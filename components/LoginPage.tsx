@@ -4,7 +4,9 @@ import { DigitalPatternBackground } from './DigitalPatternBackground';
 import { load, save, KEYS } from '../storage';
 
 interface LoginPageProps {
-  onLogin: (email: string, password: string) => boolean;
+  onLogin: (email: string, password: string) => Promise<string | null>; // returns null on success, error message on failure
+  mode: 'signin' | 'signup';
+  onToggleMode: () => void;
 }
 
 const UserCircleIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
@@ -46,12 +48,13 @@ const EyeOffIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   </svg>
 );
 
-const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
+const LoginPage: React.FC<LoginPageProps> = ({ onLogin, mode, onToggleMode }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [rememberMe, setRememberMe] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastUser, setLastUser] = useState<{ email: string; name: string; profilePictureUrl?: string } | null>(null);
 
   useEffect(() => {
@@ -68,16 +71,22 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     }
   }, []);
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
     if (!email || !password) {
       setError("Email and password are required.");
       return;
     }
-    const success = onLogin(email, password);
-    if (!success) {
-      setError("Invalid email or password. Please try again.");
+    if (mode === 'signup' && password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+    setIsSubmitting(true);
+    const errorMessage = await onLogin(email, password);
+    setIsSubmitting(false);
+    if (errorMessage) {
+      setError(errorMessage);
     } else {
         if (rememberMe) {
             localStorage.setItem('rememberedEmail', email);
@@ -209,8 +218,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
               <div className="w-16 h-16 bg-gradient-to-tr from-[#fcb632]/20 to-[#fcb632]/5 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-[#fcb632]/25 shadow-xl group transition-transform duration-500 hover:rotate-3">
                 <UserCircleIcon className="w-9 h-9 text-[#fcb632] group-hover:scale-110 transition-transform duration-300" />
               </div>
-              <h1 className="text-2xl font-bold text-white tracking-tight">Sign In</h1>
-              <p className="text-white/60 text-sm">Techinfigo CRM Workspace</p>
+              <h1 className="text-2xl font-bold text-white tracking-tight">{mode === 'signup' ? 'Create Your Account' : 'Sign In'}</h1>
+              <p className="text-white/60 text-sm">{mode === 'signup' ? 'First time setup — this becomes your owner login' : 'Techinfigo CRM Workspace'}</p>
             </motion.div>
           )}
         </AnimatePresence>
@@ -331,19 +340,22 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
             whileHover={{ scale: 1.02, y: -1 }}
             whileTap={{ scale: 0.98 }}
             type="submit"
-            className="w-full font-bold py-4 px-4 rounded-xl bg-gradient-to-r from-[#fcb632] to-amber-400 text-[#001d21] shadow-[0_8px_24px_-6px_rgba(252,182,50,0.4)] hover:shadow-[0_12px_32px_-4px_rgba(252,182,50,0.6)] transition-all duration-300 flex items-center justify-center space-x-2 text-base"
+            disabled={isSubmitting}
+            className="w-full font-bold py-4 px-4 rounded-xl bg-gradient-to-r from-[#fcb632] to-amber-400 text-[#001d21] shadow-[0_8px_24px_-6px_rgba(252,182,50,0.4)] hover:shadow-[0_12px_32px_-4px_rgba(252,182,50,0.6)] transition-all duration-300 flex items-center justify-center space-x-2 text-base disabled:opacity-60 disabled:cursor-not-allowed"
           >
             <LockClosedIcon className="w-5 h-5 shrink-0" />
-            <span>{lastUser ? 'Sign In Securely' : 'Continue'}</span>
+            <span>{isSubmitting ? 'Please wait…' : mode === 'signup' ? 'Create Account' : (lastUser ? 'Sign In Securely' : 'Continue')}</span>
           </motion.button>
 
-          {!lastUser && (
-            <div className="pt-2 text-center">
-              <p className="text-white/40 text-xs">
-                Don't have access? <a href="#" className="text-[#fcb632] hover:underline font-semibold">Contact Administrator</a>
-              </p>
-            </div>
-          )}
+          <div className="pt-2 text-center">
+            <p className="text-white/40 text-xs">
+              {mode === 'signup' ? (
+                <>Already set up? <button type="button" onClick={onToggleMode} className="text-[#fcb632] hover:underline font-semibold">Sign in instead</button></>
+              ) : (
+                <>First time here? <button type="button" onClick={onToggleMode} className="text-[#fcb632] hover:underline font-semibold">Create the owner account</button></>
+              )}
+            </p>
+          </div>
           
         </form>
       </motion.div>
