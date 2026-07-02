@@ -22,6 +22,7 @@ import {
 } from './types';
 // FIX: Corrected import path for local utils file.
 import { safeLocalStorageGet } from './utils';
+import { queueCloudWrite } from './cloudSync';
 
 
 export const CURRENT_STORAGE_VERSION = 1;
@@ -82,6 +83,8 @@ export const save = <T,>(key: string, data: T) => {
   } catch (error) {
     console.error(`Error writing to localStorage for key "${key}".`, error);
   }
+  // Also persist to Firestore (debounced, no-op if not signed in / not configured).
+  queueCloudWrite(key, data);
 };
 
 // --- EXPORT / IMPORT ---

@@ -130,7 +130,11 @@ import { useReminders } from "./hooks/useReminders";
 import { useDiagnostics } from "./hooks/useDiagnostics";
 import { UrlErrorBanner } from "./components/common/UrlErrorBanner";
 
-export const App: React.FC = () => {
+interface AppProps {
+    onSignOut?: () => void;
+}
+
+export const App: React.FC<AppProps> = ({ onSignOut }) => {
   // --- State Management ---
   const [currentUser, setCurrentUser] = useState<TeamMember | null>(() =>
     load(KEYS.currentUser, null),
@@ -917,6 +921,7 @@ export const App: React.FC = () => {
 
   const handleLogout = () => {
     setCurrentUser(null);
+    onSignOut?.();
   };
 
   const handleUpdateProfile = async (updatedData: Partial<TeamMember>, oldPassword?: string) => {
@@ -972,7 +977,17 @@ export const App: React.FC = () => {
     document.documentElement.classList.toggle("dark", theme === "dark");
   }, [theme]);
 
-  const hasPermission = (feature: FeatureKey, action: PermissionAction) => true;
+  const hasPermission = (feature: FeatureKey, action: PermissionAction): boolean => {
+    // Solo-owner / Admin always has full access.
+    if (!currentUser) return false;
+    if (currentUser.role === 'Admin') return true;
+
+    const role = roleDefinitions.find(r => r.id === currentUser.roleId || r.name === currentUser.role);
+    if (!role) return false; // fail closed: unknown role = no access, not full access
+
+    const featurePerm = role.permissions.find(p => p.featureKey === feature);
+    return Boolean(featurePerm?.currentPermissions?.[action]);
+  };
 
   // Modal Manager Handlers
   const openModal = (type: ModalType, props?: any) => {

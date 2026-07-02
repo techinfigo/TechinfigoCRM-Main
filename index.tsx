@@ -1,7 +1,7 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { App } from './App';
+import { AuthGate } from './components/AuthGate.tsx';
 import { initI18n } from './i18n.ts';
 import { ErrorBoundary } from './components/common/ErrorBoundary.tsx';
 import { DateRangeProvider } from './contexts/DateRangeContext.tsx';
@@ -20,7 +20,7 @@ async function main() {
     <React.StrictMode>
       <ErrorBoundary>
         <DateRangeProvider>
-          <App />
+          <AuthGate />
         </DateRangeProvider>
       </ErrorBoundary>
     </React.StrictMode>
