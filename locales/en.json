@@ -1,0 +1,91 @@
+
+{
+  "common": {
+    "save": "Save Changes",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "close": "Close",
+    "na": "N/A",
+    "back": "Back",
+    "confirm": "Confirm",
+    "yes": "Yes",
+    "no": "No",
+    "view": "View",
+    "search": "Search...",
+    "refresh": "Refresh",
+    "actions": "Actions",
+    "status": "Status",
+    "name": "Name",
+    "email": "Email",
+    "phone": "Phone",
+    "company": "Company",
+    "notes": "Notes"
+  },
+  "sidebar": {
+    "dashboard": "Dashboard",
+    "communication": "Communication",
+    "leads": "Leads",
+    "clients": "Clients",
+    "projects": "Projects",
+    "tasks": "Tasks",
+    "hr_module": "HR Module",
+    "finance": "Finance",
+    "calendar": "Calendar",
+    "settings": "Settings",
+    "logout": "Logout"
+  },
+  "login": {
+    "title": "Admin Login",
+    "subtitle": "Welcome to TECHINFIGO CRM",
+    "emailLabel": "Email ID",
+    "passwordLabel": "Password",
+    "rememberMe": "Remember Me",
+    "forgotPassword": "Forgot Password?",
+    "signIn": "Sign In",
+    "error": {
+      "required": "Email and password are required.",
+      "invalid": "Invalid email or password. Please try again."
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard Overview",
+    "totalRevenue": "Total Revenue",
+    "netProfit": "Net Profit",
+    "totalExpenses": "Total Expenses",
+    "outstandingRevenue": "Outstanding Revenue",
+    "leadsThisMonth": "Leads This Month",
+    "leadConversionRate": "Lead Conversion Rate",
+    "vsLastMonth": "vs last month"
+  },
+  "dates": {
+    "invalid": "—",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "yesterday": "Yesterday"
+  },
+  "validation": {
+    "required": "{{field}} is required.",
+    "invalid": "{{field}} is invalid.",
+    "min_length": "{{field}} must be at least {{length}} characters long."
+  },
+  "clients": {
+    "addTitle": "Add New Client",
+    "editTitle": "Edit Client",
+    "form": {
+      "name": "Client Name",
+      "companyName": "Company Name",
+      "email": "Email Address",
+      "phone": "Phone Number",
+      "website": "Website",
+      "industry": "Industry",
+      "contactName": "Primary Contact Name",
+      "contactEmail": "Primary Contact Email",
+      "gstin": "Client GSTIN",
+      "tags": "Tags (comma-separated)",
+      "address": "Address",
+      "notes": "Client Notes"
+    }
+  }
+}

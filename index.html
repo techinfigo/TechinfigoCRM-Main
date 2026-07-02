@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TECHINFIGO</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.1.0",
+    "react-dom": "https://esm.sh/react-dom@^19.1.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.1.0/",
+    "react/": "https://esm.sh/react@^19.1.0/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.4.0",
+    "chart.js": "https://esm.sh/chart.js@^4.4.9",
+    "chart.js/": "https://esm.sh/chart.js@^4.4.9/",
+    "jszip": "https://esm.sh/jszip@3.10.1",
+    "file-saver": "https://esm.sh/file-saver@^2.0.5",
+    "lucide-react": "https://esm.sh/lucide-react@^0.400.0",
+    "zustand": "https://esm.sh/zustand@4.5.4",
+    "zustand/": "https://esm.sh/zustand@4.5.4/",
+    "date-fns": "https://esm.sh/date-fns@^3.6.0",
+    "date-fns/": "https://esm.sh/date-fns@^3.6.0/",
+    "date-fns-tz": "https://esm.sh/date-fns-tz@^3.1.3?exports=toZonedTime",
+    "date-fns-tz/": "https://esm.sh/date-fns-tz@^3.1.3/",
+    "chartjs-plugin-datalabels": "https://esm.sh/chartjs-plugin-datalabels@^2.2.0",
+    "@/": "./",
+    "html2pdf.js": "https://aistudiocdn.com/html2pdf.js@^0.12.1",
+    "@heroicons/react/": "https://aistudiocdn.com/@heroicons/react@^2.2.0/"
+  }
+}
+</script>
+  <!-- Load Tailwind CSS CDN first -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Load Tailwind CSS Typography plugin -->
+  <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+  <!-- Chart.js will be loaded via importmap and ES module import -->
+  <!-- Configure Tailwind CSS for class-based dark mode -->
+  <!-- This MUST come AFTER the Tailwind CDN script -->
+  <script>
+    tailwind.config = {
+      darkMode: 'class', // or 'media' if you prefer OS-level control only
+      theme: {
+        extend: {
+          colors: {
+            'bg-base': 'var(--color-bg-base)',
+            'bg-muted': 'var(--color-bg-muted)',
+            'bg-canvas': 'var(--color-bg-canvas)',
+            'highlight-accent': 'var(--color-highlight-accent)',
+            'text-base': 'var(--color-text-base)',
+            'text-muted': 'var(--color-text-muted)',
+            'text-heading': 'var(--color-text-heading)',
+            'text-subheading': 'var(--color-text-subheading)',
+            'border-base': 'var(--color-border-base)',
+            'border-muted': 'var(--color-border-muted)',
+            'premium-accent': {
+              DEFAULT: 'var(--color-premium-accent)',
+              hover: 'var(--color-premium-accent-hover)',
+              text: 'var(--color-premium-accent-text)',
+              light: 'var(--color-premium-accent-light)',
+              dark: 'var(--color-premium-accent-dark)',
+            },
+            'secondary-accent': { 
+              DEFAULT: 'var(--color-secondary-accent)',
+              hover: 'var(--color-secondary-accent-hover)',
+              text: 'var(--color-secondary-accent-text)',
+            },
+            'status-positive': 'var(--color-status-positive)',
+            'status-neutral': 'var(--color-status-neutral)',
+            'status-warning': 'var(--color-status-warning)',
+            'status-negative': 'var(--color-status-negative)',
+            'status-info': 'var(--color-status-info)', 
+            'google-blue': '#4285F4',
+            'google-red': '#EA4335',
+            'google-yellow': '#FBBC05',
+            'google-green': '#34A853',
+          },
+          fontFamily: {
+            sans: ['Poppins', 'Inter', 'Roboto', 'sans-serif'],
+          },
+           spacing: {
+            '1.25': '0.3125rem', // 5px
+            '2.25': '0.5625rem', // 9px
+            '3.5': '0.875rem',   // 14px
+           },
+           fontSize: {
+             'xxs': '0.625rem', // 10px
+           },
+           animation: {
+            'pulse-notification': 'pulse-notification 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'content-fade-in': 'content-fade-in 0.3s ease-out forwards',
+            'ring': 'ring 0.8s ease-in-out',
+           },
+           keyframes: {
+            'pulse-notification': {
+              '0%, 100%': { boxShadow: '0 0 0 0 var(--color-pulse-glow)' },
+              '50%': { boxShadow: '0 0 0 6px rgba(252, 182, 50, 0)' },
+            },
+            'content-fade-in': {
+              'from': { opacity: 0, transform: 'translateY(10px)' },
+              'to': { opacity: 1, transform: 'translateY(0)' },
+            },
+            'ring': {
+              '0%': { transform: 'rotate(0)' },
+              '10%': { transform: 'rotate(-12deg)' },
+              '20%': { transform: 'rotate(12deg)' },
+              '30%': { transform: 'rotate(-12deg)' },
+              '40%': { transform: 'rotate(12deg)' },
+              '50%': { transform: 'rotate(0)' },
+              '100%': { transform: 'rotate(0)' },
+            }
+           }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root {
+      color-scheme: light dark;
+
+      /* New Branding Scheme */
+      --color-premium-accent: #001d21;
+      --color-premium-accent-hover: #003f47;
+      --color-premium-accent-text: #ffffff;
+      --color-premium-accent-light: rgba(0, 63, 71, 0.1); /* Light tint for hovers etc. */
+      --color-premium-accent-dark: #fcb632; /* Re-using base for dark variant */
+
+      --color-secondary-accent: #fcb632;
+      --color-secondary-accent-hover: #e0a32d;
+      --color-secondary-accent-text: #001d21; /* Dark text on gold */
+      
+      --color-status-positive: #16A34A;
+      --color-status-neutral:  #2563EB;
+      --color-status-warning: #f59e0b;
+      --color-status-negative: #DC2626;
+      --color-status-info: #0284C7;
+
+      /* Base Text & Backgrounds - Light Mode */
+      --color-text-base: #333333;       
+      --color-text-muted: #666666;      
+      --color-text-heading: #001d21;    
+      --color-text-subheading: #003f47; 
+      
+      --color-bg-base: #FFFFFF;         
+      --color-bg-muted: #f0f9ff; /* A very light blue */       
+      --color-bg-canvas: #faf6ed; /* New Chat Background */
+      --color-highlight-accent: #e6fbfc;
+      --color-border-base: rgba(0, 0, 0, 0.1);
+      --color-border-muted: rgba(0, 0, 0, 0.05);
+      --color-pulse-glow: rgba(252, 182, 50, 0.7);
+      
+      --scrollbar-thumb-bg: #BDC1C6;
+      --scrollbar-track-bg: #F1F3F4;
+    }
+
+    html.dark {
+      color-scheme: dark;
+      
+      --color-premium-accent: #001d21;
+      --color-premium-accent-hover: #003f47;
+      --color-premium-accent-text: #e6fbfc;
+      --color-premium-accent-light: rgba(252, 182, 50, 0.1); 
+      --color-premium-accent-dark: #fcb632;
+
+      --color-secondary-accent: #fcb632; 
+      --color-secondary-accent-hover: #dca52e;
+      --color-secondary-accent-text: #001d21;
+      
+      --color-text-base: #e6fbfc;
+      --color-text-muted: #a3b5b7;
+      --color-text-heading: #ffffff;
+      --color-text-subheading: #e6fbfc;
+
+      --color-bg-base: #002c33;     
+      --color-bg-muted: #001d21;    
+      --color-bg-canvas: #12100e; /* New Dark Chat Background */
+      --color-highlight-accent: rgba(2, 48, 56, 0.5);
+      --color-border-base: rgba(255, 255, 255, 0.1);
+      --color-border-muted: rgba(255, 255, 255, 0.15);
+      --color-pulse-glow: rgba(252, 182, 50, 0.5);
+      
+      --scrollbar-thumb-bg: #4B5563;
+      --scrollbar-track-bg: #374151;
+    }
+
+    /* Hide input number spinners / indicators */
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    input[type="number"] {
+      -moz-appearance: textfield;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      color: var(--color-text-base);
+      background-color: var(--color-bg-muted);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
+    }
+    
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--scrollbar-track-bg); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb-bg); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--color-text-muted); }
+    
+    * { scrollbar-width: thin; scrollbar-color: var(--scrollbar-thumb-bg) var(--scrollbar-track-bg); }
+    
+    .scrollbar-hide::-webkit-scrollbar {
+      display: none;
+    }
+    .scrollbar-hide {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* Custom scrollbar for Kanban board */
+    .custom-scrollbar::-webkit-scrollbar {
+        height: 8px; /* Slightly thicker for horizontal scroll */
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent; /* Make track invisible */
+        border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: var(--scrollbar-thumb-bg);
+        border-radius: 4px;
+        border: 2px solid var(--color-bg-base); /* Creates padding effect */
+    }
+    html.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+        border-color: var(--color-bg-muted);
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: var(--color-text-muted);
+    }
+
+    ::placeholder { color: var(--color-text-muted); opacity: 0.6; }
+    :-ms-input-placeholder { color: var(--color-text-muted); opacity: 0.6; }
+    ::-ms-input-placeholder { color: var(--color-text-muted); opacity: 0.6; }
+
+    .unread-badge:empty {
+      display: none;
+    }
+    .unread-badge[data-unread="0"] { display: none; }
+    .unread-badge[data-unread="NaN"] { display: none; }
+
+    @media print {
+      body {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        margin: 0;
+        background-color: white !important;
+        background-image: none !important;
+        color: black !important;
+      }
+      .print-hidden, #root > div > aside, #root > div > div > header, .modal-footer-print-hidden, .modal-close-button-print-hidden {
+        display: none !important;
+      }
+      .invoice-bill-modal-print-container {
+        position: absolute !important; left: 0 !important; top: 0 !important;
+        width: 100% !important; height: auto !important; max-height: none !important;
+        overflow: visible !important; box-shadow: none !important; border: none !important;
+        background-color: white !important; color: black !important;
+      }
+      .invoice-bill-modal-print-content {
+        overflow: visible !important; box-shadow: none !important; border: none !important;
+        padding: 20mm !important;
+        background-color: white !important; color: black !important;
+      }
+      .invoice-bill-modal-print-content *, .invoice-bill-modal-print-content p, .invoice-bill-modal-print-content div, .invoice-bill-modal-print-content span, .invoice-bill-modal-print-content th, .invoice-bill-modal-print-content td, .invoice-bill-modal-print-content h1, .invoice-bill-modal-print-content h2, .invoice-bill-modal-print-content h3, .invoice-bill-modal-print-content h4, .invoice-bill-modal-print-content h5, .invoice-bill-modal-print-content strong {
+        color: black !important; background-color: transparent !important;
+      }
+      .invoice-bill-modal-print-content svg path, .invoice-bill-modal-print-content svg circle, .invoice-bill-modal-print-content svg rect, .invoice-bill-modal-print-content svg line, .invoice-bill-modal-print-content svg tspan {
+          stroke: black !important; fill: black !important;
+      }
+      .invoice-bill-modal-print-content svg text tspan[fill="#00A99D"] { fill: black !important; }
+      .dark .invoice-bill-modal-print-container, .dark .invoice-bill-modal-print-content, .dark body {
+        background-color: white !important; background-image: none !important;
+        color: black !important; border-color: #ccc !important; 
+      }
+      .invoice-items-table th, .invoice-items-table td { border: 1px solid #ccc !important; padding: 6px !important; color: black !important; }
+      .invoice-items-table thead { background-color: #e0e0e0 !important; }
+      @page { size: A4; margin: 0; }
+    }
+  </style>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="./index.tsx"></script>
+<script type="module" src="/index.tsx"></script>
+</body>
+</html>
