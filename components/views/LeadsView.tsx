@@ -7,7 +7,7 @@ import { Card } from '../common/Card';
 import { Input } from '../common/Input';
 import { DateRangePicker, DateRange } from '../common/DateRangePicker';
 import { Checkbox } from '../common/Checkbox';
-import { ChevronDown, SlidersHorizontal, Columns, Search, RefreshCw, Undo2, GripVertical, Mail, Phone, Calendar, Download, Upload, Instagram, Globe, Webhook, StickyNote, Eye, Trash2, FileText } from 'lucide-react';
+import { ChevronDown, SlidersHorizontal, Columns, Search, Undo2, GripVertical, Mail, Phone, Calendar, Download, Upload, Instagram, Globe, Webhook, StickyNote, Eye, Trash2, FileText } from 'lucide-react';
 import { ConfirmationModal } from '../modals/ConfirmationModal';
 import { usePagination } from '../../hooks/usePagination';
 import { Pagination } from '../common/Pagination';
@@ -492,78 +492,6 @@ export const LeadsView: React.FC<LeadsViewProps> = ({ leads, auditRecords, teamM
       if (event.target) event.target.value = '';
   };
 
-  const handleGenerateDemoLeads = () => {
-      const demoTestData: Lead[] = [
-        {
-          id: `demo-${Date.now()}-1`,
-          name: "Arthur Dent",
-          companyName: "Megadodo Publications",
-          email: "arthur@guide.galaxy",
-          phone: "555-4242",
-          status: "Contacted",
-          dateAdded: new Date(Date.now() - 30 * 60 * 1000).toISOString(), // Added 30 mins ago
-          hasDigitalPresence: true,
-          source: "Direct",
-          estimatedBudget: "₹1,50,000",
-          serviceInterest: ["SEO", "Web Dev"],
-          followUpHistory: [],
-          emailHistory: [],
-          manualCompletionMarkers: {},
-          nextFollowUpDateTime: new Date(Date.now() + 45 * 60 * 1000).toISOString(), // Follow-up TODAY (in 45 mins)
-        },
-        {
-          id: `demo-${Date.now()}-2`,
-          name: "Selina Kyle",
-          companyName: "Gotham Antiques",
-          email: "selina@cats.com",
-          phone: "555-9999",
-          status: "Proposal Sent",
-          dateAdded: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString(), // Added yesterday (26 hours ago)
-          hasDigitalPresence: false,
-          source: "Referral",
-          estimatedBudget: "₹2,50,000",
-          serviceInterest: ["Social Media"],
-          followUpHistory: [],
-          emailHistory: [],
-          manualCompletionMarkers: {},
-          nextFollowUpDateTime: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(), // OVERDUE by 2 days
-        },
-        {
-          id: `demo-${Date.now()}-3`,
-          name: "Bruce Wayne",
-          companyName: "Wayne Enterprises",
-          email: "bruce@wayne.corp",
-          phone: "555-0000",
-          status: "New Lead",
-          dateAdded: new Date().toISOString(), // Added right now (forces it to the top!)
-          hasDigitalPresence: true,
-          source: "Direct",
-          estimatedBudget: "₹5,00,000+",
-          serviceInterest: ["Security Audit", "SEO"],
-          followUpHistory: [],
-          emailHistory: [],
-          manualCompletionMarkers: {},
-        },
-        {
-          id: `demo-${Date.now()}-4`,
-          name: "Clark Kent",
-          companyName: "Daily Planet",
-          email: "clark@planet.com",
-          phone: "555-9876",
-          status: "Negotiation",
-          dateAdded: new Date(Date.now() - 20 * 60 * 60 * 1000).toISOString(), // Added yesterday (20 hours ago)
-          hasDigitalPresence: true,
-          source: "LinkedIn",
-          estimatedBudget: "₹1,80,000",
-          serviceInterest: ["PPC", "Web Dev"],
-          followUpHistory: [],
-          emailHistory: [],
-          manualCompletionMarkers: {},
-        }
-      ];
-      onImportLeads(demoTestData);
-  };
-  
   const filteredLeads = useMemo(() => {
     return leads.filter(lead => {
         const lowerSearch = searchTerm.toLowerCase();
@@ -619,9 +547,6 @@ export const LeadsView: React.FC<LeadsViewProps> = ({ leads, auditRecords, teamM
                 </div>
                 <Button onClick={handleImportClick} variant="outline" size="sm" leftIcon={<Upload className="w-3.5 h-3.5 mr-1" />}>
                     Import CSV
-                </Button>
-                <Button onClick={handleGenerateDemoLeads} variant="outline" size="sm" className="text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 border-emerald-200 dark:border-emerald-800/80 bg-emerald-50/40 dark:bg-emerald-950/25" leftIcon={<RefreshCw className="w-3.5 h-3.5 mr-1 fill-emerald-100 dark:fill-emerald-950/20" />}>
-                    Seed Test Leads
                 </Button>
                 <Button onClick={handleExportClick} variant="outline" size="sm" leftIcon={<Download className="w-3.5 h-3.5 mr-1" />}>
                     Export CSV
