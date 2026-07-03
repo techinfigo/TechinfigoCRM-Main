@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Modal } from '../../common/Modal';
 import { Button } from '../../common/Button';
 import { PayrollRecord, TeamMember } from '../../../types';
@@ -19,7 +19,15 @@ export const ProcessSalaryModal: React.FC<ProcessSalaryModalProps> = ({
   payrollRecord,
   member,
 }) => {
+  const [isConfirming, setIsConfirming] = useState(false);
+
   if (!isOpen) return null;
+
+  const handleConfirm = () => {
+    if (isConfirming) return;
+    setIsConfirming(true);
+    onConfirm();
+  };
 
   return (
     <Modal
@@ -29,8 +37,8 @@ export const ProcessSalaryModal: React.FC<ProcessSalaryModalProps> = ({
       size="lg"
       footer={
         <>
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button variant="primary" onClick={onConfirm}>Confirm & Process</Button>
+          <Button variant="secondary" onClick={onClose} disabled={isConfirming}>Cancel</Button>
+          <Button variant="primary" onClick={handleConfirm} isLoading={isConfirming} disabled={isConfirming}>Confirm & Process</Button>
         </>
       }
     >

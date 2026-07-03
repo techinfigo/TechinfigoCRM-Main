@@ -4,6 +4,8 @@ import { Card } from '../common/Card';
 import { Button } from '../common/Button';
 import { TeamMember } from '../../types';
 import Chart from 'chart.js/auto';
+import { EmptyStatePlaceholder } from '../partials/EmptyStatePlaceholder';
+import { UserX } from 'lucide-react';
 
 interface ExitManagementViewProps {
   teamMembers: TeamMember[];
@@ -26,9 +28,9 @@ const StatCard: React.FC<{ title: string; value: string | number; icon: React.Re
 );
 
 const getStatusBadgeStyle = (status?: boolean): string => {
-    return status 
-      ? 'bg-green-100 text-green-800'
-      : 'bg-yellow-100 text-yellow-800';
+    return status
+      ? 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800'
+      : 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800';
 };
 
 export const ExitManagementView: React.FC<ExitManagementViewProps> = ({ teamMembers, onOpenExitChecklistModal, onOpenScheduleExitInterviewModal }) => {
@@ -104,6 +106,13 @@ export const ExitManagementView: React.FC<ExitManagementViewProps> = ({ teamMemb
 
                 {/* Exiting Employees Table */}
                 <Card title="Exiting Employees List" className="bg-bg-base dark:bg-bg-muted">
+                    {exitingEmployees.length === 0 ? (
+                        <EmptyStatePlaceholder
+                            icon={<UserX className="w-16 h-16" />}
+                            title="No Employees Exiting"
+                            message="No employees are currently in the exit process."
+                        />
+                    ) : (
                     <div className="overflow-x-auto">
                         <table className="min-w-full text-sm">
                             <thead className="text-xs text-text-muted dark:text-text-muted uppercase bg-slate-50 dark:bg-slate-700/50">
@@ -125,12 +134,12 @@ export const ExitManagementView: React.FC<ExitManagementViewProps> = ({ teamMemb
                                         <td className="p-3">{member.exitDate ? new Date(member.exitDate).toLocaleDateString() : 'N/A'}</td>
                                         <td className="p-3">{member.reasonForExit || 'N/A'}</td>
                                         <td className="p-3 text-center">
-                                            <span className={`px-2 py-0.5 rounded-full text-xxs font-semibold ${getStatusBadgeStyle(member.exitChecklist?.exitInterviewConducted)}`}>
+                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusBadgeStyle(member.exitChecklist?.exitInterviewConducted)}`}>
                                                 {member.exitChecklist?.exitInterviewConducted ? 'Done' : 'Pending'}
                                             </span>
                                         </td>
                                         <td className="p-3 text-center">
-                                            <span className={`px-2 py-0.5 rounded-full text-xxs font-semibold ${getStatusBadgeStyle(member.exitChecklist?.clearanceFormSubmitted)}`}>
+                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusBadgeStyle(member.exitChecklist?.clearanceFormSubmitted)}`}>
                                                  {member.exitChecklist?.clearanceFormSubmitted ? 'Done' : 'Pending'}
                                             </span>
                                         </td>
@@ -139,12 +148,10 @@ export const ExitManagementView: React.FC<ExitManagementViewProps> = ({ teamMemb
                                         </td>
                                     </tr>
                                 ))}
-                                {exitingEmployees.length === 0 && (
-                                    <tr><td colSpan={7} className="p-4 text-center text-text-muted dark:text-text-muted">No employees currently in the exit process.</td></tr>
-                                )}
                             </tbody>
                         </table>
                     </div>
+                    )}
                 </Card>
             </div>
         </Card>

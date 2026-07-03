@@ -4,6 +4,7 @@ import { Card } from '../common/Card';
 import { Button } from '../common/Button';
 import { TeamMember, PerformanceReview } from '../../types';
 import Chart from 'chart.js/auto';
+import { EmptyStatePlaceholder } from '../partials/EmptyStatePlaceholder';
 
 interface PerformanceViewProps {
     teamMembers: TeamMember[];
@@ -76,7 +77,7 @@ export const PerformanceView: React.FC<PerformanceViewProps> = ({ teamMembers, p
     
     return (
         <Card title="Performance Management" className="bg-transparent shadow-none border-0 p-0"
-            actions={onOpenPerformanceReviewModal && (
+            actions={onOpenPerformanceReviewModal && teamMembers.length > 0 && (
                 <Button variant="primary" size="sm" onClick={() => onOpenPerformanceReviewModal(teamMembers[0])} leftIcon={<StarIcon className="w-4 h-4"/>}>
                     Add Review
                 </Button>
@@ -94,6 +95,13 @@ export const PerformanceView: React.FC<PerformanceViewProps> = ({ teamMembers, p
                  </Card>
 
                  <Card title="Employee Performance Records" className="bg-bg-base dark:bg-bg-muted">
+                    {teamMembers.length === 0 ? (
+                        <EmptyStatePlaceholder
+                            icon={<UserCircleIcon className="w-16 h-16" />}
+                            title="No Team Members"
+                            message="Add team members to start tracking performance reviews."
+                        />
+                    ) : (
                     <div className="overflow-x-auto">
                         <table className="min-w-full text-sm">
                             <thead className="text-xs text-text-muted dark:text-text-muted uppercase bg-slate-50 dark:bg-slate-700/50">
@@ -132,6 +140,7 @@ export const PerformanceView: React.FC<PerformanceViewProps> = ({ teamMembers, p
                             </tbody>
                         </table>
                     </div>
+                    )}
                  </Card>
             </div>
         </Card>

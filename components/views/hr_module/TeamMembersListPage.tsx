@@ -5,6 +5,8 @@ import { Button } from '../../common/Button';
 import { Card } from '../../common/Card';
 import { usePagination } from '@/hooks/usePagination';
 import { Pagination } from '../../common/Pagination';
+import { EmptyStatePlaceholder } from '../../partials/EmptyStatePlaceholder';
+import { Users } from 'lucide-react';
 
 // Icons
 const PlusIcon = ({ className }: { className?: string }) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={className || "w-5 h-5"}><path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" /></svg>;
@@ -51,6 +53,14 @@ export const TeamMembersListPage: React.FC<TeamMembersListPageProps> = ({
   const canManageHRMembers = hasPermission('hrModule', 'canManageHRMembers');
   type SortableKey = 'name' | 'email' | 'jobTitle' | 'department' | 'hrStatus';
   const [sortConfig, setSortConfig] = useState<{ key: SortableKey; direction: 'ascending' | 'descending' } | null>({ key: 'name', direction: 'ascending' });
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const handleDelete = (member: TeamMember) => {
+    if (deletingId) return;
+    if (!window.confirm('Are you sure you want to delete this HR record?')) return;
+    setDeletingId(member.id);
+    onDeleteTeamMemberHR(member.id);
+  };
 
   const requestSort = (key: SortableKey) => {
     let direction: 'ascending' | 'descending' = 'ascending';
@@ -111,14 +121,17 @@ export const TeamMembersListPage: React.FC<TeamMembersListPageProps> = ({
       }
     >
       {teamMembers.length === 0 ? (
-        <div className="text-center py-12 flex-grow flex flex-col items-center justify-center">
-           <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4 text-slate-400">
-             <PlusIcon className="w-8 h-8"/>
-           </div>
-          <p className="text-slate-600 dark:text-slate-300 text-lg font-medium">No team members found in HR Module.</p>
-          {canManageHRMembers && (
-            <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Get started by adding your first team member for HR records.</p>
-          )}
+        <div className="flex-grow flex flex-col items-center justify-center">
+          <EmptyStatePlaceholder
+            icon={<Users className="w-16 h-16" />}
+            title="No Team Members"
+            message={canManageHRMembers ? "Get started by adding your first team member for HR records." : "No team members found in the HR Module."}
+            actionButton={canManageHRMembers && (
+              <Button onClick={() => onOpenTeamMemberHRFormModal()} variant="primary" size="sm" leftIcon={<PlusIcon />}>
+                Add Team Member
+              </Button>
+            )}
+          />
         </div>
       ) : (
         <div className="overflow-x-auto flex-grow">
@@ -160,7 +173,7 @@ export const TeamMembersListPage: React.FC<TeamMembersListPageProps> = ({
                     {canManageHRMembers && (
                       <>
                         <Button variant="ghost" size="xs" onClick={() => onOpenTeamMemberHRFormModal(member)} className="p-1.5 text-text-muted hover:text-premium-accent" title="Edit HR Details"><EditIcon /></Button>
-                        <Button variant="ghost" size="xs" onClick={() => { if (window.confirm('Are you sure you want to delete this HR record?')) onDeleteTeamMemberHR(member.id);}} className="p-1.5 text-text-muted hover:text-status-negative" title="Delete HR Record"><TrashIcon /></Button>
+                        <Button variant="ghost" size="xs" onClick={() => handleDelete(member)} isLoading={deletingId === member.id} disabled={deletingId === member.id} className="p-1.5 text-text-muted hover:text-status-negative" title="Delete HR Record"><TrashIcon /></Button>
                       </>
                     )}
                   </td>

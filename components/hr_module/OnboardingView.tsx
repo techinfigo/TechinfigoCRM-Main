@@ -3,6 +3,8 @@ import React, { useMemo } from 'react';
 import { Card } from '../common/Card';
 import { Button } from '../common/Button';
 import { TeamMember, OnboardingChecklist } from '../../types';
+import { EmptyStatePlaceholder } from '../partials/EmptyStatePlaceholder';
+import { UserPlus } from 'lucide-react';
 
 interface OnboardingViewProps {
   teamMembers: TeamMember[];
@@ -49,6 +51,13 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ teamMembers, onO
 
                 {/* Onboarding Employees Table */}
                 <Card title="Current Onboarding Employees" className="bg-bg-base dark:bg-bg-muted">
+                    {onboardingEmployees.length === 0 ? (
+                        <EmptyStatePlaceholder
+                            icon={<UserPlus className="w-16 h-16" />}
+                            title="No Employees Onboarding"
+                            message="No employees are currently in the onboarding process."
+                        />
+                    ) : (
                     <div className="overflow-x-auto">
                         <table className="min-w-full text-sm">
                             <thead className="text-xs text-text-muted dark:text-text-muted uppercase bg-slate-50 dark:bg-slate-700/50">
@@ -78,12 +87,10 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ teamMembers, onO
                                         </td>
                                     </tr>
                                 )})}
-                                {onboardingEmployees.length === 0 && (
-                                    <tr><td colSpan={5} className="p-4 text-center text-text-muted dark:text-text-muted">No employees currently in onboarding.</td></tr>
-                                )}
                             </tbody>
                         </table>
                     </div>
+                    )}
                 </Card>
             </div>
         </Card>

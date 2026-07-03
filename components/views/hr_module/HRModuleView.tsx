@@ -52,6 +52,7 @@ interface HRModuleViewProps {
   onOpenExitChecklistModal: (member: TeamMember) => void;
   onOpenPayslipModal: (payrollRecord: PayrollRecord, member: TeamMember) => void;
   onOpenProcessSalaryModal: (payrollRecord: PayrollRecord, member: TeamMember) => void;
+  onRunBulkPayroll: (monthYear: string) => void;
 }
 
 type HRModuleTab = 
@@ -132,7 +133,7 @@ export const HRModuleView: React.FC<HRModuleViewProps> = (props) => {
                           hasPermission={props.hasPermission}
                       />;
           case 'payroll':
-              return <PayrollView teamMembers={props.teamMembers} payrollRecords={props.payrollRecords} onOpenPayslipModal={props.onOpenPayslipModal} onOpenProcessSalaryModal={props.onOpenProcessSalaryModal} appSettings={props.appSettings} />;
+              return <PayrollView teamMembers={props.teamMembers} payrollRecords={props.payrollRecords} onOpenPayslipModal={props.onOpenPayslipModal} onOpenProcessSalaryModal={props.onOpenProcessSalaryModal} onRunBulkPayroll={props.onRunBulkPayroll} appSettings={props.appSettings} />;
           case 'performance':
               return <PerformanceView teamMembers={props.teamMembers} performanceReviews={props.performanceReviews} onOpenPerformanceReviewModal={props.onOpenPerformanceReviewModal} />;
           case 'onboarding':

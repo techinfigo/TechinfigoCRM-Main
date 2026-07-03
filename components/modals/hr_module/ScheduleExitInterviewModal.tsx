@@ -17,6 +17,7 @@ export const ScheduleExitInterviewModal: React.FC<ScheduleExitInterviewModalProp
   const [interviewDateTime, setInterviewDateTime] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
+  const [isScheduling, setIsScheduling] = useState(false);
 
   const resignedMembers = teamMembers.filter(tm => tm.hrStatus === 'Resigned');
 
@@ -29,10 +30,12 @@ export const ScheduleExitInterviewModal: React.FC<ScheduleExitInterviewModalProp
         setInterviewDateTime(defaultDateTime.toISOString().substring(0, 16));
         setNotes('');
         setError(null);
+        setIsScheduling(false);
     }
   }, [isOpen, resignedMembers]);
 
   const handleSchedule = () => {
+    if (isScheduling) return;
     if (!selectedEmployeeId) {
       setError('Please select an employee.');
       return;
@@ -46,6 +49,7 @@ export const ScheduleExitInterviewModal: React.FC<ScheduleExitInterviewModalProp
       return;
     }
     setError(null);
+    setIsScheduling(true);
     onSchedule(selectedEmployeeId, interviewDateTime, notes);
     onClose();
   };
@@ -61,8 +65,8 @@ export const ScheduleExitInterviewModal: React.FC<ScheduleExitInterviewModalProp
       size="lg"
       footer={
         <>
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button variant="primary" onClick={handleSchedule}>Schedule Interview</Button>
+          <Button variant="secondary" onClick={onClose} disabled={isScheduling}>Cancel</Button>
+          <Button variant="primary" onClick={handleSchedule} isLoading={isScheduling} disabled={isScheduling}>Schedule Interview</Button>
         </>
       }
     >

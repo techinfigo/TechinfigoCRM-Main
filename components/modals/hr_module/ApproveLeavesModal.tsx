@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Modal } from '../../common/Modal';
 import { Button } from '../../common/Button';
 import { LeaveRequest, LeaveRequestStatus } from '../../../types';
@@ -16,6 +16,14 @@ const XMarkIcon = () => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 
 
 
 export const ApproveLeavesModal: React.FC<ApproveLeavesModalProps> = ({ isOpen, onClose, pendingRequests, onUpdateLeaveStatus }) => {
+  const [processingId, setProcessingId] = useState<string | null>(null);
+
+  const handleAction = (id: string, status: LeaveRequestStatus, notes?: string) => {
+    if (processingId) return;
+    setProcessingId(id);
+    onUpdateLeaveStatus(id, status, notes);
+  };
+
   return (
     <Modal
       isOpen={isOpen}
@@ -38,13 +46,13 @@ export const ApproveLeavesModal: React.FC<ApproveLeavesModalProps> = ({ isOpen, 
                 <p className="text-xs text-text-muted dark:text-slate-400 mt-1 italic">Reason: {req.reason}</p>
               </div>
               <div className="flex-shrink-0 flex gap-2 self-end sm:self-center">
-                <Button variant="primary" size="xs" onClick={() => onUpdateLeaveStatus(req.id, 'Approved')} className="!p-1.5" title="Approve">
+                <Button variant="primary" size="xs" onClick={() => handleAction(req.id, 'Approved')} isLoading={processingId === req.id} disabled={processingId === req.id} className="!p-1.5" title="Approve">
                   <CheckIcon />
                 </Button>
                 <Button variant="danger" size="xs" onClick={() => {
                   const adminNotes = prompt("Reason for rejection (optional):");
-                  onUpdateLeaveStatus(req.id, 'Rejected', adminNotes || undefined);
-                }} className="!p-1.5" title="Reject">
+                  handleAction(req.id, 'Rejected', adminNotes || undefined);
+                }} isLoading={processingId === req.id} disabled={processingId === req.id} className="!p-1.5" title="Reject">
                   <XMarkIcon />
                 </Button>
               </div>

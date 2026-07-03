@@ -6,6 +6,8 @@ import { Checkbox } from '../common/Checkbox';
 import { TeamMember, HRDocument, HRDocumentCategory, hrDocumentCategories, HRDocumentStatus, hrDocumentStatuses } from '../../types';
 import JSZip from 'jszip';
 import saveAs from 'file-saver';
+import { EmptyStatePlaceholder } from '../partials/EmptyStatePlaceholder';
+import { FileText } from 'lucide-react';
 
 
 interface DocumentManagementViewProps {
@@ -17,11 +19,11 @@ interface DocumentManagementViewProps {
 
 const getStatusBadgeStyle = (status: HRDocumentStatus): string => {
     switch (status) {
-        case 'Approved': return 'bg-green-100 text-green-800';
-        case 'Pending Approval': return 'bg-yellow-100 text-yellow-800';
-        case 'Rejected': return 'bg-red-100 text-red-800';
-        case 'Expired': return 'bg-slate-200 text-slate-600';
-        default: return 'bg-slate-100 text-slate-800';
+        case 'Approved': return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800';
+        case 'Pending Approval': return 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800';
+        case 'Rejected': return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800';
+        case 'Expired': return 'bg-slate-200 text-slate-600 border-slate-300 dark:bg-slate-700 dark:text-slate-400 dark:border-slate-600';
+        default: return 'bg-slate-100 text-slate-800 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600';
     }
 };
 
@@ -93,6 +95,13 @@ export const DocumentManagementView: React.FC<DocumentManagementViewProps> = ({ 
                      </div>
                 </Card>
 
+                {filteredDocuments.length === 0 ? (
+                    <EmptyStatePlaceholder
+                        icon={<FileText className="w-16 h-16" />}
+                        title="No Documents Found"
+                        message="No documents match your current filters, or none have been uploaded yet."
+                    />
+                ) : (
                 <div className="overflow-x-auto">
                     <table className="min-w-full text-sm">
                         <thead className="bg-slate-50 dark:bg-slate-700/50"><tr><th className="p-2 w-8"></th><th className="p-2 text-left">Document Name</th><th className="p-2 text-left">Category</th><th className="p-2 text-left">Employee</th><th className="p-2 text-left">Upload Date</th><th className="p-2 text-center">Status</th><th className="p-2 text-right">Actions</th></tr></thead>
@@ -101,13 +110,14 @@ export const DocumentManagementView: React.FC<DocumentManagementViewProps> = ({ 
                                 <tr key={doc.id}>
                                     <td className="p-2"><Checkbox checked={selectedDocs.has(doc.id)} onChange={() => setSelectedDocs(prev => { const next = new Set(prev); if(next.has(doc.id)) next.delete(doc.id); else next.add(doc.id); return next; })} /></td>
                                     <td className="p-2 font-medium">{doc.name}</td><td>{doc.category}</td><td>{getEmployeeName(doc.employeeId)}</td><td>{new Date(doc.uploadDate).toLocaleDateString()}</td>
-                                    <td className="text-center"><span className={`px-2 py-0.5 rounded-full text-xxs ${getStatusBadgeStyle(doc.status)}`}>{doc.status}</span></td>
+                                    <td className="text-center"><span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusBadgeStyle(doc.status)}`}>{doc.status}</span></td>
                                     <td className="p-2 text-right space-x-1"><Button size="xs" variant="outline">View</Button><Button size="xs" variant="secondary">Approve</Button></td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
                 </div>
+                )}
             </div>
         </Card>
     );

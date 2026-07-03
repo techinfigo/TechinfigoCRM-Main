@@ -3,6 +3,8 @@ import React, { useState, useMemo } from 'react';
 import { LeaveRequest, LeaveRequestStatus, LeaveType, TeamMember, FeatureKey, PermissionAction, leaveTypes, leaveRequestStatuses } from '../../types';
 import { Button } from '../common/Button';
 import { Card } from '../common/Card';
+import { EmptyStatePlaceholder } from '../partials/EmptyStatePlaceholder';
+import { CalendarClock, Users } from 'lucide-react';
 
 interface LeavesViewProps {
   leaveRequests: LeaveRequest[];
@@ -21,12 +23,12 @@ const XMarkIcon = () => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 
 
 const getStatusBadgeStyle = (status: LeaveRequestStatus): string => {
   switch (status) {
-    case 'Pending': return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-700/30 dark:text-yellow-300';
-    case 'Approved': return 'bg-green-100 text-green-700 dark:bg-green-700/30 dark:text-green-300';
-    case 'Rejected': return 'bg-red-100 text-red-700 dark:bg-red-700/30 dark:text-red-300';
+    case 'Pending': return 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-700/30 dark:text-yellow-300 dark:border-yellow-800';
+    case 'Approved': return 'bg-green-100 text-green-700 border-green-200 dark:bg-green-700/30 dark:text-green-300 dark:border-green-800';
+    case 'Rejected': return 'bg-red-100 text-red-700 border-red-200 dark:bg-red-700/30 dark:text-red-300 dark:border-red-800';
     case 'CancelledByEmployee':
-    case 'CancelledByAdmin': return 'bg-slate-100 text-slate-600 dark:bg-slate-600/30 dark:text-slate-400';
-    default: return 'bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-200';
+    case 'CancelledByAdmin': return 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-600/30 dark:text-slate-400 dark:border-slate-600';
+    default: return 'bg-slate-200 text-slate-800 border-slate-300 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600';
   }
 };
 
@@ -40,8 +42,22 @@ export const LeavesView: React.FC<LeavesViewProps> = ({
 
   const [filterStatus, setFilterStatus] = useState<LeaveRequestStatus | 'All'>('All');
   const [filterMemberId, setFilterMemberId] = useState<string>('All');
+  const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
 
-  const myLeaveRequests = useMemo(() => 
+  const withProcessing = (requestId: string, action: () => void) => {
+    if (processingIds.has(requestId)) return;
+    setProcessingIds(prev => new Set(prev).add(requestId));
+    action();
+    setTimeout(() => {
+      setProcessingIds(prev => {
+        const next = new Set(prev);
+        next.delete(requestId);
+        return next;
+      });
+    }, 400);
+  };
+
+  const myLeaveRequests = useMemo(() =>
     leaveRequests.filter(req => req.memberId === currentUser.id)
                  .sort((a,b) => new Date(b.requestedDate).getTime() - new Date(a.requestedDate).getTime()),
   [leaveRequests, currentUser.id]);
@@ -90,15 +106,15 @@ export const LeavesView: React.FC<LeavesViewProps> = ({
                   <>
                     {isTeamView && canManageLeaveRequests && (
                       <>
-                        <Button variant="primary" size="xs" onClick={() => onUpdateLeaveStatus(req.id, 'Approved')} className="!p-1.5" title="Approve"><CheckIcon/></Button>
-                        <Button variant="danger" size="xs" onClick={() => {
+                        <Button variant="primary" size="xs" onClick={() => withProcessing(req.id, () => onUpdateLeaveStatus(req.id, 'Approved'))} isLoading={processingIds.has(req.id)} disabled={processingIds.has(req.id)} className="!p-1.5" title="Approve"><CheckIcon/></Button>
+                        <Button variant="danger" size="xs" onClick={() => withProcessing(req.id, () => {
                             const reason = prompt("Reason for rejection (optional):");
                             onUpdateLeaveStatus(req.id, 'Rejected', reason || undefined);
-                        }} className="!p-1.5" title="Reject"><XMarkIcon/></Button>
+                        })} isLoading={processingIds.has(req.id)} disabled={processingIds.has(req.id)} className="!p-1.5" title="Reject"><XMarkIcon/></Button>
                       </>
                     )}
                     {!isTeamView && canCancelOwnLeave && (
-                      <Button variant="outline" size="xs" onClick={() => onCancelLeaveRequest(req.id)} className="text-red-600 border-red-500 hover:bg-red-50 dark:text-red-400 dark:border-red-600 dark:hover:bg-red-900/30">Cancel</Button>
+                      <Button variant="outline" size="xs" onClick={() => withProcessing(req.id, () => onCancelLeaveRequest(req.id))} isLoading={processingIds.has(req.id)} disabled={processingIds.has(req.id)} className="text-red-600 border-red-500 hover:bg-red-50 dark:text-red-400 dark:border-red-600 dark:hover:bg-red-900/30">Cancel</Button>
                     )}
                   </>
                 )}
@@ -122,8 +138,12 @@ export const LeavesView: React.FC<LeavesViewProps> = ({
 
       {/* My Leaves Section */}
       <Card title="My Leave Requests" className="mb-6 bg-bg-base dark:bg-bg-muted shadow-md">
-        {myLeaveRequests.length === 0 ? 
-            <p className="text-sm text-text-muted dark:text-text-muted text-center py-4">You haven't requested any leaves yet.</p> 
+        {myLeaveRequests.length === 0 ?
+            <EmptyStatePlaceholder
+                icon={<CalendarClock className="w-16 h-16" />}
+                title="No Leave Requests"
+                message="You haven't requested any leaves yet."
+            />
             : renderLeaveTable(myLeaveRequests, false)
         }
       </Card>
@@ -141,8 +161,12 @@ export const LeavesView: React.FC<LeavesViewProps> = ({
               {teamMembers.map(tm => <option key={tm.id} value={tm.id} className={optionClass}>{tm.name}</option>)}
             </select>
           </div>
-          {teamLeaveRequests.length === 0 ? 
-            <p className="text-sm text-text-muted dark:text-text-muted text-center py-4">No team leave requests match your filters.</p> 
+          {teamLeaveRequests.length === 0 ?
+            <EmptyStatePlaceholder
+                icon={<Users className="w-16 h-16" />}
+                title="No Leave Requests"
+                message="No team leave requests match your filters."
+            />
             : renderLeaveTable(teamLeaveRequests, true)
           }
         </Card>

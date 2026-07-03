@@ -20,6 +20,7 @@ import {
   ChatContact,
   ChatMessage,
   LeaveRequest,
+  LeaveRequestStatus,
   DailyAttendanceRecord,
   PerformanceReview,
   HRDocument,
@@ -1025,6 +1026,108 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
     closeModal();
   };
 
+  const handleDeleteTeamMemberHR = (memberId: string) => {
+    const member = teamMembers.find((m) => m.id === memberId);
+    setTeamMembers((prev) => prev.filter((m) => m.id !== memberId));
+    addToast({
+      title: "HR Record Deleted",
+      description: `${member?.name || "The team member"}'s HR record has been removed.`,
+    });
+  };
+
+  const handleUpdateLeaveStatus = (
+    requestId: string,
+    status: LeaveRequestStatus,
+    adminNotes?: string,
+  ) => {
+    setLeaveRequests((prev) =>
+      prev.map((req) =>
+        req.id === requestId
+          ? {
+              ...req,
+              status,
+              adminNotes,
+              reviewedByUserId: currentUser?.id,
+              reviewedDate: new Date().toISOString(),
+            }
+          : req,
+      ),
+    );
+    addToast({
+      title: `Leave ${status}`,
+      description: `The leave request has been ${status.toLowerCase()}.`,
+    });
+  };
+
+  const handleCancelLeaveRequest = (requestId: string) => {
+    setLeaveRequests((prev) =>
+      prev.map((req) =>
+        req.id === requestId
+          ? { ...req, status: "CancelledByEmployee" as LeaveRequestStatus }
+          : req,
+      ),
+    );
+    addToast({
+      title: "Leave Cancelled",
+      description: "Your leave request has been cancelled.",
+    });
+  };
+
+  const handleScheduleExitInterview = (
+    employeeId: string,
+    dateTime: string,
+    notes: string,
+  ) => {
+    const member = teamMembers.find((m) => m.id === employeeId);
+    setTeamMembers((prev) =>
+      prev.map((m) =>
+        m.id === employeeId
+          ? { ...m, exitInterviewScheduledAt: dateTime, exitInterviewNotes: notes }
+          : m,
+      ),
+    );
+    addToast({
+      title: "Exit Interview Scheduled",
+      description: `Scheduled for ${member?.name || "the employee"} on ${new Date(dateTime).toLocaleString()}.`,
+    });
+  };
+
+  const handleRunBulkPayroll = (monthYear: string) => {
+    const activeMembers = teamMembers.filter((m) => m.hrStatus === "Active");
+    const membersNeedingPayroll = activeMembers.filter(
+      (member) =>
+        !payrollRecords.some(
+          (r) => r.employeeId === member.id && r.monthYear === monthYear,
+        ),
+    );
+    if (membersNeedingPayroll.length === 0) {
+      addToast({
+        title: "Bulk Payroll",
+        description:
+          "All active employees already have payroll records for this period.",
+      });
+      return;
+    }
+    const newRecords: PayrollRecord[] = membersNeedingPayroll.map((member) => {
+      const baseSalary = member.monthlySalary || 0;
+      return {
+        id: `payroll-${member.id}-${monthYear}`,
+        employeeId: member.id,
+        monthYear,
+        baseSalary,
+        bonuses: 0,
+        deductions: 0,
+        netSalary: baseSalary,
+        status: "Pending",
+      };
+    });
+    setPayrollRecords((prev) => [...prev, ...newRecords]);
+    addToast({
+      title: "Bulk Payroll Generated",
+      description: `Generated payroll for ${newRecords.length} employee(s).`,
+    });
+  };
+
   const handleSaveHRDocument = (
     docData: Omit<HRDocument, "id" | "uploadedByUserId" | "uploadedByUserName">,
   ) => {
@@ -1649,7 +1752,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
             onOpenTeamMemberHRFormModal={(m) =>
               openModal("TEAM_MEMBER_HR_FORM", { member: m })
             }
-            onDeleteTeamMemberHR={() => {}}
+            onDeleteTeamMemberHR={handleDeleteTeamMemberHR}
             onOpenTeamMemberHRDetailModal={(m) =>
               openModal("TEAM_MEMBER_HR_DETAIL", { member: m })
             }
@@ -1658,8 +1761,8 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
             onOpenLeaveRequestModal={(lr) =>
               openModal("LEAVE_REQUEST_FORM", { leaveRequest: lr })
             }
-            onUpdateLeaveStatus={() => {}}
-            onCancelLeaveRequest={() => {}}
+            onUpdateLeaveStatus={handleUpdateLeaveStatus}
+            onCancelLeaveRequest={handleCancelLeaveRequest}
             dailyAttendanceRecords={dailyAttendanceRecords}
             onSaveAttendance={() => {}}
             onOpenMarkAttendanceModal={() => openModal("MARK_ATTENDANCE")}
@@ -1702,6 +1805,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
             onOpenProcessSalaryModal={(pr, m) =>
               openModal("PROCESS_SALARY", { payrollRecord: pr, member: m })
             }
+            onRunBulkPayroll={handleRunBulkPayroll}
           />
         );
       case "FINANCE":
@@ -2421,14 +2525,8 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
         <ApproveLeavesModal
           isOpen={true}
           onClose={closeModal}
-          pendingRequests={activeModal.props?.pendingRequests || []}
-          onUpdateLeaveStatus={(id, status, notes) => {
-            setLeaveRequests((prev) =>
-              prev.map((req) =>
-                req.id === id ? { ...req, status, adminNotes: notes } : req,
-              ),
-            );
-          }}
+          pendingRequests={leaveRequests.filter((l) => l.status === "Pending")}
+          onUpdateLeaveStatus={handleUpdateLeaveStatus}
         />
       )}
       {activeModal?.type === "UPLOAD_HR_DOC" && (
@@ -2446,9 +2544,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
           isOpen={true}
           onClose={closeModal}
           teamMembers={teamMembers}
-          onSchedule={(employeeId, dateTime, notes) => {
-            alert("Scheduled (Conceptual)");
-          }}
+          onSchedule={handleScheduleExitInterview}
         />
       )}
       {activeModal?.type === "ONBOARDING_CHECKLIST" &&

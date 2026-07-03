@@ -7,12 +7,15 @@ import { Input } from '../common/Input';
 import { TeamMember, PayrollRecord, PayrollStatus, AppSettings } from '../../types';
 import { usePagination } from '../../hooks/usePagination';
 import { Pagination } from '../common/Pagination';
+import { EmptyStatePlaceholder } from '../partials/EmptyStatePlaceholder';
+import { Wallet } from 'lucide-react';
 
 interface PayrollViewProps {
   teamMembers: TeamMember[];
   payrollRecords: PayrollRecord[];
   onOpenPayslipModal: (payrollRecord: PayrollRecord, member: TeamMember) => void;
   onOpenProcessSalaryModal: (payrollRecord: PayrollRecord, member: TeamMember) => void;
+  onRunBulkPayroll: (monthYear: string) => void;
   appSettings: AppSettings;
 }
 
@@ -41,8 +44,10 @@ const getStatusBadgeStyle = (status: PayrollStatus) => {
     }
 };
 
-export const PayrollView: React.FC<PayrollViewProps> = ({ teamMembers, payrollRecords, onOpenPayslipModal, onOpenProcessSalaryModal, appSettings }) => {
+export const PayrollView: React.FC<PayrollViewProps> = ({ teamMembers, payrollRecords, onOpenPayslipModal, onOpenProcessSalaryModal, onRunBulkPayroll, appSettings }) => {
     const [selectedMonth, setSelectedMonth] = useState<string>(new Date().toISOString().slice(0, 7));
+    const [isRunningPayroll, setIsRunningPayroll] = useState(false);
+    const [processingId, setProcessingId] = useState<string | null>(null);
 
     const payrollDataForMonth = useMemo(() => {
         return teamMembers.map(member => {
@@ -84,6 +89,20 @@ export const PayrollView: React.FC<PayrollViewProps> = ({ teamMembers, payrollRe
       return new Intl.NumberFormat('en-IN', { style: 'currency', currency: appSettings.defaultCurrency || 'INR' }).format(amount);
     };
 
+    const handleRunBulkPayroll = () => {
+        if (isRunningPayroll) return;
+        setIsRunningPayroll(true);
+        onRunBulkPayroll(selectedMonth);
+        setTimeout(() => setIsRunningPayroll(false), 400);
+    };
+
+    const handleProcessClick = (member: TeamMember, record: PayrollRecord) => {
+        if (processingId) return;
+        setProcessingId(record.id);
+        onOpenProcessSalaryModal(record, member);
+        setTimeout(() => setProcessingId(null), 400);
+    };
+
     return (
         <Card title="Payroll Processing" className="bg-transparent shadow-none border-0 p-0 h-full flex flex-col">
             <div className="flex-grow space-y-6 overflow-y-auto p-1">
@@ -103,9 +122,17 @@ export const PayrollView: React.FC<PayrollViewProps> = ({ teamMembers, payrollRe
                         onChange={(e) => setSelectedMonth(e.target.value)}
                         containerClassName="max-w-xs"
                     />
-                    <Button variant="primary" onClick={() => alert('Conceptual: Run bulk payroll for all pending employees this month.')}>Run Bulk Payroll</Button>
+                    <Button variant="primary" onClick={handleRunBulkPayroll} isLoading={isRunningPayroll} disabled={isRunningPayroll}>Run Bulk Payroll</Button>
                 </div>
-                
+
+                {payrollDataForMonth.length === 0 ? (
+                    <EmptyStatePlaceholder
+                        icon={<Wallet className="w-16 h-16" />}
+                        title="No Payroll Records"
+                        message="There are no team members to generate payroll for yet."
+                    />
+                ) : (
+                <>
                 {/* Payroll Table */}
                 <div className="overflow-x-auto rounded-lg border border-border-base dark:border-border-muted">
                     <table className="min-w-full text-sm">
@@ -131,7 +158,7 @@ export const PayrollView: React.FC<PayrollViewProps> = ({ teamMembers, payrollRe
                                     </td>
                                     <td className="p-3 text-right space-x-1">
                                         {record.status === 'Pending' && (
-                                            <Button size="xs" onClick={() => onOpenProcessSalaryModal(record, member)}>Process</Button>
+                                            <Button size="xs" onClick={() => handleProcessClick(member, record)} isLoading={processingId === record.id} disabled={processingId === record.id}>Process</Button>
                                         )}
                                         {record.status !== 'Pending' && (
                                             <Button size="xs" variant="outline" onClick={() => onOpenPayslipModal(record, member)} leftIcon={<EyeIcon />}>Payslip</Button>
@@ -143,6 +170,8 @@ export const PayrollView: React.FC<PayrollViewProps> = ({ teamMembers, payrollRe
                     </table>
                      <Pagination {...paginationProps} />
                 </div>
+                </>
+                )}
             </div>
         </Card>
     );

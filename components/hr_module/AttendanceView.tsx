@@ -4,6 +4,19 @@ import { Card } from '../common/Card';
 import { Button } from '../common/Button';
 import { TeamMember, DailyAttendanceRecord, AttendanceEntry, AttendanceStatus, attendanceStatuses } from '../../types';
 import Chart from 'chart.js/auto';
+import { EmptyStatePlaceholder } from '../partials/EmptyStatePlaceholder';
+import { Users } from 'lucide-react';
+
+const getAttendanceStatusBadgeStyle = (status: AttendanceStatus): string => {
+    switch (status) {
+        case 'Present': return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800';
+        case 'Late': return 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800';
+        case 'Half-Day': return 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800';
+        case 'Leave': return 'bg-sky-100 text-sky-800 border-sky-200 dark:bg-sky-900/30 dark:text-sky-300 dark:border-sky-800';
+        case 'Absent': return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800';
+        default: return 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700/30 dark:text-slate-400 dark:border-slate-600';
+    }
+};
 
 interface AttendanceViewProps {
   teamMembers: TeamMember[];
@@ -136,6 +149,13 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ teamMembers, dai
 
                 {/* Daily Records Table */}
                 <Card title={`Attendance for ${selectedDate.toLocaleDateString()}`}>
+                    {selectedDayEntries.length === 0 ? (
+                        <EmptyStatePlaceholder
+                            icon={<Users className="w-16 h-16" />}
+                            title="No Attendance Records"
+                            message="There are no team members to show attendance for yet."
+                        />
+                    ) : (
                     <div className="overflow-x-auto">
                         <table className="min-w-full text-sm">
                             <thead className="bg-slate-50 dark:bg-slate-700/50"><tr><th className="p-2 text-left">Name</th><th className="p-2 text-left">Department</th><th className="p-2 text-left">Check-in</th><th className="p-2 text-left">Check-out</th><th className="p-2 text-center">Status</th></tr></thead>
@@ -143,12 +163,13 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({ teamMembers, dai
                                 {selectedDayEntries.map(({member, entry}) => (
                                     <tr key={member.id}>
                                         <td className="p-2 font-medium">{member.name}</td><td>{member.department}</td><td>{entry.checkInTime || 'N/A'}</td><td>{entry.checkOutTime || 'N/A'}</td>
-                                        <td className="text-center"><span className={`px-2 py-0.5 rounded-full text-xxs ${entry.status === 'Present' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{entry.status}</span></td>
+                                        <td className="text-center"><span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getAttendanceStatusBadgeStyle(entry.status)}`}>{entry.status}</span></td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
                     </div>
+                    )}
                 </Card>
 
                 {/* Charts */}

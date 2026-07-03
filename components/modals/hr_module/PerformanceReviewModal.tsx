@@ -67,6 +67,7 @@ export const PerformanceReviewModal: React.FC<PerformanceReviewModalProps> = ({
 }) => {
   const [formData, setFormData] = useState<PerformanceReviewFormData>(initialFormData);
   const [attachments, setAttachments] = useState<File[]>([]); // For new file uploads
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const initialFormStateRef = useRef<PerformanceReviewFormData & { attachmentsCount: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -94,6 +95,7 @@ export const PerformanceReviewModal: React.FC<PerformanceReviewModalProps> = ({
       setFormData(currentInitialState);
       initialFormStateRef.current = { ...currentInitialState, attachmentsCount: 0 }; // Store initial for comparison
       onSetDirty(false);
+      setIsSubmitting(false);
     }
   }, [isOpen, existingReview, onSetDirty]);
 
@@ -141,7 +143,8 @@ export const PerformanceReviewModal: React.FC<PerformanceReviewModalProps> = ({
   };
 
   const handleSubmit = () => {
-    if (!employee || !currentUser) return;
+    if (!employee || !currentUser || isSubmitting) return;
+    setIsSubmitting(true);
 
     const reviewData: PerformanceReview = {
       id: existingReview?.id || `pr-${Date.now()}`,
@@ -179,8 +182,8 @@ export const PerformanceReviewModal: React.FC<PerformanceReviewModalProps> = ({
       size="3xl"
       footer={
         <>
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button variant="primary" onClick={handleSubmit}>
+          <Button variant="secondary" onClick={onClose} disabled={isSubmitting}>Cancel</Button>
+          <Button variant="primary" onClick={handleSubmit} isLoading={isSubmitting} disabled={isSubmitting}>
             {existingReview ? 'Save Changes' : 'Submit Review'}
           </Button>
         </>
@@ -232,14 +235,6 @@ export const PerformanceReviewModal: React.FC<PerformanceReviewModalProps> = ({
                 <TextArea label="Growth & Development Plan" name="growthDevelopmentPlan" value={formData.growthDevelopmentPlan} onChange={handleChange} rows={3} placeholder="Improvement suggestions, training needs, promotion opportunities..." />
             </div>
         </Card>
-        
-        <Card title="AI-Powered Suggestions (Conceptual)" className="bg-sky-50 dark:bg-sky-800/40 border border-sky-200 dark:border-sky-600/50">
-            <p className="text-sm text-sky-800 dark:text-sky-200">
-                Based on the scores provided, AI could suggest targeted feedback. For example, a low score in 'Communication' might generate a suggestion like: "Consider recommending a workshop on active listening and clear email communication."
-            </p>
-            <Button size="sm" variant="outline" className="mt-2" disabled>Generate AI Suggestions</Button>
-        </Card>
-
         <Card title="Follow-Up & Attachments" className={inputBaseClass}>
             <div className="space-y-3 p-1">
                 <Input label="Next Review Date (Optional)" name="nextReviewDate" type="date" value={formData.nextReviewDate || ''} onChange={handleChange} />

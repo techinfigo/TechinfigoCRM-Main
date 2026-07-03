@@ -53,6 +53,8 @@ export interface TeamMember {
     exitChecklist?: ExitChecklist;
     exitDate?: string; // ISO
     reasonForExit?: string;
+    exitInterviewScheduledAt?: string; // ISO datetime
+    exitInterviewNotes?: string;
 }
 
 // --- Lead & Client ---
