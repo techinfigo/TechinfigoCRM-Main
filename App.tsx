@@ -453,8 +453,14 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
     setActiveModal(null);
   };
 
+  const handleSelectClientForDetail = (client: Client) => {
+    setSelectedClient(client);
+    setCurrentView("CLIENT_DETAIL");
+  };
+
   const handleClientDetailClose = () => {
     setSelectedClient(null);
+    setCurrentView("CLIENTS");
   };
 
   const handleProjectDetailClose = () => {
@@ -568,6 +574,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
     }
     if (selectedClient?.convertedFromLeadId === leadId) {
       setSelectedClient(null);
+      if (currentView === "CLIENT_DETAIL") setCurrentView("CLIENTS");
     }
   };
 
@@ -1373,7 +1380,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
             onOpenEmailComposeModal={(email) =>
               openModal("EMAIL_COMPOSE", { initialEmail: email })
             }
-            onSelectClientForDetail={setSelectedClient}
+            onSelectClientForDetail={handleSelectClientForDetail}
             allTasks={allTasks}
             onSelectTask={(t) => openModal("TASK_FORM", { task: t })}
           />
@@ -1488,10 +1495,101 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
               );
             }}
             hasPermission={hasPermission}
-            onSelectClientForDetail={setSelectedClient}
+            onSelectClientForDetail={handleSelectClientForDetail}
             onOpenProjectsDrawer={(config) =>
               setProjectsDrawerConfig(config || { mode: "view" })
             }
+          />
+        );
+      case "CLIENT_DETAIL":
+        if (!selectedClient) return null;
+        return (
+          <ClientDetailView
+            onClose={handleClientDetailClose}
+            client={selectedClient}
+            projects={projects.filter((p) => p.clientId === selectedClient.id)}
+            campaigns={campaigns.filter(
+              (c) => c.clientId === selectedClient.id,
+            )}
+            invoices={invoices.filter((i) => i.clientId === selectedClient.id)}
+            marketingAudits={marketingAudits.filter(
+              (a) => a.clientId === selectedClient.id,
+            )}
+            proposals={proposals.filter(
+              (p) => p.clientId === selectedClient.id,
+            )}
+            audits={audits.filter(
+              (a) =>
+                a.entityType === "Client" && a.entityId === selectedClient.id,
+            )}
+            clientDocuments={clientDocuments.filter(
+              (d) => d.clientId === selectedClient.id,
+            )}
+            teamMembers={teamMembers}
+            currentUser={currentUser}
+            appSettings={appSettings}
+            hasPermission={hasPermission}
+            activeModalType={activeModal?.type || null}
+            isModalFormDirty={false}
+            openModal={openModal}
+            closeModal={closeModal}
+            setModalFormDirty={() => {}}
+            handleRequestActionWithDirtyCheck={(action) => action()}
+            onOpenProjectModal={(p) =>
+              openModal("PROJECT_FORM", {
+                project: p,
+                prefillClientId: selectedClient.id,
+              })
+            }
+            onOpenCampaignModal={(c) =>
+              openModal("CAMPAIGN_FORM", {
+                campaign: c,
+                prefillClientId: selectedClient.id,
+              })
+            }
+            onOpenInvoiceModal={(i, prefillClient) =>
+              openModal("INVOICE_FORM", { invoice: i, client: prefillClient })
+            }
+            onOpenInvoiceDetailPanel={(i) =>
+              setActivePanel({
+                type: "INVOICE_DETAIL_PANEL",
+                props: { invoice: i },
+              })
+            }
+            onOpenProjectDetail={setSelectedProject}
+            onOpenCampaignReportModal={(c) =>
+              openModal("CAMPAIGN_REPORT", { campaign: c })
+            }
+            onOpenAuditDetailModal={(a) =>
+              openModal("AUDIT_REPORT", { auditRecord: a })
+            }
+            onOpenAuditRequestModal={(req, prefillClient) =>
+              openModal("AUDIT_FORM", {
+                auditRequest: req,
+                client: prefillClient,
+              })
+            }
+            onAddClientDocument={() => {}}
+            onDeleteClientDocument={() => {}}
+            onUpdateProject={handleSaveProject}
+            onBatchUpdateProjects={handleBatchUpdateProjects}
+            onDeleteProject={(id) => {
+              setProjects(
+                projects.filter((p) => p.id !== id),
+                {
+                  type: "delete",
+                  payload: projects.find((p) => p.id === id)!,
+                  description: "Deleted project",
+                },
+              );
+            }}
+            onUpdateInvoiceStatus={(id, status) =>
+              setInvoices(
+                invoices.map((i) => (i.id === id ? { ...i, status } : i)),
+              )
+            }
+            onDeleteInvoice={handleDeleteInvoice}
+            onRevertClientToLead={handleRevertClientToLead}
           />
         );
       case "PROJECTS":
@@ -1795,93 +1893,6 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
       </div>
 
       <ToastContainer toasts={toasts} removeToast={removeToast} />
-
-      {/* Client Detail View Modal */}
-      {selectedClient && (
-        <ClientDetailView
-          isOpen={true}
-          onClose={handleClientDetailClose}
-          client={selectedClient}
-          projects={projects.filter((p) => p.clientId === selectedClient.id)}
-          campaigns={campaigns.filter((c) => c.clientId === selectedClient.id)}
-          invoices={invoices.filter((i) => i.clientId === selectedClient.id)}
-          marketingAudits={marketingAudits.filter(
-            (a) => a.clientId === selectedClient.id,
-          )}
-          proposals={proposals.filter((p) => p.clientId === selectedClient.id)}
-          audits={audits.filter(
-            (a) => a.entityType === "Client" && a.entityId === selectedClient.id,
-          )}
-          clientDocuments={clientDocuments.filter(
-            (d) => d.clientId === selectedClient.id,
-          )}
-          teamMembers={teamMembers}
-          currentUser={currentUser}
-          appSettings={appSettings}
-          hasPermission={hasPermission}
-          activeModalType={activeModal?.type || null}
-          isModalFormDirty={false}
-          openModal={openModal}
-          closeModal={closeModal}
-          setModalFormDirty={() => {}}
-          handleRequestActionWithDirtyCheck={(action) => action()}
-          onOpenProjectModal={(p) =>
-            openModal("PROJECT_FORM", {
-              project: p,
-              prefillClientId: selectedClient.id,
-            })
-          }
-          onOpenCampaignModal={(c) =>
-            openModal("CAMPAIGN_FORM", {
-              campaign: c,
-              prefillClientId: selectedClient.id,
-            })
-          }
-          onOpenInvoiceModal={(i, prefillClient) =>
-            openModal("INVOICE_FORM", { invoice: i, client: prefillClient })
-          }
-          onOpenInvoiceDetailPanel={(i) =>
-            setActivePanel({
-              type: "INVOICE_DETAIL_PANEL",
-              props: { invoice: i },
-            })
-          }
-          onOpenProjectDetail={setSelectedProject}
-          onOpenCampaignReportModal={(c) =>
-            openModal("CAMPAIGN_REPORT", { campaign: c })
-          }
-          onOpenAuditDetailModal={(a) =>
-            openModal("AUDIT_REPORT", { auditRecord: a })
-          }
-          onOpenAuditRequestModal={(req, prefillClient) =>
-            openModal("AUDIT_FORM", {
-              auditRequest: req,
-              client: prefillClient,
-            })
-          }
-          onAddClientDocument={() => {}}
-          onDeleteClientDocument={() => {}}
-          onUpdateProject={handleSaveProject}
-          onBatchUpdateProjects={handleBatchUpdateProjects}
-          onDeleteProject={(id) => {
-            setProjects(
-              projects.filter((p) => p.id !== id),
-              {
-                type: "delete",
-                payload: projects.find((p) => p.id === id)!,
-                description: "Deleted project",
-              },
-            );
-          }}
-          onUpdateInvoiceStatus={(id, status) =>
-            setInvoices(
-              invoices.map((i) => (i.id === id ? { ...i, status } : i)),
-            )
-          }
-          onDeleteInvoice={handleDeleteInvoice}
-          onRevertClientToLead={handleRevertClientToLead}
-        />
-      )}
 
       {/* Project Detail View Modal */}
       {selectedProject && (

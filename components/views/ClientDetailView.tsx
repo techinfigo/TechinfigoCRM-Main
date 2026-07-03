@@ -10,7 +10,7 @@ import { InvoicesView } from './InvoicesView';
 import { MarketingAuditsView } from './MarketingAuditsView';
 import { TextArea } from '../common/Input';
 import { ClientCampaignsReportTab } from '@/components/views/ClientCampaignsReportTab';
-import { FileBarChart2, AlertTriangle, FileScan, CircleDollarSign, Rocket, StickyNote } from 'lucide-react';
+import { FileBarChart2, AlertTriangle, FileScan, CircleDollarSign, Rocket, StickyNote, ArrowLeft } from 'lucide-react';
 import { computeClientHealth, computeClientRoi, computeClientNextAction, computeClientRecentActivity, ClientActivityEvent } from '../../selectors/clientHealthSelectors';
 
 // Icons
@@ -44,7 +44,6 @@ const getInitials = (name?: string): string => {
 };
 
 interface ClientDetailViewProps {
-  isOpen: boolean;
   onClose: () => void;
   client: Client;
   projects: Project[]; 
@@ -100,7 +99,6 @@ const TABS = [
 type TabType = typeof TABS[number];
 
 const ClientDetailView: React.FC<ClientDetailViewProps> = ({
-  isOpen,
   onClose,
   client,
   projects,
@@ -189,9 +187,7 @@ const ClientDetailView: React.FC<ClientDetailViewProps> = ({
 
   return (
     <>
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
+    <Card
       title={
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center font-bold text-premium-accent text-lg shrink-0 overflow-hidden">
@@ -203,8 +199,39 @@ const ClientDetailView: React.FC<ClientDetailViewProps> = ({
           </div>
         </div>
       }
-      size="6xl"
-      overrideZIndex="z-[1001]"
+      actions={
+        <div className="flex items-center gap-2">
+          <Button
+              variant="outline"
+              size="sm"
+              onClick={onClose}
+              leftIcon={<ArrowLeft className="w-4 h-4"/>}
+          >
+              Back to Clients
+          </Button>
+          <Button
+              variant="outline"
+              size="sm"
+              onClick={() => openModal('CLIENT_REPORT_GENERATOR', { client })}
+              leftIcon={<FileBarChart2 className="w-4 h-4"/>}
+              className="hidden sm:flex"
+          >
+              Generate Report
+          </Button>
+          {client.convertedFromLeadId && onRevertClientToLead && (
+             <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowBacktrackConfirm(true)}
+                className="text-rose-600 hover:text-rose-700 dark:text-rose-450 dark:hover:text-rose-400 border-rose-250 dark:border-rose-900/40 bg-rose-50/20 dark:bg-rose-955/10 cursor-pointer"
+             >
+                Backtrack to Lead
+             </Button>
+          )}
+        </div>
+      }
+      className="h-full flex flex-col"
+      contentClassName="flex-grow flex flex-col p-0"
     >
       <div className="flex flex-col h-full overflow-hidden">
         <div className="flex justify-between items-center px-4 py-2 bg-slate-50 dark:bg-slate-900 border-b border-border-base dark:border-border-muted sticky top-0 z-10">
@@ -223,25 +250,6 @@ const ClientDetailView: React.FC<ClientDetailViewProps> = ({
               </button>
             ))}
           </div>
-           <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => openModal('CLIENT_REPORT_GENERATOR', { client })} 
-              leftIcon={<FileBarChart2 className="w-4 h-4"/>}
-              className="hidden sm:flex"
-          >
-              Generate Report
-          </Button>
-          {client.convertedFromLeadId && onRevertClientToLead && (
-             <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setShowBacktrackConfirm(true)} 
-                className="text-rose-600 hover:text-rose-700 dark:text-rose-450 dark:hover:text-rose-400 border-rose-250 dark:border-rose-900/40 bg-rose-50/20 dark:bg-rose-955/10 ml-2 cursor-pointer"
-             >
-                Backtrack to Lead
-             </Button>
-          )}
         </div>
 
         <div className="flex-1 overflow-y-auto p-4">
@@ -452,7 +460,7 @@ const ClientDetailView: React.FC<ClientDetailViewProps> = ({
           )}
         </div>
       </div>
-    </Modal>
+    </Card>
 
     {/* BACKTRACK CONFIRMATION MODAL FOR CLIENTS MODULE */}
     {showBacktrackConfirm && (
