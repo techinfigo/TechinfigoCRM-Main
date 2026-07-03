@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Client, Invoice, Lead, Project, TeamMember, Expense, TimeLog, AppSettings, FeatureKey, PermissionAction, View, Campaign, DashboardSuggestion, ActivityLogItem, calculateInvoiceGrandTotal, Task, LeaveRequest, DailyAttendanceRecord, EmailMessage } from '../../types';
+import { Client, Invoice, Lead, Project, TeamMember, Expense, TimeLog, AppSettings, FeatureKey, PermissionAction, View, Campaign, DashboardSuggestion, ActivityLogItem, calculateInvoiceGrandTotal, Task, LeaveRequest, DailyAttendanceRecord, EmailMessage, Proposal, Audit } from '../../types';
 import { RefreshCw } from 'lucide-react';
 import { MetricsCards } from '@/components/dashboard/MetricsCards';
 import { FinancialOverviewChart } from '@/components/dashboard/FinancialOverviewChart';
@@ -32,6 +32,8 @@ interface DashboardViewProps {
   hasPermission: (featureKey: FeatureKey, action: PermissionAction) => boolean;
   setCurrentView: (view: View) => void;
   campaigns: Campaign[];
+  proposals: Proposal[];
+  audits: Audit[];
   dashboardSuggestions: DashboardSuggestion[];
   onOpenCampaignReportModal: (campaign: Campaign) => void;
   currentUser: TeamMember | null;
@@ -52,7 +54,7 @@ interface DashboardViewProps {
 
 
 export const DashboardView: React.FC<DashboardViewProps> = (props) => {
-    const { clients, invoices, expenses, leads, projects, teamMembers, timeLogs, leaveRequests, dailyAttendanceRecords, currentUser, activityHistory, appSettings, dashboardSuggestions, setCurrentView, onOpenTaskModal, onMarkTaskAsDone, allTasks, onSelectTask } = props;
+    const { clients, invoices, expenses, leads, projects, teamMembers, timeLogs, leaveRequests, dailyAttendanceRecords, currentUser, activityHistory, appSettings, dashboardSuggestions, setCurrentView, onOpenTaskModal, onMarkTaskAsDone, allTasks, onSelectTask, campaigns, proposals, audits } = props;
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [dateRange, setDateRange] = useState<DateRange | null>(() => {
         const end = new Date();
@@ -200,9 +202,14 @@ export const DashboardView: React.FC<DashboardViewProps> = (props) => {
                     <h3 className="text-xl font-semibold text-text-heading dark:text-text-heading mb-3">Client Health Overview</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                         {clients.map(client => (
-                            <ClientSummaryCard 
-                                key={client.id} 
+                            <ClientSummaryCard
+                                key={client.id}
                                 client={client}
+                                invoices={invoices}
+                                projects={projects}
+                                campaigns={campaigns}
+                                proposals={proposals}
+                                audits={audits}
                                 onViewClient={() => props.onSelectClientForDetail(client)}
                                 onSendEmail={() => props.onOpenEmailComposeModal({ recipientEmail: client.email })}
                             />

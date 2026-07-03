@@ -1,22 +1,39 @@
 
 import React, { useState, ChangeEvent } from 'react';
-import { Client, Project, Campaign, Invoice, AppSettings, FeatureKey, PermissionAction, View, TeamMember, MarketingAuditRequest, ClientDocument, InvoiceStatus, ModalType } from '../../types';
+import { Client, Project, Campaign, Invoice, AppSettings, FeatureKey, PermissionAction, View, TeamMember, MarketingAuditRequest, ClientDocument, InvoiceStatus, ModalType, Proposal, Audit } from '../../types';
 import { Card } from '../common/Card';
 import { Button } from '../common/Button';
 import { Modal } from '../common/Modal';
-import { ProjectsView } from './ProjectsView'; 
+import { ProjectsView } from './ProjectsView';
 import { ClientCampaignsTab } from '@/components/views/ClientCampaignsTab';
-import { InvoicesView } from './InvoicesView';   
-import { MarketingAuditsView } from './MarketingAuditsView'; 
-import { TextArea } from '../common/Input'; 
+import { InvoicesView } from './InvoicesView';
+import { MarketingAuditsView } from './MarketingAuditsView';
+import { TextArea } from '../common/Input';
 import { ClientCampaignsReportTab } from '@/components/views/ClientCampaignsReportTab';
-import { FileBarChart2 } from 'lucide-react';
+import { FileBarChart2, AlertTriangle, FileScan, CircleDollarSign, Rocket, StickyNote } from 'lucide-react';
+import { computeClientHealth, computeClientRoi, computeClientNextAction, computeClientRecentActivity, ClientActivityEvent } from '../../selectors/clientHealthSelectors';
 
 // Icons
 const FileIcon: React.FC<{className?: string}> = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={className || "w-5 h-5 text-slate-500 dark:text-slate-400"}><path fillRule="evenodd" d="M4.5 2A1.5 1.5 0 003 3.5v13A1.5 1.5 0 004.5 18h11a1.5 1.5 0 001.5-1.5V7.621a1.5 1.5 0 00-.44-1.06l-4.12-4.122A1.5 1.5 0 0011.378 2H4.5zm4.75 8.5a.75.75 0 000 1.5h2.5a.75.75 0 000-1.5h-2.5z" clipRule="evenodd" /></svg>;
 const DownloadIcon: React.FC<{className?: string}> = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={className || "w-4 h-4"}><path d="M10.75 2.75a.75.75 0 00-1.5 0v8.614L6.295 8.235a.75.75 0 10-1.09 1.03l4.25 4.5a.75.75 0 001.09 0l4.25-4.5a.75.75 0 00-1.09-1.03l-2.955 3.129V2.75z" /><path d="M3.5 12.75a.75.75 0 00-1.5 0v2.5A2.75 2.75 0 004.75 18h10.5A2.75 2.75 0 0018 15.25v-2.5a.75.75 0 00-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5z" /></svg>;
 const TrashIcon: React.FC<{className?: string}> = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={className || "w-4 h-4"}><path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25-.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z" clipRule="evenodd" /></svg>;
 const UploadIcon: React.FC<{className?: string}> = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={className || "w-5 h-5"}><path d="M9.25 13.75a.75.75 0 001.5 0V4.793l2.97 2.97a.75.75 0 001.06-1.06l-4.25-4.25a.75.75 0 00-1.06 0L5.22 6.703a.75.75 0 001.06 1.06L9.25 4.793V13.75z" /><path d="M3.5 12.75a.75.75 0 00-1.5 0v2.5A2.75 2.75 0 004.75 18h10.5A2.75 2.75 0 0018 15.25v-2.5a.75.75 0 00-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5z" /></svg>;
+
+const getActivityIcon = (icon: ClientActivityEvent['icon']) => {
+  const commonClasses = "w-4 h-4 text-white p-0.5 rounded-full";
+  switch (icon) {
+    case 'audit':
+      return <FileScan className={`${commonClasses} bg-purple-500`} />;
+    case 'payment':
+      return <CircleDollarSign className={`${commonClasses} bg-green-500`} />;
+    case 'campaign':
+      return <Rocket className={`${commonClasses} bg-blue-500`} />;
+    case 'note':
+      return <StickyNote className={`${commonClasses} bg-yellow-500`} />;
+    default:
+      return null;
+  }
+};
 
 const getInitials = (name?: string): string => {
     if (!name) return '?';
@@ -32,8 +49,10 @@ interface ClientDetailViewProps {
   client: Client;
   projects: Project[]; 
   campaigns: Campaign[]; 
-  invoices: Invoice[];   
+  invoices: Invoice[];
   marketingAudits: MarketingAuditRequest[];
+  proposals: Proposal[];
+  audits: Audit[];
   clientDocuments: ClientDocument[];
   teamMembers: TeamMember[]; 
   currentUser: TeamMember;
@@ -88,6 +107,8 @@ const ClientDetailView: React.FC<ClientDetailViewProps> = ({
   campaigns,
   invoices,
   marketingAudits,
+  proposals,
+  audits,
   clientDocuments,
   teamMembers,
   currentUser,
@@ -113,6 +134,14 @@ const ClientDetailView: React.FC<ClientDetailViewProps> = ({
   const [activeTab, setActiveTab] = useState<TabType>('Projects');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showBacktrackConfirm, setShowBacktrackConfirm] = useState(false);
+
+  const healthStatus = computeClientHealth(client, invoices, projects);
+  const roi = computeClientRoi(client, campaigns);
+  const nextAction = computeClientNextAction(client, invoices, projects);
+  const recentActivity = computeClientRecentActivity(client, invoices, proposals, audits);
+  const roiPercentage = roi.goal > 0 ? (roi.current / roi.goal) * 100 : 0;
+  const isNextActionOverdue = !!nextAction && new Date(nextAction.dueDate) < new Date();
+  const formatCurrency = (amount: number) => new Intl.NumberFormat('en-IN', { notation: 'compact', compactDisplay: 'short' }).format(amount);
 
   const handleTabChange = (tab: TabType) => {
     handleRequestActionWithDirtyCheck(() => setActiveTab(tab));
@@ -217,29 +246,77 @@ const ClientDetailView: React.FC<ClientDetailViewProps> = ({
 
         <div className="flex-1 overflow-y-auto p-4">
           {activeTab === 'Overview' && (
-            <Card title="Client Profile Information" className="bg-transparent shadow-none border-0">
-              <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
-                {detailItem("Full Name", client.name)}
-                {detailItem("Company Name", client.companyName)}
-                {detailItem("Email", client.email)}
-                {detailItem("Phone", client.phone)}
-                {detailItem("Website", client.website ? <a href={client.website.startsWith('http') ? client.website : `http://${client.website}`} target="_blank" rel="noopener noreferrer" className="text-premium-accent hover:underline">{client.website}</a> : 'N/A')}
-                {detailItem("Industry", client.industry)}
-                {detailItem("GSTIN", client.gstin)}
-                {detailItem("Date Added", new Date(client.dateAdded).toLocaleDateString())}
-                {detailItem("Address", client.address, "sm:col-span-2 whitespace-pre-wrap")}
-              </dl>
-              {hasPermission('clients', 'canEdit') && (
-                  <Button
-                  onClick={() => openModal('CLIENT_FORM', { client })}
-                  variant="secondary"
-                  size="sm"
-                  className="mt-4"
-                  >
-                  Edit Client Details
-                  </Button>
-              )}
-            </Card>
+            <div className="space-y-4">
+              <Card title="Health Cockpit" className="bg-transparent shadow-none border-0">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <p className="text-xs font-medium text-text-muted dark:text-slate-400 mb-1">Health Status</p>
+                    <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2 py-1 rounded-full ${healthStatus === 'At Risk' ? 'bg-status-negative/10 text-status-negative' : 'bg-status-info/10 text-status-info'}`}>
+                      <span className={`w-2 h-2 rounded-full ${healthStatus === 'At Risk' ? 'bg-status-negative' : 'bg-status-info'}`}></span>
+                      {healthStatus}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-text-muted dark:text-slate-400 mb-1">ROI Progress</p>
+                    <p className="text-xs text-text-base dark:text-slate-200">{`Current: ${formatCurrency(roi.current)} | Goal: ${formatCurrency(roi.goal)}`}</p>
+                    <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 mt-1">
+                      <div className={`${roiPercentage >= 100 ? 'bg-status-positive' : roiPercentage < 50 ? 'bg-status-warning' : 'bg-status-info'} h-1.5 rounded-full`} style={{ width: `${Math.min(roiPercentage, 100)}%` }}></div>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-text-muted dark:text-slate-400 mb-1">Next Action</p>
+                    {nextAction ? (
+                      <div className={`flex items-center gap-1.5 text-xs ${isNextActionOverdue ? 'text-status-negative' : 'text-text-base dark:text-slate-200'}`}>
+                        {isNextActionOverdue && <AlertTriangle className="w-3.5 h-3.5 shrink-0" />}
+                        <span>{nextAction.title} – {new Date(nextAction.dueDate).toLocaleDateString()}</span>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-text-muted">No upcoming action</p>
+                    )}
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <p className="text-xs font-medium text-text-muted dark:text-slate-400 mb-2">Recent Activity</p>
+                  {recentActivity.length > 0 ? (
+                    <ul className="space-y-2">
+                      {recentActivity.map(activity => (
+                        <li key={activity.id} className="flex items-center gap-2 text-xs">
+                          {getActivityIcon(activity.icon)}
+                          <span className="text-text-muted flex-grow truncate">{activity.action}</span>
+                          <span className="text-text-muted/70 shrink-0">{new Date(activity.timestamp).toLocaleDateString()}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-xs text-text-muted">No recent activity</p>
+                  )}
+                </div>
+              </Card>
+
+              <Card title="Client Profile Information" className="bg-transparent shadow-none border-0">
+                <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
+                  {detailItem("Full Name", client.name)}
+                  {detailItem("Company Name", client.companyName)}
+                  {detailItem("Email", client.email)}
+                  {detailItem("Phone", client.phone)}
+                  {detailItem("Website", client.website ? <a href={client.website.startsWith('http') ? client.website : `http://${client.website}`} target="_blank" rel="noopener noreferrer" className="text-premium-accent hover:underline">{client.website}</a> : 'N/A')}
+                  {detailItem("Industry", client.industry)}
+                  {detailItem("GSTIN", client.gstin)}
+                  {detailItem("Date Added", new Date(client.dateAdded).toLocaleDateString())}
+                  {detailItem("Address", client.address, "sm:col-span-2 whitespace-pre-wrap")}
+                </dl>
+                {hasPermission('clients', 'canEdit') && (
+                    <Button
+                    onClick={() => openModal('CLIENT_FORM', { client })}
+                    variant="secondary"
+                    size="sm"
+                    className="mt-4"
+                    >
+                    Edit Client Details
+                    </Button>
+                )}
+              </Card>
+            </div>
           )}
 
           {activeTab === 'Projects' && (

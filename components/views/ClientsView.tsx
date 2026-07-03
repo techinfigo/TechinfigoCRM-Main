@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Client, FeatureKey, PermissionAction, MarketingAuditRequest, ProjectsDrawerConfig } from '../../types'; 
+import { Client, FeatureKey, PermissionAction, MarketingAuditRequest, ProjectsDrawerConfig, Invoice, Project } from '../../types';
 import { Button } from '../common/Button';
 import { Card } from '../common/Card';
 import { Input } from '../common/Input';
@@ -12,6 +12,7 @@ import { Search, SlidersHorizontal, ChevronDown, RefreshCw, FolderKanban } from 
 import { usePagination } from '../../hooks/usePagination';
 import { Pagination } from '../common/Pagination';
 import { safeFormatDate } from '@/utils';
+import { computeClientHealth } from '../../selectors/clientHealthSelectors';
 
 const PlusIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
@@ -38,8 +39,10 @@ const UserCircleIcon = () => (
 
 interface ClientsViewProps {
   clients: Client[];
+  invoices: Invoice[];
+  projects: Project[];
   marketingAudits: MarketingAuditRequest[];
-  onViewAuditDetail: (audit: MarketingAuditRequest) => void; 
+  onViewAuditDetail: (audit: MarketingAuditRequest) => void;
   onAddClient: () => void;
   onEditClient: (client: Client) => void;
   onDeleteClient: (clientId: string) => void;
@@ -48,7 +51,12 @@ interface ClientsViewProps {
   onOpenProjectsDrawer: (config?: ProjectsDrawerConfig) => void;
 }
 
-export const ClientsView: React.FC<ClientsViewProps> = ({ clients, marketingAudits, onViewAuditDetail, onAddClient, onEditClient, onDeleteClient, hasPermission, onSelectClientForDetail, onOpenProjectsDrawer }) => {
+const getHealthBadgeClasses = (status: 'Healthy' | 'At Risk') =>
+  status === 'At Risk'
+    ? 'bg-status-negative/10 text-status-negative'
+    : 'bg-status-info/10 text-status-info';
+
+export const ClientsView: React.FC<ClientsViewProps> = ({ clients, invoices, projects, marketingAudits, onViewAuditDetail, onAddClient, onEditClient, onDeleteClient, hasPermission, onSelectClientForDetail, onOpenProjectsDrawer }) => {
   const canCreateClients = hasPermission('clients', 'canCreate');
   const canEditClients = hasPermission('clients', 'canEdit');
   const canDeleteClients = hasPermission('clients', 'canDelete');
@@ -285,6 +293,7 @@ export const ClientsView: React.FC<ClientsViewProps> = ({ clients, marketingAudi
                     <th scope="col" className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Email</th>
                     <th scope="col" className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Website</th>
                     <th scope="col" className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Industry</th>
+                    <th scope="col" className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Health</th>
                     <th scope="col" className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Audit</th>
                     {(canEditClients || canDeleteClients) && <th scope="col" className="px-6 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Actions</th>}
                 </tr>
@@ -292,6 +301,7 @@ export const ClientsView: React.FC<ClientsViewProps> = ({ clients, marketingAudi
                 <tbody className="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
                 {paginatedData.map((client, index) => {
                     const clientAudit = marketingAudits.find(audit => audit.clientId === client.id && (audit.status === 'Completed' || audit.status === 'ReviewPending'));
+                    const clientHealth = computeClientHealth(client, invoices, projects);
                     return (
                     <tr 
                         key={client.id} 
@@ -305,6 +315,11 @@ export const ClientsView: React.FC<ClientsViewProps> = ({ clients, marketingAudi
                         {client.website ? <a href={client.website.startsWith('http') ? client.website : `https://${client.website}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-sky-600 dark:text-sky-400 hover:underline">{client.website}</a> : 'N/A'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-300">{client.industry || 'N/A'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${getHealthBadgeClasses(clientHealth)}`}>
+                            {clientHealth}
+                        </span>
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                         {clientAudit && canViewAuditDetails ? (
                             <Button variant="outline" size="xs" onClick={(e) => { e.stopPropagation(); onViewAuditDetail(clientAudit); }}>

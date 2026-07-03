@@ -1352,6 +1352,8 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
             hasPermission={hasPermission}
             setCurrentView={setCurrentView}
             campaigns={campaigns}
+            proposals={proposals}
+            audits={audits}
             dashboardSuggestions={[]}
             onOpenCampaignReportModal={(c) =>
               openModal("CAMPAIGN_REPORT", { campaign: c })
@@ -1467,6 +1469,8 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
         return (
           <ClientsView
             clients={clients}
+            invoices={invoices}
+            projects={projects}
             marketingAudits={marketingAudits}
             onViewAuditDetail={(a) =>
               openModal("AUDIT_REPORT", { auditRecord: a })
@@ -1803,6 +1807,10 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
           invoices={invoices.filter((i) => i.clientId === selectedClient.id)}
           marketingAudits={marketingAudits.filter(
             (a) => a.clientId === selectedClient.id,
+          )}
+          proposals={proposals.filter((p) => p.clientId === selectedClient.id)}
+          audits={audits.filter(
+            (a) => a.entityType === "Client" && a.entityId === selectedClient.id,
           )}
           clientDocuments={clientDocuments.filter(
             (d) => d.clientId === selectedClient.id,

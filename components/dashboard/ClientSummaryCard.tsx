@@ -1,10 +1,16 @@
 import React from 'react';
-import { Client } from '../../types';
+import { Client, Invoice, Project, Campaign, Proposal, Audit } from '../../types';
 import { Button } from '../common/Button';
 import { MoreVertical, Mail, Eye, AlertTriangle, FileScan, CircleDollarSign, Rocket, StickyNote } from 'lucide-react';
+import { computeClientHealth, computeClientRoi, computeClientNextAction, computeClientRecentActivity, ClientHealthStatus, ClientActivityEvent } from '../../selectors/clientHealthSelectors';
 
 interface ClientSummaryCardProps {
     client: Client;
+    invoices: Invoice[];
+    projects: Project[];
+    campaigns: Campaign[];
+    proposals: Proposal[];
+    audits: Audit[];
     onViewClient: (client: Client) => void;
     onSendEmail: (client: Client) => void;
 }
@@ -17,14 +23,8 @@ const getInitials = (name?: string): string => {
     return (parts[0][0]?.toUpperCase() || '') + (parts[parts.length - 1][0]?.toUpperCase() || '');
 };
 
-const getHealthStatusClasses = (status: Client['healthStatus']) => {
+const getHealthStatusClasses = (status: ClientHealthStatus) => {
     switch (status) {
-        case 'Active':
-            return {
-                dot: 'bg-status-positive',
-                text: 'text-status-positive',
-                bg: 'bg-status-positive/10',
-            };
         case 'Healthy':
             return {
                 dot: 'bg-status-info',
@@ -46,7 +46,7 @@ const getHealthStatusClasses = (status: Client['healthStatus']) => {
     }
 };
 
-const getActivityIcon = (icon: Client['recentActivity'][0]['icon']) => {
+const getActivityIcon = (icon: ClientActivityEvent['icon']) => {
     const commonClasses = "w-4 h-4 text-white p-0.5 rounded-full";
     switch (icon) {
         case 'audit':
@@ -74,13 +74,18 @@ const formatDateSafe = (isoString?: string, options: Intl.DateTimeFormatOptions 
 };
 
 
-export const ClientSummaryCard: React.FC<ClientSummaryCardProps> = ({ client, onViewClient, onSendEmail }) => {
-    const { name, companyName, industry, healthStatus, roi, nextAction, recentActivity, profilePictureUrl } = client;
+export const ClientSummaryCard: React.FC<ClientSummaryCardProps> = ({ client, invoices, projects, campaigns, proposals, audits, onViewClient, onSendEmail }) => {
+    const { name, companyName, industry, profilePictureUrl } = client;
+
+    const healthStatus = computeClientHealth(client, invoices, projects);
+    const roi = computeClientRoi(client, campaigns);
+    const nextAction = computeClientNextAction(client, invoices, projects);
+    const recentActivity = computeClientRecentActivity(client, invoices, proposals, audits);
 
     const roiPercentage = roi.goal > 0 ? (roi.current / roi.goal) * 100 : 0;
     const roiProgressColor = roiPercentage >= 100 ? 'bg-status-positive' : roiPercentage < 50 ? 'bg-status-warning' : 'bg-status-info';
 
-    const isNextActionOverdue = new Date(nextAction.dueDate) < new Date();
+    const isNextActionOverdue = !!nextAction && new Date(nextAction.dueDate) < new Date();
     const healthClasses = getHealthStatusClasses(healthStatus);
     
     const formatCurrency = (amount: number) => new Intl.NumberFormat('en-IN', { notation: 'compact', compactDisplay: 'short' }).format(amount);
@@ -120,21 +125,29 @@ export const ClientSummaryCard: React.FC<ClientSummaryCardProps> = ({ client, on
             <div className={`mt-4 p-2 rounded-md flex items-center gap-2 ${isNextActionOverdue ? 'bg-red-50 dark:bg-red-900/30' : 'bg-slate-100 dark:bg-slate-700/50'}`}>
                 {isNextActionOverdue && <AlertTriangle className="w-4 h-4 text-status-negative shrink-0" />}
                 <div className="text-xs">
-                    <span className="font-semibold text-text-muted">{isNextActionOverdue ? 'OVERDUE:' : 'NEXT:'}</span>
-                    <span className="ml-1 text-text-base dark:text-text-base">{nextAction.title} – {formatDateSafe(nextAction.dueDate)}</span>
+                    {nextAction ? (
+                        <>
+                            <span className="font-semibold text-text-muted">{isNextActionOverdue ? 'OVERDUE:' : 'NEXT:'}</span>
+                            <span className="ml-1 text-text-base dark:text-text-base">{nextAction.title} – {formatDateSafe(nextAction.dueDate)}</span>
+                        </>
+                    ) : (
+                        <span className="text-text-muted">No upcoming action</span>
+                    )}
                 </div>
             </div>
 
             {/* Activity Timeline */}
             <div className="mt-4 flex-grow">
                 <ul className="space-y-2">
-                    {recentActivity.slice(0, 3).map(activity => (
+                    {recentActivity.length > 0 ? recentActivity.slice(0, 3).map(activity => (
                         <li key={activity.id} className="flex items-center gap-2 text-xs">
                             {getActivityIcon(activity.icon)}
                             <span className="text-text-muted flex-grow truncate">{activity.action}</span>
                             <span className="text-text-muted/70 shrink-0">{formatDateSafe(activity.timestamp)}</span>
                         </li>
-                    ))}
+                    )) : (
+                        <li className="text-xs text-text-muted">No recent activity</li>
+                    )}
                 </ul>
             </div>
 
