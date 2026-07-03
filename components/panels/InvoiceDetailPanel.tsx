@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Invoice, Client, AppSettings, InvoiceStatus } from '../../types';
+import { Invoice, Client, AppSettings, InvoiceStatus, calculateInvoiceGrandTotal } from '../../types';
 import { Button } from '../common/Button';
 import { Card } from '../common/Card';
 import { StatusBadge } from '../finance/StatusBadge';
@@ -100,7 +100,7 @@ export const InvoiceDetailPanel: React.FC<InvoiceDetailPanelProps> = ({
                             </div>
                             <div className="flex justify-between text-lg font-bold border-t border-zinc-200 dark:border-zinc-700 pt-3 text-zinc-900 dark:text-white">
                                 <span className="uppercase tracking-tight">Total</span>
-                                <span>{formatCurrency(invoice.totalAmount, currency)}</span>
+                                <span>{formatCurrency(calculateInvoiceGrandTotal(invoice), currency)}</span>
                             </div>
                         </div>
                       </div>

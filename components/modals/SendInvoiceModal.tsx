@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Modal } from '../common/Modal';
 import { Button } from '../common/Button';
 import { Input, TextArea } from '../common/Input';
-import { Invoice, Client, AppSettings } from '../../types';
+import { Invoice, Client, AppSettings, calculateInvoiceGrandTotal } from '../../types';
 import { Checkbox } from '../common/Checkbox';
 
 interface SendInvoiceModalProps {
@@ -22,8 +22,15 @@ export const SendInvoiceModal: React.FC<SendInvoiceModalProps> = ({ isOpen, onCl
 
   useEffect(() => {
     if (invoice && client) {
+      const currency = invoice.currency || appSettings.defaultCurrency || 'INR';
+      const formatCurrency = (amount: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency }).format(amount);
+      const lineItems = invoice.items
+        .map((item) => `- ${item.description} (x${item.quantity}): ${formatCurrency(item.quantity * item.unitPrice)}`)
+        .join('\n');
+      const grandTotal = formatCurrency(calculateInvoiceGrandTotal(invoice));
+
       setSubject(`Invoice ${invoice.invoiceNumber} from ${appSettings.agencyName}`);
-      setBody(`Hi ${client.name},\n\nPlease find your invoice attached for your review.\n\nThank you for your business!\n\nBest regards,\nThe ${appSettings.agencyName} Team`);
+      setBody(`Hi ${client.name},\n\nPlease find your invoice summary below.\n\nInvoice: ${invoice.invoiceNumber}\nDue Date: ${new Date(invoice.dueDate).toLocaleDateString()}\n\n${lineItems}\n\nTotal Due: ${grandTotal}\n\nThank you for your business!\n\nBest regards,\nThe ${appSettings.agencyName} Team`);
     }
   }, [invoice, client, appSettings, isOpen]);
 

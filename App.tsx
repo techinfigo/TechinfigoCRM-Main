@@ -5,6 +5,7 @@ import {
   Project,
   Task,
   Invoice,
+  Payment,
   Expense,
   TeamMember,
   AppSettings,
@@ -40,6 +41,8 @@ import {
   BackupData,
   Audit,
   ModalType,
+  ProposalStatus,
+  calculateInvoiceGrandTotal,
 } from "./types";
 import {
   load,
@@ -85,7 +88,10 @@ import { CampaignFormModal } from "./components/modals/CampaignFormModal";
 import { EmailComposeModal } from "./components/modals/EmailComposeModal";
 import { ViewEmailModal } from "./components/modals/ViewEmailModal";
 import { SendInvoiceModal } from "./components/modals/SendInvoiceModal";
-import { PaymentFormModal } from "./components/modals/PaymentFormModal";
+import {
+  PaymentFormModal,
+  PaymentFormData,
+} from "./components/modals/PaymentFormModal";
 import { InvoiceBillModal } from "./components/modals/InvoiceBillModal";
 import { FollowUpFormModal } from "./components/modals/FollowUpFormModal";
 import { TeamActionModal } from "./components/modals/TeamActionModal";
@@ -173,6 +179,9 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
   // --- STANDARD STATE (No Undo/Redo yet) ---
   const [invoices, setInvoices] = useState<Invoice[]>(() =>
     load(KEYS.invoices, []),
+  );
+  const [payments, setPayments] = useState<Payment[]>(() =>
+    load(KEYS.payments, []),
   );
   const [expenses, setExpenses] = useState<Expense[]>(() =>
     load(KEYS.expenses, []),
@@ -328,6 +337,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
 
   // Save effects (Standard)
   useEffect(() => save(KEYS.invoices, invoices), [invoices]);
+  useEffect(() => save(KEYS.payments, payments), [payments]);
   useEffect(() => save(KEYS.expenses, expenses), [expenses]);
   useEffect(() => save(KEYS.emails, emails), [emails]);
   useEffect(() => save(KEYS.chatContacts, chatContacts), [chatContacts]);
@@ -660,6 +670,177 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
 
   const handleDeleteInvoice = (invoiceId: string) => {
     setInvoices((prev) => prev.filter((i) => i.id !== invoiceId));
+  };
+
+  const handleRecordPayment = (paymentData: PaymentFormData) => {
+    const invoice = invoices.find((i) => i.id === paymentData.invoiceId);
+    const newPayment: Payment = {
+      id: `payment-${Date.now()}`,
+      invoiceId: paymentData.invoiceId,
+      amount: parseFloat(paymentData.amount),
+      paymentDate: new Date(paymentData.paymentDate).toISOString(),
+      paymentMethod: paymentData.paymentMethod,
+      notes: paymentData.notes,
+    };
+
+    const updatedPayments = [...payments, newPayment];
+    setPayments(updatedPayments);
+
+    if (invoice) {
+      const totalPaid = updatedPayments
+        .filter((p) => p.invoiceId === invoice.id)
+        .reduce((sum, p) => sum + p.amount, 0);
+      const grandTotal = calculateInvoiceGrandTotal(invoice);
+      if (totalPaid >= grandTotal && invoice.status !== "Paid") {
+        setInvoices((prev) =>
+          prev.map((i) =>
+            i.id === invoice.id ? { ...i, status: "Paid" as InvoiceStatus } : i,
+          ),
+        );
+      }
+    }
+
+    closeModal();
+    addToast({
+      title: "Payment Recorded",
+      description: `Payment of ${newPayment.amount.toLocaleString()} recorded for invoice ${invoice?.invoiceNumber || ""}.`,
+    });
+  };
+
+  const handleSendInvoice = (
+    invoiceId: string,
+    emailData: { subject: string; body: string },
+  ) => {
+    const invoice = invoices.find((i) => i.id === invoiceId);
+    if (!invoice) return;
+    const client = clients.find((c) => c.id === invoice.clientId);
+    const recipientEmail = client?.email;
+    if (!recipientEmail) {
+      addToast({
+        title: "Missing Email Address",
+        description: "This client has no email address on file.",
+      });
+      return;
+    }
+
+    const mailtoUrl = `mailto:${encodeURIComponent(recipientEmail)}?subject=${encodeURIComponent(emailData.subject)}&body=${encodeURIComponent(emailData.body)}`;
+    window.location.href = mailtoUrl;
+
+    if (invoice.status !== "Paid") {
+      setInvoices((prev) =>
+        prev.map((i) =>
+          i.id === invoiceId ? { ...i, status: "Sent" as InvoiceStatus } : i,
+        ),
+      );
+    }
+
+    const newEmail: EmailMessage = {
+      id: `email-${Date.now()}`,
+      senderName: currentUser?.name || "Unknown",
+      senderEmail: currentUser?.email || "",
+      recipientEmail,
+      subject: emailData.subject,
+      body: emailData.body,
+      timestamp: new Date().toISOString(),
+      folder: "sent",
+      isRead: true,
+    };
+    setEmails((prev) => [newEmail, ...prev]);
+
+    closeModal();
+    addToast({
+      title: "Opening your email app",
+      description: "Review and hit send there to deliver the invoice.",
+    });
+  };
+
+  const handleSendProposal = (
+    proposal: Proposal,
+    emailData: { subject: string; body: string; to: string },
+  ) => {
+    if (!emailData.to) {
+      addToast({
+        title: "Missing Email Address",
+        description: "This client has no email address on file.",
+      });
+      return;
+    }
+
+    const mailtoUrl = `mailto:${encodeURIComponent(emailData.to)}?subject=${encodeURIComponent(emailData.subject)}&body=${encodeURIComponent(emailData.body)}`;
+    window.location.href = mailtoUrl;
+
+    setProposals((prev) =>
+      prev.map((p) =>
+        p.id === proposal.id
+          ? {
+              ...p,
+              status: "SentToClient" as ProposalStatus,
+              lastUpdatedDate: new Date().toISOString(),
+            }
+          : p,
+      ),
+    );
+
+    const newEmail: EmailMessage = {
+      id: `email-${Date.now()}`,
+      senderName: currentUser?.name || "Unknown",
+      senderEmail: currentUser?.email || "",
+      recipientEmail: emailData.to,
+      subject: emailData.subject,
+      body: emailData.body,
+      timestamp: new Date().toISOString(),
+      folder: "sent",
+      isRead: true,
+    };
+    setEmails((prev) => [newEmail, ...prev]);
+
+    closeModal();
+    addToast({
+      title: "Opening your email app",
+      description: "Review and hit send there to deliver the proposal.",
+    });
+  };
+
+  const handleSendAuditReport = (lead: Lead, auditRecord: AuditRecord) => {
+    const recipientEmail = lead?.email;
+    if (!recipientEmail) {
+      addToast({
+        title: "Missing Email Address",
+        description: "No email address is on file for this contact.",
+      });
+      return;
+    }
+
+    const scoreText =
+      auditRecord.aiOverallScore !== undefined
+        ? `${auditRecord.aiOverallScore}/100`
+        : "N/A";
+    const summaryText =
+      auditRecord.overallSummary || "No executive summary provided.";
+    const subject = `Marketing Audit Report for ${lead.name}`;
+    const body = `Hi ${lead.name},\n\nPlease find a summary of your marketing audit below.\n\nOverall Score: ${scoreText}\n\nExecutive Summary:\n${summaryText}\n\nBest regards,\n${currentUser?.name || "The Team"}`;
+
+    const mailtoUrl = `mailto:${encodeURIComponent(recipientEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.location.href = mailtoUrl;
+
+    const newEmail: EmailMessage = {
+      id: `email-${Date.now()}`,
+      senderName: currentUser?.name || "Unknown",
+      senderEmail: currentUser?.email || "",
+      recipientEmail,
+      subject,
+      body,
+      timestamp: new Date().toISOString(),
+      folder: "sent",
+      isRead: true,
+    };
+    setEmails((prev) => [newEmail, ...prev]);
+
+    closeModal();
+    addToast({
+      title: "Opening your email app",
+      description: "Review and hit send there to deliver the audit report.",
+    });
   };
 
   const handleProcessRecurringInvoices = () => {
@@ -1219,7 +1400,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
       tasks,
       teamMembers,
       expenses,
-      payments: [],
+      payments,
       activityHistory,
       auditRecords,
       marketingAudits,
@@ -1277,7 +1458,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
           tasks,
           teamMembers,
           expenses,
-          payments: [],
+          payments,
           activityHistory,
           auditRecords,
           marketingAudits,
@@ -1319,6 +1500,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
             description: "Imported Clients",
           });
         if (newData.invoices) setInvoices(newData.invoices);
+        if (newData.payments) setPayments(newData.payments);
         if (newData.leads)
           setLeads(newData.leads, {
             type: "batch",
@@ -2165,36 +2347,45 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
 
       {/* Side Panels */}
       {activePanel?.type === "INVOICE_DETAIL_PANEL" &&
-        activePanel.props?.invoice && (
-          <InvoiceDetailPanel
-            isOpen={true}
-            onClose={closePanel}
-            invoice={activePanel.props.invoice}
-            client={clients.find(
-              (c) => c.id === activePanel.props?.invoice.clientId,
-            )}
-            appSettings={appSettings}
-            onOpenSendModal={(inv) =>
-              openModal("SEND_INVOICE", { invoice: inv })
-            }
-            onUpdateStatus={(id, status) =>
-              setInvoices(
-                invoices.map((i) => (i.id === id ? { ...i, status } : i)),
-              )
-            }
-            onEditInvoice={(inv) => openModal("INVOICE_FORM", { invoice: inv })}
-            onOpenBillModal={(inv) =>
-              openModal("INVOICE_BILL_VIEW", { invoice: inv })
-            }
-          />
-        )}
+        activePanel.props?.invoice &&
+        (() => {
+          const liveInvoice =
+            invoices.find((i) => i.id === activePanel.props.invoice.id) ||
+            activePanel.props.invoice;
+          return (
+            <InvoiceDetailPanel
+              isOpen={true}
+              onClose={closePanel}
+              invoice={liveInvoice}
+              client={clients.find((c) => c.id === liveInvoice.clientId)}
+              appSettings={appSettings}
+              onOpenSendModal={(inv) =>
+                openModal("SEND_INVOICE", { invoice: inv })
+              }
+              onUpdateStatus={(id, status) =>
+                setInvoices(
+                  invoices.map((i) => (i.id === id ? { ...i, status } : i)),
+                )
+              }
+              onEditInvoice={(inv) =>
+                openModal("INVOICE_FORM", { invoice: inv })
+              }
+              onOpenBillModal={(inv) =>
+                openModal("INVOICE_BILL_VIEW", { invoice: inv })
+              }
+            />
+          );
+        })()}
 
       {activePanel?.type === "PROPOSAL_DETAIL_PANEL" &&
         activePanel.props?.proposal && (
           <ProposalDetailPanel
             isOpen={true}
             onClose={closePanel}
-            proposal={activePanel.props.proposal}
+            proposal={
+              proposals.find((p) => p.id === activePanel.props.proposal.id) ||
+              activePanel.props.proposal
+            }
             onOpenSendModal={(p) => openModal("SEND_PROPOSAL", { proposal: p })}
             onUpdateStatus={(id, status) =>
               setProposals(
@@ -2341,6 +2532,16 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
               }
             }
             onEditAudit={() => {}}
+            onSend={() =>
+              handleSendAuditReport(
+                activeModal.props?.lead || {
+                  name: "Unknown",
+                  companyName: "",
+                  email: "",
+                },
+                activeModal.props.auditRecord,
+              )
+            }
             currentUser={currentUser}
           />
         )}
@@ -2394,7 +2595,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
         <SendInvoiceModal
           isOpen={true}
           onClose={closeModal}
-          onSend={() => {}}
+          onSend={handleSendInvoice}
           invoice={activeModal.props.invoice}
           client={
             clients.find((c) => c.id === activeModal.props.invoice.clientId) ||
@@ -2459,9 +2660,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
         <PaymentFormModal
           isOpen={true}
           onClose={closeModal}
-          onSave={() => {
-            closeModal();
-          }}
+          onSave={handleRecordPayment}
           invoices={invoices}
           appSettings={appSettings}
           onSetDirty={() => {}}
@@ -2685,13 +2884,13 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
         <SendProposalModal
           isOpen={true}
           onClose={closeModal}
-          onSend={() => {
-            alert("Sent proposal (Conceptual)");
-            closeModal();
-          }}
+          onSend={(_clientId, emailData) =>
+            handleSendProposal(activeModal.props.proposal, emailData)
+          }
           proposal={activeModal.props.proposal}
           client={
             clients.find((c) => c.id === activeModal.props.proposal.clientId) ||
+            leads.find((l) => l.id === activeModal.props.proposal.clientId) ||
             null
           }
         />

@@ -22,10 +22,15 @@ export const SendProposalModal: React.FC<SendProposalModalProps> = ({ isOpen, on
 
   useEffect(() => {
     if (isOpen && client) {
-      setSubject(proposal?.subject || `Proposal from Techinfigo`);
+      setSubject(proposal?.subject || `Proposal for ${client.name}`);
+      const summaryLines = [
+        proposal?.title ? `Proposal: ${proposal.title}` : null,
+        proposal?.estimatedBudget ? `Estimated Budget: ${proposal.estimatedBudget}` : null,
+        proposal?.timeline ? `Timeline: ${proposal.timeline}` : null,
+      ].filter(Boolean).join('\n');
       setBody(
         proposal?.message ||
-        `Dear ${client.name},\n\nPlease find our proposal attached for your review.\n\nWe are excited about the potential to work together and help you achieve your goals. Let us know if you have any questions.\n\nBest regards,\nThe Techinfigo Team\nwww.techinfigo.com`
+        `Dear ${client.name},\n\nPlease find our proposal summary below.\n\n${summaryLines}\n\nWe are excited about the potential to work together and help you achieve your goals. Let us know if you have any questions.\n\nBest regards,\nThe Techinfigo Team\nwww.techinfigo.com`
       );
       setAttachedFileName('Proposal.pdf'); // Reset to default on open
       setIsDefaultAttachment(true);
@@ -48,7 +53,7 @@ export const SendProposalModal: React.FC<SendProposalModalProps> = ({ isOpen, on
     onSend(client.id, { subject, body, to: client.email });
   };
   
-  const modalOverlayClasses = "fixed inset-0 z-[1000] bg-black/40 dark:bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 transition-opacity duration-300 ease-in-out print:hidden animate-[fade-in_0.2s_ease-out]";
+  const modalOverlayClasses = "fixed inset-0 z-[1060] bg-black/40 dark:bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 transition-opacity duration-300 ease-in-out print:hidden animate-[fade-in_0.2s_ease-out]";
   const modalContentClasses = "bg-bg-base dark:bg-bg-muted rounded-lg shadow-2xl border border-border-base dark:border-border-muted flex flex-col w-full max-w-[720px] h-[560px] overflow-hidden transform transition-all animate-[scale-in_0.2s_ease-out]";
 
   return (
