@@ -1,16 +1,17 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Modal } from '../common/Modal';
 import { Button } from '../common/Button';
 import { Input, TextArea } from '../common/Input';
+import { DateTimePicker } from '../common/DateTimePicker';
+import { Select } from '../common/Select';
 import { FollowUpLogItem, FollowUpType, followUpTypes } from '../../types';
 
 interface FollowUpFormModalProps {
   isOpen: boolean;
   onClose: () => void; // Provided by App.tsx's handleCloseActiveModal
   onSave: (followUpData: Omit<FollowUpLogItem, 'id' | 'timestamp' | 'addedByUserId' | 'addedByUserName'>, leadId: string) => void;
-  leadName: string; 
-  leadId: string; 
+  leadName: string;
+  leadId: string;
   onSetDirty: (isDirty: boolean) => void; // New prop
   initialNote?: string;
 }
@@ -43,7 +44,7 @@ export const FollowUpFormModal: React.FC<FollowUpFormModalProps> = ({ isOpen, on
       const hours = tomorrow.getHours().toString().padStart(2, '0');
       const minutes = tomorrow.getMinutes().toString().padStart(2, '0');
       const defaultDateTimeLocal = `${year}-${month}-${day}T${hours}:${minutes}`;
-      
+
       const newInitialState = {
         ...initialFormData,
         note: initialNote,
@@ -68,7 +69,7 @@ export const FollowUpFormModal: React.FC<FollowUpFormModalProps> = ({ isOpen, on
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
-    
+
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
@@ -77,6 +78,17 @@ export const FollowUpFormModal: React.FC<FollowUpFormModalProps> = ({ isOpen, on
     if (errors[name as keyof FollowUpFormData]) {
       setErrors(prev => ({ ...prev, [name]: undefined }));
     }
+  };
+
+  const handleDateTimeChange = (value: string) => {
+    setFormData(prev => ({ ...prev, nextFollowUpDateTime: value }));
+    if (errors.nextFollowUpDateTime) {
+      setErrors(prev => ({ ...prev, nextFollowUpDateTime: undefined }));
+    }
+  };
+
+  const handleFollowUpTypeChange = (value: string) => {
+    setFormData(prev => ({ ...prev, followUpType: value as FollowUpType }));
   };
 
   const validate = (): boolean => {
@@ -100,10 +112,6 @@ export const FollowUpFormModal: React.FC<FollowUpFormModalProps> = ({ isOpen, on
     onSetDirty(false); // Mark as not dirty after save
     // onClose will be called by App.tsx after successful save if needed
   };
-  
-  const selectBaseClass = "w-full p-2.5 bg-bg-base dark:bg-bg-muted border border-border-base dark:border-border-muted rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-premium-accent dark:focus:ring-premium-accent focus:border-premium-accent dark:focus:border-premium-accent text-sm text-text-base dark:text-text-base";
-  const labelClassSmall = "block text-xs font-medium text-text-muted dark:text-text-muted mb-1";
-
 
   return (
     <Modal
@@ -130,29 +138,20 @@ export const FollowUpFormModal: React.FC<FollowUpFormModalProps> = ({ isOpen, on
           placeholder="What was discussed? Next steps?"
           required
         />
-        <Input
+        <DateTimePicker
           label="Next Follow-Up Date & Time *"
-          id="nextFollowUpDateTime"
-          name="nextFollowUpDateTime"
-          type="datetime-local"
           value={formData.nextFollowUpDateTime}
-          onChange={handleChange}
+          onChange={handleDateTimeChange}
           error={errors.nextFollowUpDateTime}
           required
         />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
-            <div>
-                <label htmlFor="followUpType" className={labelClassSmall}>Follow-Up Type</label>
-                <select
-                    id="followUpType"
-                    name="followUpType"
-                    value={formData.followUpType}
-                    onChange={handleChange}
-                    className={selectBaseClass}
-                >
-                    {followUpTypes.map(type => <option key={type} value={type}>{type}</option>)}
-                </select>
-            </div>
+            <Select
+                label="Follow-Up Type"
+                options={followUpTypes.map(type => ({ value: type, label: type }))}
+                value={formData.followUpType || 'Call'}
+                onChange={handleFollowUpTypeChange}
+            />
             <div className="flex items-center pt-5 sm:pt-3">
                 <input
                     type="checkbox"

@@ -88,6 +88,25 @@ export const useUndoRedo = <T extends { id: string }>(
     }
   }, [state, history, redoStack, debouncedSave, isInitialized]);
 
+  // Safety net: if the tab is closed/refreshed/backgrounded before the debounced
+  // save (150ms) fires, flush the latest data synchronously so nothing is lost.
+  useEffect(() => {
+    const flushNow = () => {
+      if (isInitialized) {
+        save(storageKey, { state, history, redo: redoStack });
+      }
+    };
+    const handleVisibility = () => {
+      if (document.visibilityState === 'hidden') flushNow();
+    };
+    window.addEventListener('beforeunload', flushNow);
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      window.removeEventListener('beforeunload', flushNow);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [state, history, redoStack, isInitialized, storageKey]);
+
   // --- CORE ACTIONS ---
 
   const setWithHistory = useCallback((newItems: T[], action: ActionPayload<T>) => {
