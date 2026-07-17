@@ -219,10 +219,11 @@ export const DatePicker: React.FC<DatePickerProps> = ({
       </button>
       {error && <p className="mt-1 text-xs text-status-negative">{error}</p>}
 
-      <AnimatePresence>
-        {isOpen && createPortal(
-          <motion.div
-            ref={dropdownRef}
+      {createPortal(
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              ref={dropdownRef}
             initial={{ opacity: 0, scale: 0.95, y: -10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: -10 }}
@@ -272,10 +273,11 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                     Today
                 </button>
             </div>
-          </motion.div>,
-          document.body
-        )}
-      </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 };

@@ -335,10 +335,11 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({ onApply, initi
       >
         {appliedLabel}
       </Button>
-      <AnimatePresence>
-        {isOpen && createPortal(
-          <motion.div 
-              ref={pickerRef} 
+      {createPortal(
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              ref={pickerRef}
               initial={{ opacity: 0, scale: 0.95, y: 8 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 8 }}
@@ -380,10 +381,11 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({ onApply, initi
                     <Button variant="primary" size="sm" onClick={handleApply}>Apply Range</Button>
                 </div>
             </div>
-          </motion.div>,
-          document.body
-        )}
-      </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 };
