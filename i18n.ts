@@ -7,8 +7,7 @@ let translations: { [key: string]: any } = {};
 export async function initI18n() {
     try {
         // Fetch the JSON file directly. Note: fetch does not use the import map.
-        // The path is relative to the location of the HTML file.
-        const response = await fetch('./locales/en.json');
+        const response = await fetch('/locales/en.json');
         if (!response.ok) {
             throw new Error(`Failed to fetch translations: ${response.statusText}`);
         }
