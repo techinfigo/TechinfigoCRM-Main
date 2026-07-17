@@ -23,6 +23,16 @@ function docRefFor(uid: string, key: string) {
 }
 
 /**
+ * Firestore rejects any `undefined` field value outright (the whole write fails).
+ * Our types use plenty of optional fields that end up as `undefined`, so strip
+ * them before writing. JSON round-trip drops undefined keys and undefined array
+ * entries become null, which Firestore accepts.
+ */
+function sanitizeForFirestore<T>(value: T): unknown {
+  return JSON.parse(JSON.stringify(value ?? null));
+}
+
+/**
  * Pulls every known key from Firestore into localStorage.
  * Call this once, right after sign-in, BEFORE the main App component mounts,
  * since the app's React state reads from localStorage synchronously on first render.
@@ -67,7 +77,7 @@ export function queueCloudWrite<T>(key: string, value: T) {
     delete pendingTimers[key];
     delete pendingWriteData[key];
     try {
-      await setDoc(docRefFor(uid, key), { value, updatedAt: Date.now() });
+      await setDoc(docRefFor(uid, key), { value: sanitizeForFirestore(value), updatedAt: Date.now() });
     } catch (err) {
       console.error(`Cloud sync: failed to write "${key}"`, err);
     }
@@ -123,7 +133,7 @@ export async function flushPendingWrites(): Promise<void> {
       delete pendingWriteData[key];
       if (pending) {
         try {
-          await setDoc(docRefFor(pending.uid, key), { value: pending.value, updatedAt: Date.now() });
+          await setDoc(docRefFor(pending.uid, key), { value: sanitizeForFirestore(pending.value), updatedAt: Date.now() });
         } catch (err) {
           console.error(`Cloud sync: failed to flush "${key}"`, err);
         }
