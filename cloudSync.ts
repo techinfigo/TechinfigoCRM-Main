@@ -7,7 +7,8 @@ const LOCAL_ONLY_KEYS = new Set<string>([KEYS.theme, KEYS.globalSnoozeUntil]);
 
 let currentUid: string | null = null;
 const pendingTimers: Record<string, ReturnType<typeof setTimeout>> = {};
-const DEBOUNCE_MS = 1200;
+const pendingWriteData: Record<string, { uid: string; value: unknown }> = {};
+const DEBOUNCE_MS = 400;
 
 export function setCloudUid(uid: string | null) {
   currentUid = uid;
@@ -60,8 +61,11 @@ export function queueCloudWrite<T>(key: string, value: T) {
   if (pendingTimers[key]) clearTimeout(pendingTimers[key]);
 
   const uid = currentUid;
+  pendingWriteData[key] = { uid, value };
+
   pendingTimers[key] = setTimeout(async () => {
     delete pendingTimers[key];
+    delete pendingWriteData[key];
     try {
       await setDoc(docRefFor(uid, key), { value, updatedAt: Date.now() });
     } catch (err) {
@@ -108,14 +112,35 @@ export function clearLocalUserRecord() {
   localStorage.removeItem(KEYS.currentUser);
 }
 
-/** Force-flush any pending debounced writes immediately (e.g. before logout). */
+/** Force-flush any pending debounced writes immediately (e.g. before logout or page unload). */
 export async function flushPendingWrites(): Promise<void> {
   const keys = Object.keys(pendingTimers);
   await Promise.all(
-    keys.map(key => new Promise<void>(resolve => {
+    keys.map(async (key) => {
       clearTimeout(pendingTimers[key]);
       delete pendingTimers[key];
-      resolve();
-    }))
+      const pending = pendingWriteData[key];
+      delete pendingWriteData[key];
+      if (pending) {
+        try {
+          await setDoc(docRefFor(pending.uid, key), { value: pending.value, updatedAt: Date.now() });
+        } catch (err) {
+          console.error(`Cloud sync: failed to flush "${key}"`, err);
+        }
+      }
+    })
   );
+}
+
+// Ensure pending cloud writes are flushed before the tab is hidden/closed/refreshed,
+// so bootstrapCloudData() on the next load never pulls stale data over fresh local changes.
+if (typeof window !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+      flushPendingWrites();
+    }
+  });
+  window.addEventListener('pagehide', () => {
+    flushPendingWrites();
+  });
 }
