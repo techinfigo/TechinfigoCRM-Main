@@ -67,10 +67,14 @@ export type LeadViewMode = 'List' | 'Kanban';
 export type OnboardingInterestLevel = 'High' | 'Medium' | 'Low' | 'Not Discussed';
 export const onboardingInterestLevels: OnboardingInterestLevel[] = ['High', 'Medium', 'Low', 'Not Discussed'];
 
+export type LeadType = 'D2C' | 'General';
+export const leadTypes: LeadType[] = ['D2C', 'General'];
+
 export interface Lead {
     id: string;
     name: string;
     email: string;
+    leadType?: LeadType; // 'D2C' shows e-commerce fields; 'General' shows service-business fields
     phone?: string;
     companyName?: string;
     source?: string;

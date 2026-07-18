@@ -1,6 +1,6 @@
-
 import React, { useState, useEffect, useRef } from 'react';
-import { Lead, LeadStatus, leadStatuses, OnboardingInterestLevel, onboardingInterestLevels, CustomField, TeamMember } from '../../types'; 
+import { Lead, LeadStatus, leadStatuses, OnboardingInterestLevel, onboardingInterestLevels, CustomField, TeamMember, LeadType, leadTypes } from '../../types';
+import { Select } from '../common/Select';
 import { SidePanel } from '../common/SidePanel';
 import { Button } from '../common/Button';
 import { Input, TextArea } from '../common/Input';
@@ -19,6 +19,8 @@ interface LeadFormModalProps {
 }
 
 interface LeadFormData {
+  // Lead type decides which qualification fields to show
+  leadType: LeadType;
   // Vitals
   name: string;
   companyName: string;
@@ -26,16 +28,16 @@ interface LeadFormData {
   phone?: string;
   website?: string;
   instagramHandle?: string;
-  
+
   // D2C Qualification
   revenueBand?: string;
   adStatus?: 'Active' | 'Inactive';
   techStack?: string; // Comma-sep string for input
-  
+
   // Outreach
   outreachAngle?: string;
   offerSent?: string;
-  
+
   // Agency Insights
   primaryGoal?: string;
   keyCompetitors?: string;
@@ -44,17 +46,17 @@ interface LeadFormData {
   brandTone?: string;
   trackingHealth?: 'Verified' | 'Issues Detected' | 'Not Installed' | 'Unknown';
   adLibraryLink?: string;
-  
+
   // Meta
   source?: string;
   status: LeadStatus;
   assignedToUserId?: string;
   tags?: string;
-  
+
   // Legacy/Other
   notes?: string;
   lastContactedDate?: string;
-  nextFollowUpDateTime?: string; 
+  nextFollowUpDateTime?: string;
   customFieldValues: { [key: string]: any };
 }
 
@@ -67,6 +69,7 @@ const revenueBands = [
 ];
 
 const initialFormData: LeadFormData = {
+  leadType: 'D2C',
   name: '',
   companyName: '',
   email: '',
@@ -86,7 +89,7 @@ const initialFormData: LeadFormData = {
   trackingHealth: 'Unknown',
   adLibraryLink: '',
   source: '',
-  status: 'New Lead', 
+  status: 'New Lead',
   assignedToUserId: '',
   tags: '',
   notes: '',
@@ -117,20 +120,21 @@ export const LeadFormModal: React.FC<LeadFormModalProps> = ({ isOpen, onClose, o
       let currentInitialState: LeadFormData;
       if (lead) {
         currentInitialState = {
+          leadType: lead.leadType || 'D2C',
           name: lead.name,
           companyName: lead.companyName || '',
           email: lead.email,
           phone: lead.phone || '',
           website: lead.website || '',
           instagramHandle: lead.instagramHandle || '',
-          
+
           revenueBand: lead.revenueBand || '',
           adStatus: lead.adStatus || 'Inactive',
           techStack: Array.isArray(lead.techStack) ? lead.techStack.join(', ') : '',
-          
+
           outreachAngle: lead.outreachAngle || '',
           offerSent: lead.offerSent || '',
-          
+
           // Agency Insights
           primaryGoal: lead.primaryGoal || '',
           keyCompetitors: lead.keyCompetitors || '',
@@ -139,12 +143,12 @@ export const LeadFormModal: React.FC<LeadFormModalProps> = ({ isOpen, onClose, o
           brandTone: lead.brandTone || '',
           trackingHealth: lead.trackingHealth || 'Unknown',
           adLibraryLink: lead.adLibraryLink || '',
-          
+
           source: lead.source || '',
           status: lead.status,
           assignedToUserId: lead.assignedToUserId || '',
           tags: Array.isArray(lead.tags) ? lead.tags.join(', ') : '',
-          
+
           notes: lead.notes || '',
           lastContactedDate: (lead.lastContactedDate ?? '').split('T')[0],
           nextFollowUpDateTime: lead.nextFollowUpDateTime ? toLocalISOString(lead.nextFollowUpDateTime) : '',
@@ -158,8 +162,8 @@ export const LeadFormModal: React.FC<LeadFormModalProps> = ({ isOpen, onClose, o
         const defaultNextFollowUpDateTime = new Date(tomorrow.getTime() - offset).toISOString().slice(0, 16);
 
         currentInitialState = {
-          ...initialFormData, 
-          status: 'New Lead', 
+          ...initialFormData,
+          status: 'New Lead',
           lastContactedDate: new Date().toISOString().split('T')[0],
           nextFollowUpDateTime: defaultNextFollowUpDateTime,
           customFieldValues: customFields
@@ -174,7 +178,7 @@ export const LeadFormModal: React.FC<LeadFormModalProps> = ({ isOpen, onClose, o
         };
       }
       setFormData(currentInitialState);
-      initialFormStateRef.current = JSON.parse(JSON.stringify(currentInitialState)); 
+      initialFormStateRef.current = JSON.parse(JSON.stringify(currentInitialState));
       onSetDirty(false);
       setErrors({});
     }
@@ -197,6 +201,14 @@ export const LeadFormModal: React.FC<LeadFormModalProps> = ({ isOpen, onClose, o
     }
   };
 
+  // For the custom Select component, which returns the value directly.
+  const handleSelectChange = (name: keyof LeadFormData, value: string) => {
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: undefined }));
+    }
+  };
+
   const handleCustomFieldChange = (fieldId: string, value: any) => {
     onSetDirty(true);
     setFormData(prev => ({
@@ -207,7 +219,7 @@ export const LeadFormModal: React.FC<LeadFormModalProps> = ({ isOpen, onClose, o
       },
     }));
   };
-  
+
   const validate = (): boolean => {
     const newErrors: Partial<Record<keyof LeadFormData, string>> = {};
     if (!formData.name.trim()) newErrors.name = "Lead name is required.";
@@ -215,7 +227,7 @@ export const LeadFormModal: React.FC<LeadFormModalProps> = ({ isOpen, onClose, o
     if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
         newErrors.email = "Email is invalid.";
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -223,30 +235,30 @@ export const LeadFormModal: React.FC<LeadFormModalProps> = ({ isOpen, onClose, o
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
-    
+
     const leadToSave: Lead = {
-      id: lead?.id || `lead-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`, 
-      dateAdded: lead?.dateAdded || new Date().toISOString(), 
+      id: lead?.id || `lead-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      dateAdded: lead?.dateAdded || new Date().toISOString(),
       ...formData,
-      
+
       // Transform arrays
       techStack: formData.techStack ? formData.techStack.split(',').map(s => s.trim()).filter(s => s) : [],
       tags: formData.tags ? formData.tags.split(',').map(s => s.trim()).filter(s => s) : [],
       marketingChannels: formData.marketingChannels ? formData.marketingChannels.split(',').map(s => s.trim()).filter(s => s) : [],
-      
+
       // Dates
       lastContactedDate: formData.lastContactedDate ? new Date(formData.lastContactedDate).toISOString() : undefined,
       nextFollowUpDateTime: formData.nextFollowUpDateTime ? new Date(formData.nextFollowUpDateTime).toISOString() : undefined,
-      
+
       // Preserve history
       followUpHistory: lead?.followUpHistory || [],
       emailHistory: lead?.emailHistory || [],
       manualCompletionMarkers: lead?.manualCompletionMarkers || {},
-      
+
       // Defaults for fields not in this form
-      hasDigitalPresence: true, 
+      hasDigitalPresence: true,
       onboardingInterest: 'Not Discussed',
-      
+
       customFieldValues: formData.customFieldValues,
     };
     onSave(leadToSave);
@@ -271,7 +283,28 @@ export const LeadFormModal: React.FC<LeadFormModalProps> = ({ isOpen, onClose, o
       }
     >
       <form onSubmit={handleSubmit} className="space-y-6 pb-6">
-        
+
+        {/* Lead Type selector — drives which qualification fields are shown */}
+        <div className="bg-secondary-accent/5 dark:bg-secondary-accent/10 p-4 rounded-lg border border-secondary-accent/20">
+          <label className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2 uppercase tracking-wide">Lead Type</label>
+          <div className="grid grid-cols-2 gap-3">
+            {leadTypes.map(lt => (
+              <button
+                type="button"
+                key={lt}
+                onClick={() => handleSelectChange('leadType', lt)}
+                className={`p-3 rounded-lg border text-sm font-semibold transition-all ${
+                  formData.leadType === lt
+                    ? 'border-secondary-accent bg-secondary-accent text-white shadow-sm'
+                    : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:border-secondary-accent'
+                }`}
+              >
+                {lt === 'D2C' ? 'D2C / E-commerce Brand' : 'General / Service Business'}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Section 1: The Vitals */}
         <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border border-slate-100 dark:border-slate-700">
           <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-3 uppercase tracking-wide">1. The Vitals</h3>
@@ -285,29 +318,60 @@ export const LeadFormModal: React.FC<LeadFormModalProps> = ({ isOpen, onClose, o
           </div>
         </div>
 
-        {/* Section 2: D2C Qualification */}
+        {/* Section 2A: D2C Qualification — only for D2C leads */}
+        {formData.leadType === 'D2C' && (
         <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border border-slate-100 dark:border-slate-700">
           <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-3 uppercase tracking-wide">2. D2C Qualification</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-             <div>
-              <label htmlFor="revenueBand" className="block text-sm font-medium text-text-muted dark:text-text-muted mb-1">Est. Revenue Band</label>
-              <select id="revenueBand" name="revenueBand" value={formData.revenueBand} onChange={handleChange} className={selectBaseClass}>
-                <option value="" className={optionClass}>Unknown</option>
-                {revenueBands.map(rb => <option key={rb} value={rb} className={optionClass}>{rb}</option>)}
-              </select>
-            </div>
-            <div>
-              <label htmlFor="adStatus" className="block text-sm font-medium text-text-muted dark:text-text-muted mb-1">Ad Library Status</label>
-              <select id="adStatus" name="adStatus" value={formData.adStatus} onChange={handleChange} className={selectBaseClass}>
-                <option value="Inactive" className={optionClass}>No Active Ads</option>
-                <option value="Active" className={optionClass}>Running Ads</option>
-              </select>
-            </div>
+             <Select
+                label="Est. Revenue Band"
+                value={formData.revenueBand || ''}
+                onChange={(v) => handleSelectChange('revenueBand', v)}
+                placeholder="Unknown"
+                options={[{ value: '', label: 'Unknown' }, ...revenueBands.map(rb => ({ value: rb, label: rb }))]}
+             />
+             <Select
+                label="Ad Library Status"
+                value={formData.adStatus || 'Inactive'}
+                onChange={(v) => handleSelectChange('adStatus', v)}
+                options={[{ value: 'Inactive', label: 'No Active Ads' }, { value: 'Active', label: 'Running Ads' }]}
+             />
             <Input label="Tech Stack (comma-separated)" id="techStack" name="techStack" value={formData.techStack} onChange={handleChange} placeholder="Shopify, Klaviyo, Yotpo..." />
             <Input label="Niche / Industry" id="tags" name="tags" value={formData.tags} onChange={handleChange} placeholder="e.g., Apparel, Supplements" />
           </div>
         </div>
-        
+        )}
+
+        {/* Section 2B: General Business Qualification — only for General leads */}
+        {formData.leadType === 'General' && (
+        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border border-slate-100 dark:border-slate-700">
+          <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-3 uppercase tracking-wide">2. Business Qualification</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+             <Select
+                label="Business Size"
+                value={formData.revenueBand || ''}
+                onChange={(v) => handleSelectChange('revenueBand', v)}
+                placeholder="Unknown"
+                options={[
+                  { value: '', label: 'Unknown' },
+                  { value: 'Solo / Freelancer', label: 'Solo / Freelancer' },
+                  { value: 'Small (2-10)', label: 'Small (2-10)' },
+                  { value: 'Medium (11-50)', label: 'Medium (11-50)' },
+                  { value: 'Large (50+)', label: 'Large (50+)' },
+                ]}
+             />
+             <Select
+                label="Currently Running Ads?"
+                value={formData.adStatus || 'Inactive'}
+                onChange={(v) => handleSelectChange('adStatus', v)}
+                options={[{ value: 'Inactive', label: 'Not Running Ads' }, { value: 'Active', label: 'Running Ads' }]}
+             />
+            <Input label="Industry / Sector" id="tags" name="tags" value={formData.tags} onChange={handleChange} placeholder="e.g., Real Estate, Clinic, SaaS, Education" />
+            <Input label="Current Tools (comma-separated)" id="techStack" name="techStack" value={formData.techStack} onChange={handleChange} placeholder="e.g., HubSpot, WordPress, Zoho" />
+          </div>
+        </div>
+        )}
+
         {/* Section 3: The Outreach */}
         <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border border-slate-100 dark:border-slate-700">
            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-3 uppercase tracking-wide">3. The Hook</h3>
@@ -326,15 +390,17 @@ export const LeadFormModal: React.FC<LeadFormModalProps> = ({ isOpen, onClose, o
               <Input label="Active Marketing Channels (comma-spaced)" id="marketingChannels" name="marketingChannels" value={formData.marketingChannels || ''} onChange={handleChange} placeholder="Meta, TikTok PPC, Klaviyo Flows" />
               <Input label="Target Persona / Audience" id="targetAudience" name="targetAudience" value={formData.targetAudience || ''} onChange={handleChange} placeholder="e.g. Gen Z males, self-improvement seekers" />
               <Input label="Brand Design / Copy Tone" id="brandTone" name="brandTone" value={formData.brandTone || ''} onChange={handleChange} placeholder="e.g. Minimalist premium, direct response, funny" />
-              <div>
-                <label htmlFor="trackingHealth" className="block text-sm font-medium text-text-muted dark:text-text-muted mb-1">Pixel & Tracking Health</label>
-                <select id="trackingHealth" name="trackingHealth" value={formData.trackingHealth || 'Unknown'} onChange={handleChange} className={selectBaseClass}>
-                  <option value="Unknown" className={optionClass}>Unknown</option>
-                  <option value="Verified" className={optionClass}>Verified & Active</option>
-                  <option value="Issues Detected" className={optionClass}>Issues (e.g. broken Deduplication)</option>
-                  <option value="Not Installed" className={optionClass}>None Installed</option>
-                </select>
-              </div>
+              <Select
+                label="Pixel & Tracking Health"
+                value={formData.trackingHealth || 'Unknown'}
+                onChange={(v) => handleSelectChange('trackingHealth', v)}
+                options={[
+                  { value: 'Unknown', label: 'Unknown' },
+                  { value: 'Verified', label: 'Verified & Active' },
+                  { value: 'Issues Detected', label: 'Issues (e.g. broken Deduplication)' },
+                  { value: 'Not Installed', label: 'None Installed' },
+                ]}
+              />
               <div className="md:col-span-2">
                 <Input label="Competitor / Brand Meta Ad Library URL" id="adLibraryLink" name="adLibraryLink" type="url" value={formData.adLibraryLink || ''} onChange={handleChange} placeholder="https://www.facebook.com/ads/library/..." />
               </div>
@@ -345,29 +411,30 @@ export const LeadFormModal: React.FC<LeadFormModalProps> = ({ isOpen, onClose, o
         <div>
           <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-3 uppercase tracking-wide">Internal Details</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-             <div>
-              <label htmlFor="status" className="block text-sm font-medium text-text-muted dark:text-text-muted mb-1">Status</label>
-              <select id="status" name="status" value={formData.status} onChange={handleChange} className={selectBaseClass}>
-                {selectableLeadStatuses.map(s => <option key={s} value={s} className={optionClass}>{s}</option>)}
-              </select>
-            </div>
-            <div>
-              <label htmlFor="source" className="block text-sm font-medium text-text-muted dark:text-text-muted mb-1">Source</label>
-              <select id="source" name="source" value={formData.source} onChange={handleChange} className={selectBaseClass}>
-                <option value="" disabled className={optionClass}>Select Source</option>
-                {leadSources.map(source => <option key={source} value={source} className={optionClass}>{source}</option>)}
-              </select>
-            </div>
-            <div>
-              <label htmlFor="assignedToUserId" className="block text-sm font-medium text-text-muted dark:text-text-muted mb-1">Lead Owner</label>
-              <select id="assignedToUserId" name="assignedToUserId" value={formData.assignedToUserId} onChange={handleChange} className={selectBaseClass}>
-                <option value="" className={optionClass}>Unassigned</option>
-                {teamMembers.map(member => <option key={member.id} value={member.id} className={optionClass}>{member.name}</option>)}
-              </select>
-            </div>
+             <Select
+                label="Status"
+                value={formData.status}
+                onChange={(v) => handleSelectChange('status', v)}
+                options={selectableLeadStatuses.map(st => ({ value: st, label: st }))}
+             />
+             <Select
+                label="Source"
+                value={formData.source || ''}
+                onChange={(v) => handleSelectChange('source', v)}
+                placeholder="Select Source"
+                options={leadSources.map(src => ({ value: src, label: src }))}
+             />
+             <Select
+                label="Lead Owner"
+                value={formData.assignedToUserId || ''}
+                onChange={(v) => handleSelectChange('assignedToUserId', v)}
+                placeholder="Unassigned"
+                searchable
+                options={[{ value: '', label: 'Unassigned' }, ...teamMembers.map(m => ({ value: m.id, label: m.name }))]}
+             />
           </div>
         </div>
-        
+
         <DynamicFormFields
             module="Leads"
             customFields={customFields}
