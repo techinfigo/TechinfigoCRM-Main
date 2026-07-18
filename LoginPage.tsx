@@ -3,7 +3,10 @@ import { DigitalPatternBackground } from '@/components/DigitalPatternBackground'
 import { t } from '@/i18n';
 
 interface LoginPageProps {
-  onLogin: (email: string, password: string) => boolean;
+  onLogin: (email: string, password: string) => Promise<string | null>;
+  mode?: 'signin' | 'signup';
+  onToggleMode?: () => void;
+  onForgotPassword?: (email: string) => Promise<string | null>;
 }
 
 const UserCircleIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
@@ -38,12 +41,13 @@ const EyeOffIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   </svg>
 );
 
-
-const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
+const LoginPage: React.FC<LoginPageProps> = ({ onLogin, mode = 'signin', onToggleMode, onForgotPassword }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
 
   useEffect(() => {
@@ -54,22 +58,46 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     }
   }, []);
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
+    setInfo(null);
     if (!email || !password) {
       setError(t('login.error.required'));
       return;
     }
-    const success = onLogin(email, password);
-    if (!success) {
-      setError(t('login.error.invalid'));
+    setIsSubmitting(true);
+    const errMsg = await onLogin(email, password);
+    setIsSubmitting(false);
+    if (errMsg) {
+      setError(errMsg);
     } else {
-        if (rememberMe) {
-            localStorage.setItem('rememberedEmail', email);
-        } else {
-            localStorage.removeItem('rememberedEmail');
-        }
+      if (rememberMe) {
+        localStorage.setItem('rememberedEmail', email);
+      } else {
+        localStorage.removeItem('rememberedEmail');
+      }
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    setError(null);
+    setInfo(null);
+    if (!email) {
+      setError('Enter your email address above first, then click "Forgot password".');
+      return;
+    }
+    if (!onForgotPassword) {
+      setError('Password reset is not available right now. Please contact your administrator.');
+      return;
+    }
+    setIsSubmitting(true);
+    const errMsg = await onForgotPassword(email);
+    setIsSubmitting(false);
+    if (errMsg) {
+      setError(errMsg);
+    } else {
+      setInfo(`Password reset link sent to ${email}. Check your inbox (and spam folder).`);
     }
   };
 
@@ -77,100 +105,77 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     <div className="min-h-screen w-full flex items-center justify-center p-4" style={{ background: '#001d21' }}>
       <DigitalPatternBackground />
       <div className="w-full max-w-sm rounded-2xl p-8 space-y-6 z-10" style={{ background: 'rgba(0, 44, 51, 0.75)', backdropFilter: 'blur(10px)', border: '1px solid rgba(252, 182, 50, 0.2)', boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)' }}>
-        
         <div className="flex justify-center">
             <div className="w-20 h-20 bg-[#001d21] rounded-full flex items-center justify-center border-2 border-[#fcb632]/50">
                 <UserCircleIcon className="w-12 h-12 text-[#fcb632]/80"/>
             </div>
         </div>
-
         <div className="text-center">
             <h1 className="text-2xl font-bold text-white">{t('login.title')}</h1>
             <p className="text-white/60 text-sm">{t('login.subtitle')}</p>
         </div>
-
         <form className="space-y-5" onSubmit={handleSubmit}>
           {error && (
             <div className="p-3 rounded-lg bg-[#fcb632]/10 text-[#fcb632] border border-[#fcb632]/30 text-sm text-center" role="alert">
               {error}
             </div>
           )}
-          
+          {info && (
+            <div className="p-3 rounded-lg bg-green-400/10 text-green-300 border border-green-400/30 text-sm text-center" role="status">
+              {info}
+            </div>
+          )}
           <div>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                 <EnvelopeIcon className="h-5 w-5 text-white/40" />
               </div>
-              <input
-                id="email"
-                type="email"
-                placeholder="founder@agency.com"
-                aria-label={t('login.emailLabel')}
+              <input id="email" type="email" placeholder="founder@agency.com" aria-label={t('login.emailLabel')}
                 className="w-full pl-11 pr-4 py-3 rounded-lg bg-[#001d21] text-white placeholder-white/40 border border-white/20 focus:outline-none focus:ring-2 focus:ring-[#fcb632] focus:border-[#fcb632] transition-all duration-200"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                autoComplete="email"
-              />
+                value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
             </div>
           </div>
-
           <div>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                 <LockClosedIcon className="h-5 w-5 text-white/40" />
               </div>
-              <input
-                id="password"
-                type={showPassword ? 'text' : 'password'}
-                placeholder={t('login.passwordLabel')}
-                aria-label={t('login.passwordLabel')}
+              <input id="password" type={showPassword ? 'text' : 'password'} placeholder={t('login.passwordLabel')} aria-label={t('login.passwordLabel')}
                 className="w-full pl-11 pr-11 py-3 rounded-lg bg-[#001d21] text-white placeholder-white/40 border border-white/20 focus:outline-none focus:ring-2 focus:ring-[#fcb632] focus:border-[#fcb632] transition-all duration-200"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                autoComplete="current-password"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
+                value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" />
+              <button type="button" onClick={() => setShowPassword(!showPassword)}
                 className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-white/40 hover:text-white/70 focus:outline-none"
-                aria-label={showPassword ? "Hide password" : "Show password"}
-              >
-                {showPassword ? (
-                  <EyeOffIcon className="h-5 w-5" />
-                ) : (
-                  <EyeIcon className="h-5 w-5" />
-                )}
+                aria-label={showPassword ? "Hide password" : "Show password"}>
+                {showPassword ? <EyeOffIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
               </button>
             </div>
           </div>
-
           <div className="text-sm flex justify-between items-center">
             <label htmlFor="remember-me" className="flex items-center cursor-pointer text-white/60 select-none">
-              <input
-                id="remember-me"
-                type="checkbox"
+              <input id="remember-me" type="checkbox"
                 className="h-4 w-4 rounded border-white/30 bg-[#001d21] text-secondary-accent focus:ring-secondary-accent focus:ring-offset-0"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-              />
+                checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} />
               <span className="ml-2">{t('login.rememberMe')}</span>
             </label>
-            <a href="#" className="font-medium text-white/60 hover:text-[#fcb632] transition-colors">
+            <button type="button" onClick={handleForgotPassword} disabled={isSubmitting}
+              className="font-medium text-white/60 hover:text-[#fcb632] transition-colors disabled:opacity-50 focus:outline-none">
               {t('login.forgotPassword')}
-            </a>
-          </div>
-
-          <div className="pt-2">
-            <button
-                type="submit"
-                className="w-full font-bold py-3 px-4 rounded-lg bg-secondary-accent text-secondary-accent-text shadow-[0_4px_14px_0_rgba(252,182,50,0.39)] hover:shadow-[0_6px_20px_0_rgba(252,182,50,0.5)] hover:bg-secondary-accent-hover transition-all duration-300 transform focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#001d21] focus:ring-secondary-accent hover:scale-105"
-            >
-                {t('login.signIn')}
             </button>
           </div>
-          
+          <div className="pt-2">
+            <button type="submit" disabled={isSubmitting}
+              className="w-full font-bold py-3 px-4 rounded-lg bg-secondary-accent text-secondary-accent-text shadow-[0_4px_14px_0_rgba(252,182,50,0.39)] hover:shadow-[0_6px_20px_0_rgba(252,182,50,0.5)] hover:bg-secondary-accent-hover transition-all duration-300 transform focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#001d21] focus:ring-secondary-accent hover:scale-105 disabled:opacity-60 disabled:hover:scale-100">
+              {isSubmitting ? 'Please wait…' : (mode === 'signup' ? 'Create Account' : t('login.signIn'))}
+            </button>
+          </div>
+          {onToggleMode && (
+            <p className="text-center text-sm text-white/50 pt-1">
+              {mode === 'signup' ? 'Already have an account?' : "Don't have an account?"}{' '}
+              <button type="button" onClick={onToggleMode} className="font-medium text-[#fcb632] hover:underline focus:outline-none">
+                {mode === 'signup' ? 'Sign in' : 'Create one'}
+              </button>
+            </p>
+          )}
         </form>
       </div>
     </div>

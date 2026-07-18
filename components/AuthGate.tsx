@@ -3,12 +3,13 @@ import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
   signOut,
   User,
 } from 'firebase/auth';
 import { auth, isFirebaseConfigured } from '../firebase';
 import { bootstrapCloudData, setCloudUid, ensureLocalUserRecord, clearLocalUserRecord } from '../cloudSync';
-import LoginPage from './LoginPage';
+import LoginPage from '../LoginPage';
 import { App } from '../App';
 
 type GateState = 'checking' | 'signedOut' | 'bootstrapping' | 'ready';
@@ -72,6 +73,18 @@ export const AuthGate: React.FC = () => {
     }
   };
 
+  const handleForgotPassword = async (email: string): Promise<string | null> => {
+    if (!isFirebaseConfigured) {
+      return 'Password reset requires Firebase to be configured.';
+    }
+    try {
+      await sendPasswordResetEmail(auth, email);
+      return null;
+    } catch (err) {
+      return firebaseErrorToMessage(err);
+    }
+  };
+
   if (gateState === 'checking' || gateState === 'bootstrapping') {
     return (
       <div className="min-h-screen w-full flex items-center justify-center" style={{ background: '#001d21' }}>
@@ -89,6 +102,7 @@ export const AuthGate: React.FC = () => {
         onLogin={handleLogin}
         mode={mode}
         onToggleMode={() => setMode(m => (m === 'signin' ? 'signup' : 'signin'))}
+        onForgotPassword={handleForgotPassword}
       />
     );
   }
