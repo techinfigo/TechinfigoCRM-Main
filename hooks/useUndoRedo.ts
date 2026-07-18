@@ -206,9 +206,17 @@ export const useUndoRedo = <T extends { id: string }>(
     showToast({ title: 'Redone', description: nextAction.description });
   }, [redoStack, state, showToast]);
 
+  // Replace the entire collection from an external source (e.g. a live Firestore
+  // subscription) WITHOUT creating an undo entry. Used for real-time sync where
+  // the cloud is the source of truth and local undo history doesn't apply.
+  const hydrate = useCallback((items: T[]) => {
+    setState(items);
+  }, []);
+
   return {
     state,
     set: setWithHistory,
+    hydrate,
     undo,
     redo,
     canUndo: history.length > 0,
