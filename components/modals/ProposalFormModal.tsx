@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
-import { Proposal, Client, ProposalStatus, proposalStatuses } from '../../types';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Proposal, Client, Lead, ProposalStatus, proposalStatuses } from '../../types';
 import { Modal } from '../common/Modal';
 import { Button } from '../common/Button';
 import { Input, TextArea } from '../common/Input';
@@ -16,6 +16,9 @@ interface ProposalFormModalProps {
   onSave: (proposal: Omit<Proposal, 'id' | 'clientName' | 'proposalNumber' | 'version'> & { id?: string }) => void;
   proposal: Proposal | null;
   clients: Client[];
+  leads: Lead[];
+  /** When creating a proposal from a Lead (or Client) detail view, preselect that record. */
+  prefillClientId?: string;
   getNextProposalNumber: () => string;
   ai: GoogleGenAI | null;
 }
@@ -30,7 +33,7 @@ interface ProposalFormData {
   timeline: string;
 }
 
-export const ProposalFormModal: React.FC<ProposalFormModalProps> = ({ isOpen, onClose, onSave, proposal, clients, getNextProposalNumber, ai }) => {
+export const ProposalFormModal: React.FC<ProposalFormModalProps> = ({ isOpen, onClose, onSave, proposal, clients, leads, prefillClientId, getNextProposalNumber, ai }) => {
   const [formData, setFormData] = useState<ProposalFormData>({
     clientId: '',
     status: 'Draft',
@@ -43,28 +46,53 @@ export const ProposalFormModal: React.FC<ProposalFormModalProps> = ({ isOpen, on
   
   const [isGenerating, setIsGenerating] = useState(false);
 
+  // A real, previously-saved proposal always has an id. Callers that only want to
+  // preselect a record pass `prefillClientId` instead of a stub proposal object,
+  // so this stays false and the form behaves as "create new".
+  const isEditing = !!proposal?.id;
+
+  // Leads and Clients both live in the proposal's `clientId` field, so offer both.
+  const recipientOptions = useMemo(() => {
+    const clientOpts = clients.map(c => ({
+      id: c.id,
+      label: `${c.name}${c.companyName ? ` (${c.companyName})` : ''}`,
+      group: 'Clients' as const,
+    }));
+    const leadOpts = leads.map(l => ({
+      id: l.id,
+      label: `${l.name}${l.companyName ? ` (${l.companyName})` : ''}`,
+      group: 'Leads' as const,
+    }));
+    return { clientOpts, leadOpts };
+  }, [clients, leads]);
+
   useEffect(() => {
     if (isOpen) {
-      if (proposal) {
+      const defaultValidUntil = new Date();
+      defaultValidUntil.setDate(defaultValidUntil.getDate() + 14); // 2 weeks default validity
+      const defaultValidUntilStr = defaultValidUntil.toISOString().split('T')[0];
+
+      if (isEditing && proposal) {
         setFormData({
             clientId: proposal.clientId,
-            status: proposal.status,
-            validUntilDate: proposal.validUntilDate || '',
-            title: proposal.title || '',
+            status: proposal.status || 'Draft',
+            validUntilDate: proposal.validUntilDate || defaultValidUntilStr,
+            title: proposal.title || proposal.subject || '',
             content: proposal.message || proposal.content || '', // Handle legacy message field mapping
             estimatedBudget: proposal.estimatedBudget || '',
             timeline: proposal.timeline || '',
         });
       } else {
-        // Defaults for new proposal
-        const defaultClient = clients.length > 0 ? clients[0].id : '';
-        const defaultValidUntil = new Date();
-        defaultValidUntil.setDate(defaultValidUntil.getDate() + 14); // 2 weeks default validity
-        
+        // New proposal. Preselect the lead/client we were opened from, if any.
+        const preselected =
+          prefillClientId ||
+          proposal?.clientId ||
+          (clients.length > 0 ? clients[0].id : '');
+
         setFormData({
-            clientId: defaultClient,
+            clientId: preselected,
             status: 'Draft',
-            validUntilDate: defaultValidUntil.toISOString().split('T')[0],
+            validUntilDate: defaultValidUntilStr,
             title: '',
             content: '',
             estimatedBudget: '',
@@ -72,7 +100,7 @@ export const ProposalFormModal: React.FC<ProposalFormModalProps> = ({ isOpen, on
         });
       }
     }
-  }, [isOpen, proposal, clients]);
+  }, [isOpen, proposal, clients, isEditing, prefillClientId]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -89,7 +117,10 @@ export const ProposalFormModal: React.FC<ProposalFormModalProps> = ({ isOpen, on
         return;
     }
 
-    const clientName = clients.find(c => c.id === formData.clientId)?.name || "the client";
+    const clientName =
+        clients.find(c => c.id === formData.clientId)?.name ||
+        leads.find(l => l.id === formData.clientId)?.name ||
+        "the client";
     setIsGenerating(true);
 
     try {
@@ -155,7 +186,7 @@ export const ProposalFormModal: React.FC<ProposalFormModalProps> = ({ isOpen, on
     <Modal 
         isOpen={isOpen} 
         onClose={onClose} 
-        title={proposal ? `Edit Proposal: ${proposal.proposalNumber}` : "Create New Proposal"} 
+        title={isEditing && proposal ? `Edit Proposal: ${proposal.proposalNumber}` : "Create New Proposal"}
         size="4xl"
         footer={
             <div className="flex justify-end gap-2 w-full">
@@ -170,19 +201,30 @@ export const ProposalFormModal: React.FC<ProposalFormModalProps> = ({ isOpen, on
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
                 <label htmlFor="clientId" className={labelClass}>Client/Lead *</label>
-                <select 
-                    id="clientId" 
-                    name="clientId" 
-                    value={formData.clientId} 
-                    onChange={handleChange} 
-                    className={selectBaseClass} 
+                <select
+                    id="clientId"
+                    name="clientId"
+                    value={formData.clientId}
+                    onChange={handleChange}
+                    className={selectBaseClass}
                     required
-                    disabled={!!proposal} // Disable changing client on edit to maintain integrity
+                    disabled={isEditing} // Lock the recipient only when editing a saved proposal
                 >
                     <option value="" disabled>Select a Client or Lead</option>
-                    {clients.map(c => (
-                        <option key={c.id} value={c.id}>{c.name} {c.companyName ? `(${c.companyName})` : ''}</option>
-                    ))}
+                    {recipientOptions.clientOpts.length > 0 && (
+                        <optgroup label="Clients">
+                            {recipientOptions.clientOpts.map(o => (
+                                <option key={o.id} value={o.id}>{o.label}</option>
+                            ))}
+                        </optgroup>
+                    )}
+                    {recipientOptions.leadOpts.length > 0 && (
+                        <optgroup label="Leads">
+                            {recipientOptions.leadOpts.map(o => (
+                                <option key={o.id} value={o.id}>{o.label}</option>
+                            ))}
+                        </optgroup>
+                    )}
                 </select>
             </div>
             <div>

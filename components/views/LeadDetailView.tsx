@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { Lead, TeamMember, FeatureKey, PermissionAction, AuditRecord, Proposal, OnboardingKickoffData, LeadStatus, Client, PanelType, ProjectsDrawerConfig, ModalType } from '../../types';
+import { Lead, TeamMember, FeatureKey, PermissionAction, AuditRecord, Proposal, OnboardingKickoffData, LeadStatus, Client, PanelType, ProjectsDrawerConfig, ModalType, Task } from '../../types';
 import { Button } from '../common/Button';
 import { Card } from '../common/Card';
 import { SidePanel } from '../common/SidePanel';
@@ -44,6 +44,7 @@ interface LeadDetailViewProps {
   onUpdateLeadField: <K extends keyof Lead>(leadId: string, field: K, value: Lead[K]) => void;
   clients: Client[];
   onOpenProjectsDrawer: (config?: ProjectsDrawerConfig) => void;
+  tasks: Task[];
 }
 
 const getInitials = (name?: string): string => {
@@ -108,11 +109,11 @@ const getStatusBadgeStyle = (status: string) => {
     };
 };
 
-const LeadDetailView: React.FC<LeadDetailViewProps> = ({ 
-    isOpen, onClose, lead, auditRecords, proposals, teamMembers, onEditLead, 
-    hasPermission, onUpdateStatus, onOpenFollowUpModal, onOpenAuditFormModal, 
+const LeadDetailView: React.FC<LeadDetailViewProps> = ({
+    isOpen, onClose, lead, auditRecords, proposals, teamMembers, onEditLead,
+    hasPermission, onUpdateStatus, onOpenFollowUpModal, onOpenAuditFormModal,
     onOpenAuditReportModal, onOpenProjectsDrawer, clients, openModal, onOpenProposalPanel,
-    onConvertLeadToClient, onRevertClientToLead
+    onConvertLeadToClient, onRevertClientToLead, tasks
 }) => {
     
   const [activeTab, setActiveTab ] = useState<'timeline' | 'audit' | 'proposals'>('timeline');
@@ -143,6 +144,7 @@ const LeadDetailView: React.FC<LeadDetailViewProps> = ({
   const relatedAudit = useMemo(() => auditRecords.find(a => a.leadId === lead.id), [auditRecords, lead.id]);
   const relatedProposals = useMemo(() => proposals.filter(p => p.clientId === lead.id), [proposals, lead.id]);
   const leadOwner = useMemo(() => teamMembers.find(t => t.id === lead.assignedToUserId), [teamMembers, lead.assignedToUserId]);
+  const leadTasks = useMemo(() => (tasks || []).filter(t => t.leadId === lead.id), [tasks, lead.id]);
 
   interface UnifiedTimelineEvent {
     id: string;
@@ -453,6 +455,42 @@ const LeadDetailView: React.FC<LeadDetailViewProps> = ({
                     {/* TAB 1: TIMELINE */}
                     {activeTab === 'timeline' && (
                         <div className="space-y-6">
+                            {/* Linked Tasks */}
+                            <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+                                <div className="flex items-center justify-between mb-3">
+                                    <h3 className="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                                        <CheckCircle2 className="w-4 h-4 text-secondary-accent" /> Tasks
+                                    </h3>
+                                    <Button
+                                        size="xs"
+                                        variant="outline"
+                                        leftIcon={<Plus className="w-3.5 h-3.5" />}
+                                        onClick={() => openModal('TASK_FORM', { defaultLink: { type: 'lead', id: lead.id, name: lead.name } })}
+                                    >
+                                        Add Task
+                                    </Button>
+                                </div>
+                                {leadTasks.length > 0 ? (
+                                    <div className="space-y-2">
+                                        {leadTasks.map(t => (
+                                            <div
+                                                key={t.id}
+                                                onClick={() => openModal('TASK_FORM', { task: t })}
+                                                className="flex items-center justify-between gap-3 p-2.5 bg-slate-50 dark:bg-slate-900/40 rounded-xl border border-slate-100 dark:border-slate-800/60 hover:border-secondary-accent cursor-pointer transition-colors"
+                                            >
+                                                <span className={`text-xs font-semibold truncate ${t.status === 'Done' ? 'line-through text-slate-400' : 'text-slate-700 dark:text-slate-200'}`}>{t.title}</span>
+                                                <div className="flex items-center gap-2 shrink-0 text-[10px]">
+                                                    <span className="px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold">{t.status}</span>
+                                                    {t.dueDate && <span className="text-slate-400">{safeFormatDate(t.dueDate)}</span>}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="text-xs text-slate-400 italic">No tasks linked to this lead yet.</p>
+                                )}
+                            </div>
+
                             {/* Input Box */}
                             <div className="bg-white dark:bg-slate-800/80 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/60 shadow-xs hover:shadow-sm focus-within:shadow-md focus-within:border-secondary-accent focus-within:ring-1 focus-within:ring-secondary-accent/40 flex gap-4 transition-all duration-300">
                                 <div className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-700/50 flex-shrink-0 flex items-center justify-center font-bold text-slate-500 text-xs shadow-xs ring-4 ring-slate-100/50 dark:ring-slate-800/10 transition-all duration-300">
@@ -810,7 +848,7 @@ const LeadDetailView: React.FC<LeadDetailViewProps> = ({
                         <div className="space-y-4">
                             <div className="flex justify-between items-center mb-2">
                                 <h3 className="font-bold text-slate-700 dark:text-white">Proposals</h3>
-                                <Button size="sm" onClick={() => openModal('PROPOSAL_FORM', { proposal: { clientId: lead.id } })} leftIcon={<Plus className="w-4 h-4"/>}>New Proposal</Button>
+                                <Button size="sm" onClick={() => openModal('PROPOSAL_FORM', { prefillClientId: lead.id })} leftIcon={<Plus className="w-4 h-4"/>}>New Proposal</Button>
                             </div>
                             
                             {relatedProposals.length > 0 ? (

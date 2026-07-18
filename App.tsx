@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { GoogleGenAI } from "@google/genai";
 import {
   Lead,
   Client,
@@ -135,6 +136,8 @@ import { useUndoRedo } from "./hooks/useUndoRedo";
 import { useReminders } from "./hooks/useReminders";
 import { useDiagnostics } from "./hooks/useDiagnostics";
 import { UrlErrorBanner } from "./components/common/UrlErrorBanner";
+import { auth, isFirebaseConfigured } from "./firebase";
+import { subscribeToTasks, saveTaskToCloud, deleteTaskFromCloud } from "./taskSync";
 
 interface AppProps {
     onSignOut?: () => void;
@@ -154,6 +157,20 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
 
   const { toasts, addToast, removeToast } = useToast();
 
+  // Shared Gemini client for AI-assisted features (e.g. proposal auto-drafting).
+  // Stays null when no API key is configured, which hides the AI buttons rather
+  // than erroring — so the app works fine without Gemini set up.
+  const aiClient = useMemo(() => {
+    try {
+      const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
+      if (!apiKey) return null;
+      return new GoogleGenAI({ apiKey });
+    } catch (err) {
+      console.error("Failed to initialise Gemini client", err);
+      return null;
+    }
+  }, []);
+
   // --- CORE DATA & UNDO/REDO HOOKS ---
   const { state: leads, set: setLeads } = useUndoRedo<Lead>(
     KEYS.leads,
@@ -170,11 +187,25 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
     load(KEYS.projects, []),
     addToast,
   );
-  const { state: tasks, set: setTasks } = useUndoRedo<Task>(
+  const { state: tasks, set: setTasks, hydrate: hydrateTasks } = useUndoRedo<Task>(
     KEYS.tasks,
     load(KEYS.tasks, []),
     addToast,
   );
+
+  // Real-time Firestore sync for tasks: a dedicated per-document collection
+  // (see taskSync.ts) rather than the generic whole-array blob the rest of
+  // the app's data uses, so "My Tasks" stays in sync live and survives a
+  // refresh. currentUid is stable for the lifetime of this component — the
+  // AuthGate wrapper only mounts App after sign-in completes.
+  const currentUid = isFirebaseConfigured ? auth.currentUser?.uid ?? null : null;
+  useEffect(() => {
+    if (!currentUid) return;
+    const unsubscribe = subscribeToTasks(currentUid, (cloudTasks) => {
+      hydrateTasks(cloudTasks);
+    });
+    return unsubscribe;
+  }, [currentUid, hydrateTasks]);
 
   // --- STANDARD STATE (No Undo/Redo yet) ---
   const [invoices, setInvoices] = useState<Invoice[]>(() =>
@@ -639,17 +670,16 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
         } else {
           const invoiceNums = prev
             .map((i) => i.invoiceNumber)
-            .filter((num) => typeof num === 'string' && /^INV-\d+$/i.test(num));
-            
-          let maxNum = 0;
+            .filter((num) => typeof num === 'string' && /^\d+$/.test(num));
+
+          let maxNum = 1035;
           invoiceNums.forEach((num) => {
-            const parts = num.split('-');
-            const val = parseInt(parts[1], 10);
+            const val = parseInt(num, 10);
             if (!isNaN(val) && val > maxNum) {
               maxNum = val;
             }
           });
-          finalInvoiceNumber = `INV-${String(maxNum + 1).padStart(3, '0')}`;
+          finalInvoiceNumber = String(maxNum + 1);
         }
       }
 
@@ -933,23 +963,21 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
       return;
     }
 
-    // Helper to generate sequential next INV-xxx numbers
+    // Helper to generate sequential next invoice numbers
     const invoiceNums = invoices
       .map((i) => i.invoiceNumber)
-      .filter((num) => /^INV-\d+$/i.test(num));
-      
-    let maxNum = 0;
+      .filter((num) => /^\d+$/.test(num));
+
+    let maxNum = 1035;
     invoiceNums.forEach((num) => {
-      const parts = num.split('-');
-      const val = parseInt(parts[1], 10);
+      const val = parseInt(num, 10);
       if (!isNaN(val) && val > maxNum) {
         maxNum = val;
       }
     });
 
     const nextInvoiceNumbers = pendingGenerations.map((_, idx) => {
-      const padded = String(maxNum + 1 + idx).padStart(3, '0');
-      return `INV-${padded}`;
+      return String(maxNum + 1 + idx);
     });
 
     const formatCurrency = (amount: number) => {
@@ -1109,6 +1137,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
   };
 
   const handleSaveTask = (task: Task) => {
+    if (currentUid) saveTaskToCloud(currentUid, task);
     const exists = tasks.find((t) => t.id === task.id);
     if (exists) {
       setTasks(
@@ -1332,11 +1361,23 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
   };
 
   const handleSaveProposal = (proposalData: Partial<Proposal>) => {
+    // A proposal's `clientId` may point at either a Client or a Lead.
+    const recipientName =
+      clients.find((c) => c.id === proposalData.clientId)?.name ||
+      leads.find((l) => l.id === proposalData.clientId)?.name ||
+      undefined;
+
     setProposals((prev) => {
       if (proposalData.id) {
         return prev.map((p) =>
           p.id === proposalData.id
-            ? ({ ...p, ...proposalData } as Proposal)
+            ? ({
+                ...p,
+                ...proposalData,
+                clientName: recipientName ?? p.clientName,
+                status: proposalData.status || p.status || "Draft",
+                lastUpdatedDate: new Date().toISOString(),
+              } as Proposal)
             : p,
         );
       }
@@ -1344,6 +1385,8 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
         ...prev,
         {
           ...proposalData,
+          clientName: recipientName,
+          status: proposalData.status || "Draft",
           id: `prop-${Date.now()}`,
           proposalNumber: `PROP-${Date.now()}`,
           version: 1,
@@ -1558,8 +1601,8 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
 
   // --- Computed Data for Views ---
   const allTasks = useMemo(
-    () => getAllTasks(projects, tasks, teamMembers),
-    [projects, tasks, teamMembers],
+    () => getAllTasks(projects, tasks, teamMembers, leads, clients),
+    [projects, tasks, teamMembers, leads, clients],
   );
 
   // --- Reminder System Hook ---
@@ -1730,7 +1773,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
             onCreateProposal={(leadId) => {
               const lead = leads.find((l) => l.id === leadId);
               if (lead)
-                openModal("PROPOSAL_FORM", { proposal: { clientId: leadId } });
+                openModal("PROPOSAL_FORM", { prefillClientId: leadId });
             }}
             hasPermission={hasPermission}
             onImportLeads={(leadsToImport) => {
@@ -1875,6 +1918,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
             }
             onDeleteInvoice={handleDeleteInvoice}
             onRevertClientToLead={handleRevertClientToLead}
+            tasks={allTasks}
           />
         );
       case "PROJECTS":
@@ -1907,10 +1951,11 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
       case "MY_TASKS":
         return (
           <MyTasksView
+            tasks={allTasks}
             projects={projects}
             teamMembers={teamMembers}
             currentUser={currentUser}
-            onMarkTaskAsDone={(taskId, projectId) => {
+            onMarkTaskAsDone={(taskId) => {
               const task = allTasks.find((t) => t.id === taskId);
               if (task)
                 handleSaveTask({
@@ -1919,11 +1964,20 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
                   completed: task.status !== "Done",
                 });
             }}
+            onEditTask={(task) => openModal("TASK_FORM", { task })}
             onOpenTimeLogModal={(log, defaults) =>
               openModal("TIME_LOG_FORM", { timeLog: log, ...defaults })
             }
             onOpenTaskModal={() => openModal("TASK_FORM")}
             onOpenProjectDetailModal={setSelectedProject}
+            onOpenLeadDetail={(leadId) => {
+              const lead = leads.find((l) => l.id === leadId);
+              if (lead) setSelectedLead(lead);
+            }}
+            onOpenClientDetail={(clientId) => {
+              const client = clients.find((c) => c.id === clientId);
+              if (client) handleSelectClientForDetail(client);
+            }}
             setCurrentView={setCurrentView}
           />
         );
@@ -2154,7 +2208,18 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
               prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)),
             )
           }
-          onOpenTaskModal={() => openModal("TASK_FORM")}
+          onOpenTaskModal={() => {
+            const defaultLink = selectedLead
+              ? { type: "lead" as const, id: selectedLead.id, name: selectedLead.name }
+              : selectedClient
+                ? {
+                    type: "client" as const,
+                    id: selectedClient.id,
+                    name: selectedClient.companyName || selectedClient.name,
+                  }
+                : undefined;
+            openModal("TASK_FORM", defaultLink ? { defaultLink } : undefined);
+          }}
           globalSnoozeUntil={load(KEYS.globalSnoozeUntil, null)}
           onSetGlobalSnooze={(val) => {
             save(KEYS.globalSnoozeUntil, val);
@@ -2202,6 +2267,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
           }}
           onUpdateTask={(pid, task) => handleSaveTask(task)}
           onDeleteTask={(pid, tid) => {
+            if (currentUid) deleteTaskFromCloud(currentUid, tid);
             setTasks(
               tasks.filter((t) => t.id !== tid),
               {
@@ -2342,6 +2408,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
             setProjectsDrawerConfig(config || { mode: "view" })
           }
           onRevertClientToLead={handleRevertClientToLead}
+          tasks={allTasks}
         />
       )}
 
@@ -2480,16 +2547,15 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
           getNextInvoiceNumber={() => {
             const invoiceNums = invoices
               .map((i) => i.invoiceNumber)
-              .filter((num) => typeof num === 'string' && /^INV-\d+$/i.test(num));
-            let maxNum = 0;
+              .filter((num) => typeof num === 'string' && /^\d+$/.test(num));
+            let maxNum = 1035;
             invoiceNums.forEach((num) => {
-              const parts = num.split('-');
-              const val = parseInt(parts[1], 10);
+              const val = parseInt(num, 10);
               if (!isNaN(val) && val > maxNum) {
                 maxNum = val;
               }
             });
-            return `INV-${String(maxNum + 1).padStart(3, '0')}`;
+            return String(maxNum + 1);
           }}
           appSettings={appSettings}
           onSetDirty={() => {}}
@@ -2551,6 +2617,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
           onClose={closeModal}
           onSave={handleSaveTask}
           onDelete={(id) => {
+            if (currentUid) deleteTaskFromCloud(currentUid, id);
             setTasks(
               tasks.filter((t) => t.id !== id),
               {
@@ -2563,11 +2630,14 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
           }}
           task={activeModal.props?.task || null}
           projects={projects}
+          leads={leads}
+          clients={clients}
           teamMembers={teamMembers}
           currentUser={currentUser}
           onSetDirty={() => {}}
           showToast={handleToast}
           overrideZIndex="z-[1060]"
+          defaultLink={activeModal.props?.defaultLink || null}
         />
       )}
       {activeModal?.type === "EMAIL_COMPOSE" && (
@@ -2847,8 +2917,10 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
           onSave={handleSaveProposal}
           proposal={activeModal.props?.proposal || null}
           clients={clients}
+          leads={leads}
+          prefillClientId={activeModal.props?.prefillClientId}
           getNextProposalNumber={() => `PROP-${Date.now()}`}
-          ai={null}
+          ai={aiClient}
         />
       )}
       {activeModal?.type === "CUSTOM_FIELD_FORM" && (
