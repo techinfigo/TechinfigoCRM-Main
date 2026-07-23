@@ -564,6 +564,15 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
 
   // Data Handlers (Modified to use Undo/Redo setters where applicable)
   const handleSaveClient = (client: Client) => {
+    // New clients arrive from the form with an empty id — assign one here,
+    // otherwise every new client shares id "" and overwrites the previous one.
+    if (!client.id) {
+      client = {
+        ...client,
+        id: `client-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+        dateAdded: client.dateAdded || new Date().toISOString(),
+      };
+    }
     const exists = clients.find((c) => c.id === client.id);
     if (exists) {
       setClients(
