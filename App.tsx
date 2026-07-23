@@ -121,7 +121,7 @@ import { ClientReportModal } from "./components/modals/ClientReportModal";
 
 import { ToastContainer } from "./components/common/ToastContainer";
 import { useToast } from "./hooks/useToast";
-import { ToastData } from "./types";
+import { ToastData, LeadStatus } from "./types";
 
 // Detail Panels
 import { InvoiceDetailPanel } from "./components/panels/InvoiceDetailPanel";

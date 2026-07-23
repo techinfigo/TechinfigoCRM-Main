@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { DateRange } from './types';
+import { DateRange } from '../types';
 
 interface DateRangeContextType {
   dateRange: DateRange | null;
