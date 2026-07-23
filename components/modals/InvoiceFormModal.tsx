@@ -77,6 +77,8 @@ const emptyFormData: InvoiceFormData = {
 export const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({ isOpen, onClose, onSave, invoice, clients, getNextInvoiceNumber, appSettings, onSetDirty }) => {
   const [formData, setFormData] = useState<InvoiceFormData>(emptyFormData);
   const [errors, setErrors] = useState<InvoiceFormErrors>({});
+  const [formSummaryErrors, setFormSummaryErrors] = useState<string[]>([]);
+  const summaryRef = useRef<HTMLDivElement>(null);
 
   const clientOptions = useMemo<SelectOption[]>(() => {
     return clients.map(c => ({
@@ -348,8 +350,26 @@ export const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({ isOpen, onCl
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate()) return;
-    
+    if (!validate()) {
+      // Surface why the save was blocked. Without this the Save button appears
+      // to do nothing, because the failing field is often scrolled out of view.
+      const problems: string[] = [];
+      if (!formData.clientId) problems.push('Select a client.');
+      if (!formData.issueDate) problems.push('Enter an issue date.');
+      if (!formData.dueDate) problems.push('Enter a due date.');
+      else if (formData.issueDate && new Date(formData.dueDate) < new Date(formData.issueDate)) problems.push('Due date cannot be before the issue date.');
+      if (!formData.paymentTerms?.trim()) problems.push('Enter payment terms.');
+      (formData.items || []).forEach((item, i) => {
+        if (!item.description.trim()) problems.push(`Line item ${i + 1}: enter a description.`);
+        if ((item.quantity ?? 0) <= 0) problems.push(`Line item ${i + 1}: duration must be greater than 0.`);
+        if ((item.unitPrice ?? 0) < 0) problems.push(`Line item ${i + 1}: charges cannot be negative.`);
+      });
+      setFormSummaryErrors(problems.length ? problems : ['Please review the highlighted fields above.']);
+      summaryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    setFormSummaryErrors([]);
+
     const saveData: Omit<Invoice, 'id' | 'clientName'> & { id?: string; invoiceNumber?: string; clientName?: string } = {
         ...formData,
         id: invoice?.id, 
@@ -391,6 +411,16 @@ export const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({ isOpen, onCl
       }
     >
       <form onSubmit={handleSubmit} className="space-y-4">
+        <div ref={summaryRef}>
+          {formSummaryErrors.length > 0 && (
+            <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 text-sm" role="alert">
+              <p className="font-semibold mb-1">Can't save this invoice yet:</p>
+              <ul className="list-disc pl-5 space-y-0.5">
+                {formSummaryErrors.map((msg, i) => <li key={i}>{msg}</li>)}
+              </ul>
+            </div>
+          )}
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Select
                 label="Client *"
