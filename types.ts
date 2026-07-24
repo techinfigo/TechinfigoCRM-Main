@@ -840,6 +840,8 @@ export interface AppSettings {
     agencyName: string;
     agencyLogoUrl?: string;
     agencyGstin?: string;
+    /** One term per line. When empty the invoice falls back to built-in defaults. */
+    invoiceTerms?: string;
     defaultCurrency: 'USD' | 'INR' | 'EUR' | 'GBP';
     defaultPaymentTerms?: number;
     leadsModule: {

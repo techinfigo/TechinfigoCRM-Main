@@ -102,7 +102,7 @@ const ContactRow: React.FC<{ icon: React.ReactNode; children: React.ReactNode }>
   </div>
 );
 
-const TERMS: string[] = [
+const DEFAULT_TERMS: string[] = [
   'This invoice is system generated and does not require a physical signature.',
   'Services are provided on a best-effort basis and results may vary based on market conditions, platform policies, and client inputs.',
   'Fees once paid are non-refundable.',
@@ -157,6 +157,13 @@ export const InvoiceBillModal: React.FC<InvoiceBillModalProps> = ({ isOpen, onCl
   const agencyPhone = settingsAny.agencyPhone || '+91 955 733 8487';
   const agencyWebsite = settingsAny.agencyWebsite || 'https://techinfigo.com';
   const agencyGstin = appSettings.agencyGstin || '09FKTPS0699D1ZB';
+
+  // Terms are editable in Settings > Finance; fall back to the built-in list.
+  const terms = (appSettings.invoiceTerms || '')
+    .split('\n')
+    .map(t => t.trim())
+    .filter(Boolean);
+  const effectiveTerms = terms.length > 0 ? terms : DEFAULT_TERMS;
 
   const bankAccountName = settingsAny.bankAccountName || 'TECHINFIGO';
   const bankName = settingsAny.bankName || 'ICICI Bank';
@@ -415,7 +422,7 @@ export const InvoiceBillModal: React.FC<InvoiceBillModalProps> = ({ isOpen, onCl
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13, fontWeight: 800, color: INK, marginBottom: 8 }}>Terms &amp; Conditions</div>
                 <ul style={{ fontSize: 10, color: '#444', lineHeight: 1.6, margin: 0, paddingLeft: 18, listStyleType: 'disc', listStylePosition: 'outside' }}>
-                  {TERMS.map((term, i) => <li key={i}>{term}</li>)}
+                  {effectiveTerms.map((term, i) => <li key={i}>{term}</li>)}
                 </ul>
               </div>
 
