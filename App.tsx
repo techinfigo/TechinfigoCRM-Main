@@ -282,8 +282,8 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
 
   const [appSettings, setAppSettings] = useState<AppSettings>(() =>
     load(KEYS.appSettings, {
-      agencyName: "My Agency",
-      defaultCurrency: "USD",
+      agencyName: "TECHINFIGO",
+      defaultCurrency: "INR",
       leadsModule: {
         isEnabled: true,
         enableAutoReminders: true,
@@ -992,7 +992,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
     const formatCurrency = (amount: number) => {
       return new Intl.NumberFormat('en-US', {
         style: 'currency',
-        currency: appSettings?.defaultCurrency || 'USD',
+        currency: appSettings?.defaultCurrency || 'INR',
       }).format(amount);
     };
 
