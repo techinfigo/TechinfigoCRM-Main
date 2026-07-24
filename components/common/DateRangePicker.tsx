@@ -242,6 +242,16 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({ onApply, initi
     setIsOpen(false);
   };
 
+  /** Resets back to "All Time" — there was previously no way to undo a range. */
+  const handleClear = () => {
+    const cleared = { startDate: null, endDate: null };
+    setRange(cleared);
+    setDisplayRange(cleared);
+    setAppliedLabel('Date Range');
+    onApply(cleared);
+    setIsOpen(false);
+  };
+
   const handleDateClick = (date: Date) => {
     const d = new Date(date);
     d.setHours(0,0,0,0);
@@ -377,6 +387,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({ onApply, initi
                     <CalendarMonth monthDate={nextMonthDate} range={range} onDateClick={handleDateClick} />
                 </div>
                 <div className="flex justify-end p-3 border-t border-slate-100 dark:border-slate-700 space-x-2 bg-slate-50 dark:bg-slate-800/50 sm:rounded-br-xl">
+                    <Button variant="ghost" size="sm" onClick={handleClear}>Clear</Button>
                     <Button variant="secondary" size="sm" onClick={handleCancel}>Cancel</Button>
                     <Button variant="primary" size="sm" onClick={handleApply}>Apply Range</Button>
                 </div>

@@ -27,6 +27,7 @@ interface InvoiceFormData {
   discountType?: DiscountType;
   discountValue?: number;
   taxRate?: number;
+  advanceAmount?: number;
   paymentInstructions?: string;
   paymentTerms?: string; // Added paymentTerms
   isRecurring?: boolean;
@@ -65,6 +66,7 @@ const emptyFormData: InvoiceFormData = {
   discountType: 'None',
   discountValue: 0,
   taxRate: 18,
+  advanceAmount: 0,
   paymentInstructions: '',
   paymentTerms: '',
   isRecurring: false,
@@ -170,6 +172,7 @@ export const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({ isOpen, onCl
                     discountType: invoice.discountType ?? 'None',
                     discountValue: invoice.discountValue ?? 0,
                     taxRate: invoice.taxRate ?? 18,
+                    advanceAmount: invoice.advanceAmount ?? 0,
                     paymentInstructions: invoice.paymentInstructions ?? '',
                     paymentTerms: invoice.paymentTerms ?? `Payment due within ${appSettings.defaultPaymentTerms || 7} days of invoice date.`,
                     isRecurring: invoice.isRecurring ?? false,
@@ -376,7 +379,8 @@ export const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({ isOpen, onCl
         invoiceNumber: invoice ? invoice.invoiceNumber : getNextInvoiceNumber(),
         clientName: clients.find(c => c.id === formData.clientId)?.name,
         discountValue: Number(formData.discountValue) || 0,
-        taxRate: Number(formData.taxRate) || 0, 
+        taxRate: Number(formData.taxRate) || 0,
+        advanceAmount: Number(formData.advanceAmount) || 0,
         recurrenceEndDate: formData.isRecurring && formData.recurrenceEndDate ? formData.recurrenceEndDate : undefined,
     };
     onSave(saveData);
@@ -507,6 +511,7 @@ export const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({ isOpen, onCl
             />
             <Input label={`Value ${formData.discountType === 'Percentage' ? '(%)' : formData.discountType === 'Fixed' ? `(${formData.currency})` : ''}`} id="discountValue" name="discountValue" type="number" value={(formData.discountValue ?? 0).toString()} onChange={handleInputChange} min="0" step="0.01" disabled={formData.discountType === 'None'} error={errors.discountValue}/>
             <Input label="Total Tax Rate (%)" id="taxRate" name="taxRate" type="number" value={(formData.taxRate ?? 0).toString()} onChange={handleInputChange} min="0" step="0.01" error={errors.taxRate}/>
+            <Input label="Advance Received" id="advanceAmount" name="advanceAmount" type="number" value={(formData.advanceAmount ?? 0).toString()} onChange={handleInputChange} min="0" step="0.01" placeholder="0" />
         </div>
 
         {/* Recurring Invoice Section */}

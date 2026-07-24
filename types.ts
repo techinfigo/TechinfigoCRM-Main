@@ -362,6 +362,9 @@ export interface Invoice {
     discountType?: DiscountType;
     discountValue?: number;
     taxRate?: number;
+    /** Advance / deposit taken before work started. Shown on the invoice and
+     *  deducted from the total to give the balance due. */
+    advanceAmount?: number;
     paymentInstructions?: string;
     paymentTerms?: string;
     isRecurring?: boolean;
