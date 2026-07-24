@@ -2680,6 +2680,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
           isOpen={true}
           onClose={closeModal}
           onSend={handleSendInvoice}
+          onOpenPdf={(inv) => openModal("INVOICE_BILL_VIEW", { invoice: inv })}
           invoice={activeModal.props.invoice}
           client={
             clients.find((c) => c.id === activeModal.props.invoice.clientId) ||
