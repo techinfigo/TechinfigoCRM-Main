@@ -280,8 +280,8 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
     () => load(KEYS.activityHistory, []),
   );
 
-  const [appSettings, setAppSettings] = useState<AppSettings>(() =>
-    load(KEYS.appSettings, {
+  const [appSettings, setAppSettings] = useState<AppSettings>(() => {
+    const loaded = load(KEYS.appSettings, {
       agencyName: "TECHINFIGO",
       defaultCurrency: "INR",
       leadsModule: {
@@ -291,8 +291,18 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
         dataRetentionDays: 365,
       },
       security: { twoFactorEnabled: false, sessionTimeoutMinutes: 60 },
-    }),
-  );
+    });
+    // One-time correction: this app shipped with a USD default, which hid every
+    // INR invoice behind the Finance currency filter. Flip legacy saved settings
+    // to INR once; after that the user's own choice in Settings is respected.
+    if (!localStorage.getItem("crm_currency_migrated_inr")) {
+      localStorage.setItem("crm_currency_migrated_inr", "1");
+      if (loaded.defaultCurrency === "USD") {
+        return { ...loaded, defaultCurrency: "INR" as const };
+      }
+    }
+    return loaded;
+  });
 
   // Detail View States
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);

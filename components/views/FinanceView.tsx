@@ -67,11 +67,24 @@ export const FinanceView: React.FC<FinanceViewProps> = (props) => {
   const filteredInvoices = props.invoices.filter(inv => (inv.currency || props.appSettings.defaultCurrency || 'INR') === viewCurrency);
   const filteredExpenses = props.expenses.filter(exp => (exp.currency || props.appSettings.defaultCurrency || 'INR') === viewCurrency);
 
+  // Invoices and expenses are filtered by the selected currency, so records in
+  // another currency vanish with no explanation. Warn instead of showing "0".
+  const hiddenByCurrency =
+    activeTab === 'invoices'
+      ? props.invoices.length - filteredInvoices.length
+      : props.expenses.length - filteredExpenses.length;
+
+  const currencyHint = hiddenByCurrency > 0 ? (
+    <div className="mb-4 p-3 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 text-sm text-amber-800 dark:text-amber-200">
+      {hiddenByCurrency} record{hiddenByCurrency === 1 ? ' is' : 's are'} hidden because {hiddenByCurrency === 1 ? 'it uses' : 'they use'} a different currency. Change the <strong>Currency</strong> selector above to see {hiddenByCurrency === 1 ? 'it' : 'them'}.
+    </div>
+  ) : null;
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'invoices':
-        return <InvoicesView 
-                    invoices={filteredInvoices} 
+        return <>{currencyHint}<InvoicesView
+                    invoices={filteredInvoices}
                     clients={props.clients}
                     onAddInvoice={props.onAddInvoice}
                     onEditInvoice={props.onEditInvoice}
@@ -82,7 +95,7 @@ export const FinanceView: React.FC<FinanceViewProps> = (props) => {
                     hasPermission={props.hasPermission}
                     onOpenInvoiceBillModal={props.onOpenInvoiceBillModal}
                     onOpenInvoiceDetailPanel={props.onOpenInvoiceDetailPanel}
-                />;
+                /></>;
       case 'expenses':
         return <ExpensesView 
                     expenses={filteredExpenses} 
