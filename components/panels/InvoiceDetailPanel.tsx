@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Invoice, Client, AppSettings, InvoiceStatus, calculateInvoiceGrandTotal } from '../../types';
+import { Invoice, Client, AppSettings, InvoiceStatus, Payment, calculateInvoiceGrandTotal } from '../../types';
 import { Button } from '../common/Button';
 import { Card } from '../common/Card';
 import { StatusBadge } from '../finance/StatusBadge';
@@ -17,12 +17,13 @@ interface InvoiceDetailPanelProps {
   onUpdateStatus: (invoiceId: string, status: InvoiceStatus) => void;
   onEditInvoice: (invoice: Invoice) => void;
   onOpenBillModal: (invoice: Invoice) => void;
+  payments: Payment[];
 }
 
 const formatCurrency = (amount: number, currencyCode: string) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: currencyCode }).format(amount);
 
 export const InvoiceDetailPanel: React.FC<InvoiceDetailPanelProps> = ({
-  isOpen, onClose, invoice, client, appSettings, onOpenSendModal, onUpdateStatus, onEditInvoice, onOpenBillModal
+  isOpen, onClose, invoice, client, appSettings, onOpenSendModal, onUpdateStatus, onEditInvoice, onOpenBillModal, payments = []
 }) => {
   const currency = invoice.currency || appSettings.defaultCurrency || 'INR';
 
@@ -103,6 +104,56 @@ export const InvoiceDetailPanel: React.FC<InvoiceDetailPanelProps> = ({
                                 <span>{formatCurrency(calculateInvoiceGrandTotal(invoice), currency)}</span>
                             </div>
                         </div>
+                      </div>
+
+                      {/* Payment History */}
+                      <div className="mt-8">
+                        <h3 className="text-sm font-bold uppercase tracking-wider text-zinc-500 mb-4 px-1">Payment History</h3>
+                        {(() => {
+                          const invoicePayments = (payments || [])
+                            .filter(p => p.invoiceId === invoice.id)
+                            .sort((a, b) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime());
+                          const grandTotal = calculateInvoiceGrandTotal(invoice);
+                          const totalPaid = invoicePayments.reduce((sum, p) => sum + p.amount, 0);
+                          const balanceDue = Math.max(0, grandTotal - totalPaid);
+
+                          if (invoicePayments.length === 0) {
+                            return (
+                              <p className="text-sm text-zinc-500 px-1 py-3 border border-dashed border-zinc-200 dark:border-zinc-700 rounded-lg text-center">
+                                No payments recorded yet.
+                              </p>
+                            );
+                          }
+
+                          return (
+                            <div className="space-y-3">
+                              {invoicePayments.map(p => (
+                                <div key={p.id} className="flex items-start justify-between gap-3 p-3 rounded-lg border border-zinc-100 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-800/30">
+                                  <div className="min-w-0">
+                                    <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{formatCurrency(p.amount, currency)}</p>
+                                    <p className="text-xs text-zinc-500 mt-0.5">
+                                      {new Date(p.paymentDate).toLocaleDateString([], { dateStyle: 'medium' })} · {p.paymentMethod}
+                                    </p>
+                                    {p.notes && <p className="text-xs text-zinc-500 mt-1 break-words">{p.notes}</p>}
+                                  </div>
+                                </div>
+                              ))}
+
+                              <div className="pt-3 mt-1 border-t border-zinc-200 dark:border-zinc-700 space-y-1">
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-zinc-500">Total Paid</span>
+                                  <span className="font-semibold text-emerald-600 dark:text-emerald-400">{formatCurrency(totalPaid, currency)}</span>
+                                </div>
+                                <div className="flex justify-between text-sm font-bold">
+                                  <span className="text-zinc-600 dark:text-zinc-300">Balance Due</span>
+                                  <span className={balanceDue > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}>
+                                    {formatCurrency(balanceDue, currency)}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </div>
 
                       {/* Activity Log */}

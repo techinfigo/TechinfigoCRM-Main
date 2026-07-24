@@ -2061,7 +2061,11 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
             onAddInvoice={() => openModal("INVOICE_FORM")}
             onEditInvoice={(i) => openModal("INVOICE_FORM", { invoice: i })}
             onDeleteInvoice={handleDeleteInvoice}
-            onUpdateStatus={() => {}}
+            onUpdateStatus={(id, status) =>
+              setInvoices(
+                invoices.map((i) => (i.id === id ? { ...i, status } : i)),
+              )
+            }
             onProcessRecurringInvoices={handleProcessRecurringInvoices}
             onOpenInvoiceBillModal={(i) =>
               openModal("INVOICE_BILL_VIEW", { invoice: i })
@@ -2435,6 +2439,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
               invoice={liveInvoice}
               client={clients.find((c) => c.id === liveInvoice.clientId)}
               appSettings={appSettings}
+              payments={payments}
               onOpenSendModal={(inv) =>
                 openModal("SEND_INVOICE", { invoice: inv })
               }
