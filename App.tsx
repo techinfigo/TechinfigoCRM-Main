@@ -19,6 +19,7 @@ import {
   OnboardingKickoffData,
   Campaign,
   EmailMessage,
+  EmailFolder,
   ChatContact,
   ChatMessage,
   LeaveRequest,
@@ -1767,9 +1768,28 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
             onOpenViewEmailModal={(email) =>
               openModal("VIEW_EMAIL", { emailMessage: email })
             }
-            onMoveToTrash={() => {}}
-            onDeletePermanently={() => {}}
-            onToggleStar={() => {}}
+            onMoveToTrash={(emailId, currentFolder) =>
+              setEmails((prev) =>
+                prev.map((e) =>
+                  e.id === emailId
+                    ? currentFolder === "trash"
+                      // Already in Trash: restore it to wherever it came from.
+                      ? { ...e, folder: e.previousFolder || "inbox", previousFolder: undefined }
+                      : { ...e, folder: "trash" as EmailFolder, previousFolder: currentFolder }
+                    : e,
+                ),
+              )
+            }
+            onDeletePermanently={(emailId) =>
+              setEmails((prev) => prev.filter((e) => e.id !== emailId))
+            }
+            onToggleStar={(emailId) =>
+              setEmails((prev) =>
+                prev.map((e) =>
+                  e.id === emailId ? { ...e, isStarred: !e.isStarred } : e,
+                ),
+              )
+            }
             onSendMessage={handleSendMessage}
             onMarkContactAsRead={(id) =>
               setChatContacts((prev) =>

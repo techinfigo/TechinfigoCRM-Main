@@ -92,7 +92,13 @@ export const EmailView: React.FC<EmailViewProps> = ({
 
   const filteredEmails = useMemo(() => {
     return emails
-      .filter(email => email.folder === selectedFolder)
+      // 'Important' is a starred view, not a real folder — starring sets isStarred
+      // rather than moving the message, so it needs its own rule.
+      .filter(email =>
+        selectedFolder === 'important'
+          ? !!email.isStarred && email.folder !== 'trash'
+          : email.folder === selectedFolder,
+      )
       .filter(email => {
         if (!searchTerm.trim()) return true;
         const lowerSearch = searchTerm.toLowerCase();
@@ -202,8 +208,39 @@ export const EmailView: React.FC<EmailViewProps> = ({
                  </div>
                 <div className="flex items-center">
                    <Button variant="ghost" size="sm" className="p-2" title="Reply" onClick={() => onOpenComposeModal({ subject: `Re: ${selectedEmail.subject}`})}><CornerUpLeft className="w-4 h-4"/></Button>
-                   <Button variant="ghost" size="sm" className="p-2" title="Forward"><CornerUpRight className="w-4 h-4"/></Button>
-                   <Button variant="ghost" size="sm" className="p-2" title="More options"><MoreVertical className="w-4 h-4"/></Button>
+                   <Button
+                     variant="ghost" size="sm" className="p-2" title="Forward"
+                     onClick={() => onOpenComposeModal({
+                       subject: `Fwd: ${selectedEmail.subject}`,
+                       body: `\n\n---------- Forwarded message ----------\nFrom: ${selectedEmail.senderName || selectedEmail.senderEmail} <${selectedEmail.senderEmail}>\nDate: ${new Date(selectedEmail.timestamp).toLocaleString()}\nSubject: ${selectedEmail.subject}\n\n${selectedEmail.body}`,
+                     })}
+                   ><CornerUpRight className="w-4 h-4"/></Button>
+                   <Button
+                     variant="ghost" size="sm" className="p-2"
+                     title={selectedEmail.isStarred ? 'Remove star' : 'Star'}
+                     onClick={() => onToggleStar(selectedEmail.id)}
+                   >
+                     <Star className={`w-4 h-4 ${selectedEmail.isStarred ? 'fill-secondary-accent text-secondary-accent' : ''}`}/>
+                   </Button>
+                   <Button
+                     variant="ghost" size="sm" className="p-2"
+                     title={selectedFolder === 'trash' ? 'Restore to previous folder' : 'Move to Trash'}
+                     onClick={() => { onMoveToTrash(selectedEmail.id, selectedFolder); setSelectedEmail(null); }}
+                   >
+                     {selectedFolder === 'trash' ? <Inbox className="w-4 h-4"/> : <Trash2 className="w-4 h-4"/>}
+                   </Button>
+                   {selectedFolder === 'trash' && (
+                     <Button
+                       variant="ghost" size="sm" className="p-2 text-red-600 hover:text-red-700"
+                       title="Delete permanently"
+                       onClick={() => {
+                         if (window.confirm('Delete this email permanently? This cannot be undone.')) {
+                           onDeletePermanently(selectedEmail.id);
+                           setSelectedEmail(null);
+                         }
+                       }}
+                     ><Trash2 className="w-4 h-4"/></Button>
+                   )}
                 </div>
               </div>
               <div className="overflow-y-auto scrollbar-hide p-4 space-y-4">

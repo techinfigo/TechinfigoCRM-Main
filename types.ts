@@ -686,6 +686,9 @@ export interface EmailMessage {
     timestamp: string; // ISO
     folder: EmailFolder;
     isRead?: boolean;
+    isStarred?: boolean;
+    /** Folder the email came from, so restoring from Trash returns it home. */
+    previousFolder?: EmailFolder;
     attachments?: EmailAttachment[]; // from file system
     attachmentsFromFiles?: File[]; // transient
 }
