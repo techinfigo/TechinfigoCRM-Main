@@ -1,9 +1,11 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Client, CustomField } from '../../types';
+import { Client, CustomField, PaymentMode, ClientDocumentType, paymentModes, clientDocumentTypes } from '../../types';
 import { Modal } from '../common/Modal';
 import { Button } from '../common/Button';
 import { Input, TextArea } from '../common/Input';
+import { Select } from '../common/Select';
+import { Checkbox } from '../common/Checkbox';
 import { DynamicFormFields } from '@/components/forms/DynamicFormFields';
 import { t } from '@/i18n';
 
@@ -29,6 +31,10 @@ interface ClientFormData {
   primaryContactEmail?: string;
   clientNotes?: string;
   gstin?: string; // Added GSTIN field
+  paymentMode?: PaymentMode;
+  documentType: ClientDocumentType;
+  invoiceRequired: boolean;
+  internalNotes?: string;
   customFieldValues: { [key: string]: any };
 }
 
@@ -45,6 +51,10 @@ const initialFormData: ClientFormData = {
   primaryContactEmail: '',
   clientNotes: '',
   gstin: '', // Initialize GSTIN
+  paymentMode: undefined,
+  documentType: 'GST Invoice',
+  invoiceRequired: true,
+  internalNotes: '',
   customFieldValues: {},
 };
 
@@ -69,6 +79,10 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({ isOpen, onClos
             primaryContactEmail: client.primaryContactEmail || '',
             clientNotes: client.clientNotes || '',
             gstin: client.gstin || '',
+            paymentMode: client.paymentMode,
+            documentType: client.documentType ?? 'GST Invoice',
+            invoiceRequired: client.invoiceRequired ?? true,
+            internalNotes: client.internalNotes || '',
             customFieldValues: client.customFieldValues || {},
           };
         } else {
@@ -111,7 +125,22 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({ isOpen, onClos
     }));
     // Optional: Add custom field validation logic here
   };
-  
+
+  const handlePaymentModeChange = (value: string) => {
+    onSetDirty(true);
+    setFormData(prev => ({ ...prev, paymentMode: (value || undefined) as PaymentMode | undefined }));
+  };
+
+  const handleDocumentTypeChange = (value: string) => {
+    onSetDirty(true);
+    setFormData(prev => ({ ...prev, documentType: value as ClientDocumentType }));
+  };
+
+  const handleInvoiceRequiredChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onSetDirty(true);
+    setFormData(prev => ({ ...prev, invoiceRequired: e.target.checked }));
+  };
+
   const validate = (): boolean => {
     const newErrors: Partial<Record<keyof ClientFormData, string>> = {};
     if (!formData.name.trim()) newErrors.name = t('validation.required', { field: t('clients.form.name') });
@@ -126,7 +155,7 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({ isOpen, onClos
      if (formData.website && !/^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/.test(formData.website)) {
         newErrors.website = t('validation.invalid', { field: t('clients.form.website') });
     }
-    if (formData.gstin && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/i.test(formData.gstin)) {
+    if (formData.documentType === 'GST Invoice' && formData.gstin && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/i.test(formData.gstin)) {
         newErrors.gstin = t('validation.invalid', { field: t('clients.form.gstin') });
     }
     setErrors(newErrors);
@@ -152,7 +181,11 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({ isOpen, onClos
       ...baseClientData,
       ...formData,
       tags: formData.tags ? formData.tags.split(',').map(tag => tag.trim()).filter(Boolean) : [],
-      gstin: formData.gstin?.trim() || undefined,
+      gstin: formData.documentType === 'GST Invoice' ? (formData.gstin?.trim() || undefined) : undefined,
+      paymentMode: formData.paymentMode,
+      documentType: formData.documentType,
+      invoiceRequired: formData.invoiceRequired,
+      internalNotes: formData.internalNotes?.trim() || undefined,
       customFieldValues: formData.customFieldValues,
     };
 
@@ -193,11 +226,56 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({ isOpen, onClos
             <Input label={t('clients.form.contactName')} id="primaryContactName" name="primaryContactName" value={formData.primaryContactName || ''} onChange={handleChange} />
             <Input label={t('clients.form.contactEmail')} id="primaryContactEmail" name="primaryContactEmail" type="email" value={formData.primaryContactEmail || ''} onChange={handleChange} error={errors.primaryContactEmail}/>
         </div>
-        <Input label={t('clients.form.gstin')} id="gstin" name="gstin" value={formData.gstin || ''} onChange={handleChange} error={errors.gstin} placeholder="e.g., 22AAAAA0000A1Z5"/>
         <Input label={t('clients.form.tags')} id="tags" name="tags" placeholder="e.g., key_account, local, b2c" value={formData.tags || ''} onChange={handleChange} />
         <TextArea label={t('clients.form.address')} id="address" name="address" value={formData.address || ''} onChange={handleChange} rows={2} />
         <TextArea label={t('clients.form.notes')} id="clientNotes" name="clientNotes" value={formData.clientNotes || ''} onChange={handleChange} rows={3} placeholder="Internal notes about the client, preferences, history..."/>
-      
+
+        <div className="pt-2 border-t border-border-base dark:border-slate-700">
+          <h4 className="text-sm font-semibold text-text-base dark:text-text-base mb-3 mt-3">Billing Preferences</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Select
+              label="Payment Mode"
+              value={formData.paymentMode || ''}
+              onChange={handlePaymentModeChange}
+              placeholder="Not set"
+              options={[
+                { value: '', label: 'Not set' },
+                ...paymentModes.map(pm => ({ value: pm, label: pm })),
+              ]}
+            />
+            <Select
+              label="Document Type"
+              value={formData.documentType}
+              onChange={handleDocumentTypeChange}
+              options={clientDocumentTypes.map(dt => ({ value: dt, label: dt }))}
+            />
+          </div>
+
+          <div className="mt-4">
+            <Checkbox
+              id="invoiceRequired"
+              label="Invoice required for this client"
+              checked={formData.invoiceRequired}
+              onChange={handleInvoiceRequiredChange}
+            />
+            {!formData.invoiceRequired && (
+              <div className="mt-2 px-3 py-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-xs text-amber-700 dark:text-amber-300">
+                This client will be excluded from bulk invoice generation and automated invoice emails.
+              </div>
+            )}
+          </div>
+
+          {formData.documentType === 'GST Invoice' && (
+            <div className="mt-4">
+              <Input label={t('clients.form.gstin')} id="gstin" name="gstin" value={formData.gstin || ''} onChange={handleChange} error={errors.gstin} placeholder="e.g., 22AAAAA0000A1Z5"/>
+            </div>
+          )}
+
+          <div className="mt-4">
+            <TextArea label="Internal Notes (billing)" id="internalNotes" name="internalNotes" value={formData.internalNotes || ''} onChange={handleChange} rows={2} placeholder="e.g., pays in cash, prefers UPI, no invoice needed..."/>
+          </div>
+        </div>
+
         <DynamicFormFields
             module="Clients"
             customFields={customFields}

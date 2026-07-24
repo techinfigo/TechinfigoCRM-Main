@@ -130,6 +130,12 @@ export interface FollowUpLogItem {
 export type FollowUpType = 'Call' | 'Email' | 'Meeting' | 'Other';
 export const followUpTypes: FollowUpType[] = ['Call', 'Email', 'Meeting', 'Other'];
 
+export type PaymentMode = 'Cash' | 'UPI' | 'Bank Transfer' | 'Cheque';
+export const paymentModes: PaymentMode[] = ['Cash', 'UPI', 'Bank Transfer', 'Cheque'];
+
+export type ClientDocumentType = 'GST Invoice' | 'Bill of Supply' | 'Receipt Only' | 'No Document';
+export const clientDocumentTypes: ClientDocumentType[] = ['GST Invoice', 'Bill of Supply', 'Receipt Only', 'No Document'];
+
 export interface Client {
     id: string;
     name: string;
@@ -144,7 +150,13 @@ export interface Client {
     primaryContactName?: string;
     primaryContactEmail?: string;
     clientNotes?: string;
-    gstin?: string; 
+    gstin?: string;
+    /** Billing preferences. Optional so existing records keep working; readers should
+     *  default to 'GST Invoice' / invoiceRequired = true (see selectors/clientBilling). */
+    paymentMode?: PaymentMode;
+    documentType?: ClientDocumentType;
+    invoiceRequired?: boolean;
+    internalNotes?: string;
     convertedFromLeadId?: string;
     customFieldValues?: { [key: string]: any };
     profilePictureUrl?: string;

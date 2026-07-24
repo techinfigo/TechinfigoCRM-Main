@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Client, FeatureKey, PermissionAction, MarketingAuditRequest, ProjectsDrawerConfig, Invoice, Project } from '../../types';
+import { Client, FeatureKey, PermissionAction, MarketingAuditRequest, ProjectsDrawerConfig, Invoice, Project, paymentModes, clientDocumentTypes } from '../../types';
 import { Button } from '../common/Button';
 import { Card } from '../common/Card';
 import { Input } from '../common/Input';
@@ -13,6 +13,7 @@ import { usePagination } from '../../hooks/usePagination';
 import { Pagination } from '../common/Pagination';
 import { safeFormatDate } from '@/utils';
 import { computeClientHealth } from '../../selectors/clientHealthSelectors';
+import { getDocumentType, isInvoiceRequired, documentTypeStyle, paymentModeStyle } from '../../selectors/clientBilling';
 
 const PlusIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
@@ -69,6 +70,9 @@ export const ClientsView: React.FC<ClientsViewProps> = ({ clients, invoices, pro
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [industryFilters, setIndustryFilters] = useState<Set<string>>(new Set());
   const [tagFilters, setTagFilters] = useState<Set<string>>(new Set());
+  const [paymentModeFilters, setPaymentModeFilters] = useState<Set<string>>(new Set());
+  const [documentTypeFilters, setDocumentTypeFilters] = useState<Set<string>>(new Set());
+  const [invoiceRequiredFilter, setInvoiceRequiredFilter] = useState<'all' | 'yes' | 'no'>('all');
   const [isRefreshing, setIsRefreshing] = useState(false);
   
   const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
@@ -162,8 +166,11 @@ export const ClientsView: React.FC<ClientsViewProps> = ({ clients, invoices, pro
         
         const industryMatch = industryFilters.size === 0 || (client.industry && industryFilters.has(client.industry));
         const tagMatch = tagFilters.size === 0 || (client.tags && client.tags.some(tag => tagFilters.has(tag)));
+        const paymentModeMatch = paymentModeFilters.size === 0 || (client.paymentMode && paymentModeFilters.has(client.paymentMode));
+        const documentTypeMatch = documentTypeFilters.size === 0 || documentTypeFilters.has(getDocumentType(client));
+        const invoiceRequiredMatch = invoiceRequiredFilter === 'all' || (invoiceRequiredFilter === 'yes' ? isInvoiceRequired(client) : !isInvoiceRequired(client));
 
-        return searchMatch && dateMatch && industryMatch && tagMatch;
+        return searchMatch && dateMatch && industryMatch && tagMatch && paymentModeMatch && documentTypeMatch && invoiceRequiredMatch;
     });
 
     const [key, direction] = sortBy.split('-');
@@ -180,7 +187,7 @@ export const ClientsView: React.FC<ClientsViewProps> = ({ clients, invoices, pro
         if (valA > valB) return direction === 'asc' ? 1 : -1;
         return 0;
     });
-  }, [clients, searchTerm, dateRange, industryFilters, tagFilters, sortBy]);
+  }, [clients, searchTerm, dateRange, industryFilters, tagFilters, paymentModeFilters, documentTypeFilters, invoiceRequiredFilter, sortBy]);
 
   const { paginatedData, ...paginationProps } = usePagination({ data: filteredAndSortedClients, initialEntriesPerPage: 10 });
 
@@ -197,13 +204,35 @@ export const ClientsView: React.FC<ClientsViewProps> = ({ clients, invoices, pro
   const clearFilters = () => {
     setIndustryFilters(new Set());
     setTagFilters(new Set());
+    setPaymentModeFilters(new Set());
+    setDocumentTypeFilters(new Set());
+    setInvoiceRequiredFilter('all');
   };
 
   const renderFilterPanel = () => (
-    <div ref={filterPanelRef} style={filterPanelStyle} className="w-72 bg-white dark:bg-zinc-900 rounded-xl shadow-2xl border border-gray-100 dark:border-zinc-800 p-4 space-y-4 animate-in fade-in zoom-in-95 duration-200 ring-1 ring-black/5 z-[9999]">
+    <div ref={filterPanelRef} style={filterPanelStyle} className="w-72 bg-white dark:bg-zinc-900 rounded-xl shadow-2xl border border-gray-100 dark:border-zinc-800 p-4 space-y-4 animate-in fade-in zoom-in-95 duration-200 ring-1 ring-black/5 z-[9999] max-h-[80vh] overflow-y-auto">
         <div className="flex justify-between items-center"><h4 className="font-semibold text-gray-900 dark:text-white">Filters</h4><Button variant="ghost" size="xs" onClick={clearFilters}>Clear All</Button></div>
         <div><p className="text-xs font-semibold mb-1 text-gray-500 dark:text-gray-400 uppercase">Industry</p><div className="space-y-1 max-h-32 overflow-y-auto">{allIndustries.map(s => <Checkbox key={s} label={s} checked={industryFilters.has(s)} onChange={() => toggleFilter(setIndustryFilters, s)}/>)}</div></div>
         <div><p className="text-xs font-semibold mb-1 text-gray-500 dark:text-gray-400 uppercase">Tags</p><div className="space-y-1 max-h-32 overflow-y-auto">{allTags.map(s => <Checkbox key={s} label={s} checked={tagFilters.has(s)} onChange={() => toggleFilter(setTagFilters, s)}/>)}</div></div>
+        <div><p className="text-xs font-semibold mb-1 text-gray-500 dark:text-gray-400 uppercase">Payment Mode</p><div className="space-y-1 max-h-32 overflow-y-auto">{paymentModes.map(s => <Checkbox key={s} label={s} checked={paymentModeFilters.has(s)} onChange={() => toggleFilter(setPaymentModeFilters, s)}/>)}</div></div>
+        <div><p className="text-xs font-semibold mb-1 text-gray-500 dark:text-gray-400 uppercase">Document Type</p><div className="space-y-1 max-h-32 overflow-y-auto">{clientDocumentTypes.map(s => <Checkbox key={s} label={s} checked={documentTypeFilters.has(s)} onChange={() => toggleFilter(setDocumentTypeFilters, s)}/>)}</div></div>
+        <div>
+            <p className="text-xs font-semibold mb-1 text-gray-500 dark:text-gray-400 uppercase">Invoice Required</p>
+            <div className="space-y-1">
+                {(['all', 'yes', 'no'] as const).map(opt => (
+                    <label key={opt} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                        <input
+                            type="radio"
+                            name="invoiceRequiredFilter"
+                            checked={invoiceRequiredFilter === opt}
+                            onChange={() => setInvoiceRequiredFilter(opt)}
+                            className="form-radio h-4 w-4 text-premium-accent border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:ring-premium-accent"
+                        />
+                        {opt === 'all' ? 'All' : opt === 'yes' ? 'Yes' : 'No'}
+                    </label>
+                ))}
+            </div>
+        </div>
     </div>
   );
 
@@ -273,7 +302,7 @@ export const ClientsView: React.FC<ClientsViewProps> = ({ clients, invoices, pro
             <div className="flex flex-col items-center justify-center py-12 text-center">
             <UserCircleIcon />
             <p className="text-slate-500 dark:text-slate-400 mt-4 text-lg">No clients match your criteria.</p>
-            {searchTerm === '' && industryFilters.size === 0 && tagFilters.size === 0 && canCreateClients && (
+            {searchTerm === '' && industryFilters.size === 0 && tagFilters.size === 0 && paymentModeFilters.size === 0 && documentTypeFilters.size === 0 && invoiceRequiredFilter === 'all' && canCreateClients && (
                 <>
                 <p className="text-slate-400 dark:text-slate-500 text-sm">Get started by adding your first client.</p>
                 <Button onClick={onAddClient} variant="outline" size="sm" className="mt-6" leftIcon={<PlusIcon />}>
@@ -293,6 +322,8 @@ export const ClientsView: React.FC<ClientsViewProps> = ({ clients, invoices, pro
                     <th scope="col" className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Email</th>
                     <th scope="col" className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Website</th>
                     <th scope="col" className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Industry</th>
+                    <th scope="col" className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Payment Mode</th>
+                    <th scope="col" className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Document Type</th>
                     <th scope="col" className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Health</th>
                     <th scope="col" className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Audit</th>
                     {(canEditClients || canDeleteClients) && <th scope="col" className="px-6 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Actions</th>}
@@ -315,6 +346,39 @@ export const ClientsView: React.FC<ClientsViewProps> = ({ clients, invoices, pro
                         {client.website ? <a href={client.website.startsWith('http') ? client.website : `https://${client.website}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-sky-600 dark:text-sky-400 hover:underline">{client.website}</a> : 'N/A'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-300">{client.industry || 'N/A'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {(() => {
+                            const pmStyle = paymentModeStyle(client.paymentMode);
+                            return (
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${pmStyle.className}`}>
+                                    <span>{pmStyle.icon}</span>
+                                    <span>{pmStyle.label}</span>
+                                </span>
+                            );
+                        })()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {(() => {
+                            const dtStyle = documentTypeStyle(getDocumentType(client));
+                            const noInvoice = !isInvoiceRequired(client);
+                            return (
+                                <div className="flex items-center gap-1.5">
+                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${dtStyle.className}`}>
+                                        <span>{dtStyle.icon}</span>
+                                        <span>{dtStyle.label}</span>
+                                    </span>
+                                    {noInvoice && (
+                                        <span
+                                            title="Excluded from bulk invoice generation and automated invoice emails"
+                                            className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+                                        >
+                                            No invoice
+                                        </span>
+                                    )}
+                                </div>
+                            );
+                        })()}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${getHealthBadgeClasses(clientHealth)}`}>
                             {clientHealth}
