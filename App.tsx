@@ -2138,7 +2138,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
             emailTemplates={[]}
             customFields={customFields}
             onSaveRoleDefinitions={() => {}}
-            onSaveSettings={() => {}}
+            onSaveSettings={(newSettings) => setAppSettings(newSettings)}
             onConnectIntegration={() => {}}
             onRevokeApiKey={() => {}}
             onAddApiKey={() => {}}
