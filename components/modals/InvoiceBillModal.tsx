@@ -69,40 +69,30 @@ const GlobeIcon = () => (
 );
 
 const TechinfigoLogoSvg = ({ className }: { className?: string }) => (
-  <svg
-    viewBox="0 0 432 100"
-    xmlns="http://www.w3.org/2000/svg"
-    className={className || "h-12 w-auto"}
-    aria-labelledby="techinfigoLogoTitleInvoice"
-  >
-    <title id="techinfigoLogoTitleInvoice">Techinfigo Logo</title>
-    <defs>
-      <style>
-        {`
-          .techinfigo-text-invoice { font-family: 'Roboto', Arial, sans-serif; font-weight: bold; }
-        `}
-      </style>
-    </defs>
-    <g transform="translate(0, 5)">
-      <g id="power-icon-invoice" transform="scale(1.7) translate(0, 0)">
-        <path
-          d="M25,8 A17,17 0 1,1 24.99,8 Z"
-          stroke="#ffffff"
-          strokeWidth="3.5"
-          fill="none"
-          strokeLinecap="round"
-          strokeDasharray="88,17"
-          transform="rotate(100 25 25)"
-        />
-        <rect x="23" y="3" width="4" height="15" fill="#ffffff" rx="2" />
-        <circle cx="25" cy="7" r="2.5" fill="#FFFFFF" stroke={INK} strokeWidth="1" />
-        <circle cx="25" cy="14" r="2.5" fill="#FFFFFF" stroke={INK} strokeWidth="1" />
-      </g>
-      <text x="95" y="55" className="techinfigo-text-invoice" fontSize="40">
-        <tspan fill="#ffffff">TECH</tspan><tspan fill={GOLD}>INFIGO</tspan>
-      </text>
-    </g>
-  </svg>
+  // Rendered as HTML rather than SVG <text>: html2canvas drops text nodes that are
+  // styled via a class inside <defs><style>, which is why the wordmark vanished.
+  <div className={className} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+    <svg viewBox="0 0 50 50" width="40" height="40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path
+        d="M25,8 A17,17 0 1,1 24.99,8 Z"
+        stroke="#ffffff"
+        strokeWidth="3.5"
+        fill="none"
+        strokeLinecap="round"
+        strokeDasharray="88,17"
+        transform="rotate(100 25 25)"
+      />
+      <rect x="23" y="3" width="4" height="15" fill="#ffffff" rx="2" />
+    </svg>
+    <div style={{ lineHeight: 1 }}>
+      <div style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontWeight: 800, fontSize: 30, letterSpacing: -0.5 }}>
+        <span style={{ color: '#ffffff' }}>TECH</span><span style={{ color: GOLD }}>INFIGO</span>
+      </div>
+      <div style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: 7, letterSpacing: 3.2, color: 'rgba(255,255,255,0.85)', marginTop: 3, textAlign: 'center' }}>
+        WE DEVELOP SOLUTIONS
+      </div>
+    </div>
+  </div>
 );
 
 const ContactRow: React.FC<{ icon: React.ReactNode; children: React.ReactNode }> = ({ icon, children }) => (
@@ -130,6 +120,7 @@ const thStyle: React.CSSProperties = {
   fontWeight: 700,
   textTransform: 'uppercase',
   letterSpacing: 0.3,
+  whiteSpace: 'nowrap',
 };
 
 const tdStyle: React.CSSProperties = {
@@ -143,6 +134,8 @@ const totalLabelStyle: React.CSSProperties = {
   border: `1px solid ${INK}`,
   padding: '6px 10px',
   fontSize: 11.5,
+  color: '#111',            // explicit: never inherit the app's dark-mode light text
+  background: '#ffffff',
 };
 
 const totalValueStyle: React.CSSProperties = {
@@ -213,7 +206,8 @@ export const InvoiceBillModal: React.FC<InvoiceBillModalProps> = ({ isOpen, onCl
         margin: [0, 0, 0, 0], // Top, Right, Bottom, Left
         filename: `Invoice_${invoice.invoiceNumber.replace(/[^a-z0-9]/gi, '_')}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
+        html2canvas: { scale: 3, useCORS: true, logging: false, windowWidth: 794, backgroundColor: '#ffffff' },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
 
@@ -295,7 +289,7 @@ export const InvoiceBillModal: React.FC<InvoiceBillModalProps> = ({ isOpen, onCl
       </style>
 
       <div
-        className="bg-white dark:bg-zinc-900 text-slate-900 dark:text-slate-100 shadow-2xl w-full max-w-[210mm] h-full sm:h-auto sm:max-h-[95vh] sm:rounded-lg flex flex-col overflow-hidden invoice-content transform transition-all"
+        className="bg-white text-slate-900 shadow-2xl w-full max-w-[210mm] h-full sm:h-auto sm:max-h-[95vh] sm:rounded-lg flex flex-col overflow-hidden invoice-content transform transition-all"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Actions Header - Screen Only */}
@@ -329,7 +323,7 @@ export const InvoiceBillModal: React.FC<InvoiceBillModalProps> = ({ isOpen, onCl
         <div className="flex-1 overflow-y-auto font-sans" style={{ background: CREAM }}>
           <div
             id="invoice-pdf-content"
-            style={{ width: '210mm', minHeight: '297mm', margin: '0 auto', background: CREAM, display: 'flex', flexDirection: 'column' }}
+            style={{ width: '210mm', minHeight: '296mm', margin: '0 auto', background: CREAM, color: '#111', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
           >
             {/* 1. Top gold bar */}
             <div style={{ height: 10, background: GOLD, flexShrink: 0 }} />
@@ -386,7 +380,7 @@ export const InvoiceBillModal: React.FC<InvoiceBillModalProps> = ({ isOpen, onCl
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ background: GOLD, color: INK }}>
-                    <th style={{ ...thStyle, width: 48, textAlign: 'center' }}>S No.</th>
+                    <th style={{ ...thStyle, width: 58, textAlign: 'center', whiteSpace: 'nowrap' }}>S No.</th>
                     <th style={{ ...thStyle, textAlign: 'left' }}>Description</th>
                     <th style={{ ...thStyle, width: 100, textAlign: 'right' }}>Charges</th>
                     <th style={{ ...thStyle, width: 90, textAlign: 'center' }}>Duration</th>
@@ -420,7 +414,7 @@ export const InvoiceBillModal: React.FC<InvoiceBillModalProps> = ({ isOpen, onCl
             <div style={{ display: 'flex', padding: '24px 40px 0', gap: 32 }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13, fontWeight: 800, color: INK, marginBottom: 8 }}>Terms &amp; Conditions</div>
-                <ul style={{ fontSize: 10, color: '#444', lineHeight: 1.6, margin: 0, paddingLeft: 16 }}>
+                <ul style={{ fontSize: 10, color: '#444', lineHeight: 1.6, margin: 0, paddingLeft: 18, listStyleType: 'disc', listStylePosition: 'outside' }}>
                   {TERMS.map((term, i) => <li key={i}>{term}</li>)}
                 </ul>
               </div>
