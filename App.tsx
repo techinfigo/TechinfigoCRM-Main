@@ -746,6 +746,28 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
     });
   };
 
+  /**
+   * Opens an email draft for the given message.
+   *
+   * `mailto:` is unreliable here: Chrome silently does nothing when no protocol
+   * handler is registered (the Gmail chooser appears but never opens), and long
+   * bodies — which invoices always have — exceed the practical URL limit.
+   * Gmail's web compose URL avoids both problems, so it is the default.
+   */
+  const openEmailDraft = (to: string, subject: string, body: string) => {
+    const gmailUrl =
+      `https://mail.google.com/mail/?view=cm&fs=1` +
+      `&to=${encodeURIComponent(to)}` +
+      `&su=${encodeURIComponent(subject)}` +
+      `&body=${encodeURIComponent(body)}`;
+    const win = window.open(gmailUrl, "_blank", "noopener,noreferrer");
+    if (!win) {
+      // Popup blocked — fall back to the OS default mail client.
+      window.location.href =
+        `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    }
+  };
+
   const handleSendInvoice = (
     invoiceId: string,
     emailData: { subject: string; body: string },
@@ -762,8 +784,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
       return;
     }
 
-    const mailtoUrl = `mailto:${encodeURIComponent(recipientEmail)}?subject=${encodeURIComponent(emailData.subject)}&body=${encodeURIComponent(emailData.body)}`;
-    window.location.href = mailtoUrl;
+    openEmailDraft(recipientEmail, emailData.subject, emailData.body);
 
     if (invoice.status !== "Paid") {
       setInvoices((prev) =>
@@ -805,8 +826,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
       return;
     }
 
-    const mailtoUrl = `mailto:${encodeURIComponent(emailData.to)}?subject=${encodeURIComponent(emailData.subject)}&body=${encodeURIComponent(emailData.body)}`;
-    window.location.href = mailtoUrl;
+    openEmailDraft(emailData.to, emailData.subject, emailData.body);
 
     setProposals((prev) =>
       prev.map((p) =>
@@ -859,8 +879,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
     const subject = `Marketing Audit Report for ${lead.name}`;
     const body = `Hi ${lead.name},\n\nPlease find a summary of your marketing audit below.\n\nOverall Score: ${scoreText}\n\nExecutive Summary:\n${summaryText}\n\nBest regards,\n${currentUser?.name || "The Team"}`;
 
-    const mailtoUrl = `mailto:${encodeURIComponent(recipientEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    window.location.href = mailtoUrl;
+    openEmailDraft(recipientEmail, subject, body);
 
     const newEmail: EmailMessage = {
       id: `email-${Date.now()}`,
