@@ -2,8 +2,9 @@
 import React from 'react';
 import { EmailView } from './EmailView';
 import { ChatView } from './ChatView';
-import { 
-  EmailMessage, EmailFolder, TeamMember, FeatureKey, PermissionAction, 
+import { GmailView } from './GmailView';
+import {
+  EmailMessage, EmailFolder, TeamMember, FeatureKey, PermissionAction,
   ChatContact, ChatMessage
 } from '../../types';
 import { Mail, MessageSquare } from 'lucide-react';
@@ -25,8 +26,8 @@ interface CommunicationViewProps {
   onMarkContactAsRead: (contactId: string) => void;
   // General Props
   currentUser: TeamMember | null;
-  activeTab: 'email' | 'chat';
-  setActiveTab: (tab: 'email' | 'chat') => void;
+  activeTab: 'email' | 'chat' | 'gmail';
+  setActiveTab: (tab: 'email' | 'chat' | 'gmail') => void;
 }
 
 export const CommunicationView: React.FC<CommunicationViewProps> = (props) => {
@@ -65,12 +66,24 @@ export const CommunicationView: React.FC<CommunicationViewProps> = (props) => {
                         <MessageSquare className="w-4 h-4" />
                         <span>Chat</span>
                     </button>
+                    <button
+                        onClick={() => setActiveTab('gmail')}
+                        className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200 ${
+                            activeTab === 'gmail'
+                            ? 'bg-white dark:bg-slate-600 text-premium-accent dark:text-white shadow-sm'
+                            : 'text-text-muted hover:text-text-base dark:text-slate-400 dark:hover:text-slate-200'
+                        }`}
+                    >
+                        <Mail className="w-4 h-4" />
+                        <span>Gmail</span>
+                    </button>
                 </div>
             </div>
         }
       >
         {activeTab === 'email' && <EmailView {...props} />}
         {activeTab === 'chat' && <ChatView {...props} />}
+        {activeTab === 'gmail' && <GmailView />}
       </Card>
     </div>
   );
