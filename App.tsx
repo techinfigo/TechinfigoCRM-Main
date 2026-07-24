@@ -1926,6 +1926,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
               )
             }
             onDeleteInvoice={handleDeleteInvoice}
+            onProcessRecurringInvoices={handleProcessRecurringInvoices}
             onRevertClientToLead={handleRevertClientToLead}
             tasks={allTasks}
           />

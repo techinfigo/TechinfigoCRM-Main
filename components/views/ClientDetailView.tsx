@@ -83,6 +83,7 @@ interface ClientDetailViewProps {
   onDeleteProject: (projectId: string) => void;
   onUpdateInvoiceStatus: (invoiceId: string, status: InvoiceStatus) => void;
   onDeleteInvoice: (invoiceId: string) => void;
+  onProcessRecurringInvoices: () => void;
   onRevertClientToLead?: (leadId: string) => void;
 }
 
@@ -127,6 +128,7 @@ const ClientDetailView: React.FC<ClientDetailViewProps> = ({
   onDeleteProject,
   onUpdateInvoiceStatus,
   onDeleteInvoice,
+  onProcessRecurringInvoices,
   onRevertClientToLead
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('Projects');
@@ -367,7 +369,7 @@ const ClientDetailView: React.FC<ClientDetailViewProps> = ({
               onEditInvoice={(inv) => onOpenInvoiceModal(inv, client)}
               onDeleteInvoice={onDeleteInvoice} 
               onUpdateStatus={onUpdateInvoiceStatus}
-              onProcessRecurring={() => { alert('Process recurring invoices action (Conceptual)'); }}
+              onProcessRecurring={onProcessRecurringInvoices}
               appSettings={appSettings}
               hasPermission={hasPermission}
               onOpenInvoiceBillModal={handleOpenInvoiceBillModal}
