@@ -412,7 +412,7 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
         onSave({
             ...(task || {}),
             ...formData,
-            id: task?.id || `task-${Date.now()}`,
+            id: task?.id || `task-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
             labels: formData.labels.split(',').map(l => l.trim()).filter(Boolean),
             watchers,
             subtasks: subtasks,

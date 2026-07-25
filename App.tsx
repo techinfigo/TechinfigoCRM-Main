@@ -1743,7 +1743,15 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
               openModal("TIME_LOG_FORM", { timeLog: log, ...defaults })
             }
             onOpenTaskModal={() => openModal("TASK_FORM")}
-            onMarkTaskAsDone={() => {}}
+            onMarkTaskAsDone={(taskId) => {
+              const task = allTasks.find((t) => t.id === taskId);
+              if (task)
+                handleSaveTask({
+                  ...task,
+                  status: task.status === "Done" ? "To Do" : "Done",
+                  completed: task.status !== "Done",
+                });
+            }}
             onOpenEmailComposeModal={(email) =>
               openModal("EMAIL_COMPOSE", { initialEmail: email })
             }
