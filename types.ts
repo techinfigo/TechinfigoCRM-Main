@@ -157,6 +157,12 @@ export interface Client {
     documentType?: ClientDocumentType;
     invoiceRequired?: boolean;
     internalNotes?: string;
+    /** Advance / token money taken at onboarding, before any invoice exists.
+     *  Pre-fills the Advance Received field when an invoice is later created. */
+    advanceAmount?: number;
+    advancePaymentMode?: PaymentMode;
+    advanceReceivedDate?: string; // ISO
+    advanceNotes?: string;
     convertedFromLeadId?: string;
     customFieldValues?: { [key: string]: any };
     profilePictureUrl?: string;

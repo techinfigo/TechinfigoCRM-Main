@@ -133,6 +133,14 @@ export const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({ isOpen, onCl
       if (name === 'discountType' && value === 'None') {
         updated.discountValue = 0;
       }
+      // Advance is recorded on the client at onboarding, before any invoice exists.
+      // Carry it over automatically on a NEW invoice, unless the user already typed one.
+      if (name === 'clientId' && !invoice && !prev.advanceAmount) {
+        const picked = clients.find(c => c.id === value);
+        if (picked?.advanceAmount) {
+          updated.advanceAmount = picked.advanceAmount;
+        }
+      }
       return updated;
     });
 

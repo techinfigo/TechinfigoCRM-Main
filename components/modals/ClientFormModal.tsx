@@ -35,6 +35,10 @@ interface ClientFormData {
   documentType: ClientDocumentType;
   invoiceRequired: boolean;
   internalNotes?: string;
+  advanceAmount?: number;
+  advancePaymentMode?: PaymentMode;
+  advanceReceivedDate?: string;
+  advanceNotes?: string;
   customFieldValues: { [key: string]: any };
 }
 
@@ -55,6 +59,10 @@ const initialFormData: ClientFormData = {
   documentType: 'GST Invoice',
   invoiceRequired: true,
   internalNotes: '',
+  advanceAmount: 0,
+  advancePaymentMode: undefined,
+  advanceReceivedDate: '',
+  advanceNotes: '',
   customFieldValues: {},
 };
 
@@ -83,6 +91,10 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({ isOpen, onClos
             documentType: client.documentType ?? 'GST Invoice',
             invoiceRequired: client.invoiceRequired ?? true,
             internalNotes: client.internalNotes || '',
+            advanceAmount: client.advanceAmount ?? 0,
+            advancePaymentMode: client.advancePaymentMode,
+            advanceReceivedDate: (client.advanceReceivedDate ?? '').split('T')[0],
+            advanceNotes: client.advanceNotes || '',
             customFieldValues: client.customFieldValues || {},
           };
         } else {
@@ -186,6 +198,10 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({ isOpen, onClos
       documentType: formData.documentType,
       invoiceRequired: formData.invoiceRequired,
       internalNotes: formData.internalNotes?.trim() || undefined,
+      advanceAmount: Number(formData.advanceAmount) || undefined,
+      advancePaymentMode: formData.advancePaymentMode,
+      advanceReceivedDate: formData.advanceReceivedDate ? new Date(formData.advanceReceivedDate).toISOString() : undefined,
+      advanceNotes: formData.advanceNotes?.trim() || undefined,
       customFieldValues: formData.customFieldValues,
     };
 
@@ -273,6 +289,47 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({ isOpen, onClos
 
           <div className="mt-4">
             <TextArea label="Internal Notes (billing)" id="internalNotes" name="internalNotes" value={formData.internalNotes || ''} onChange={handleChange} rows={2} placeholder="e.g., pays in cash, prefers UPI, no invoice needed..."/>
+          </div>
+
+          <div className="mt-5 pt-4 border-t border-border-base dark:border-border-muted">
+            <h4 className="text-sm font-bold text-text-heading dark:text-slate-200 mb-1">Advance / Token Payment</h4>
+            <p className="text-xs text-text-muted mb-3">Money taken before starting work. This auto-fills the advance on their next invoice.</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                label="Advance Amount"
+                id="advanceAmount"
+                name="advanceAmount"
+                type="number"
+                min="0"
+                step="0.01"
+                value={(formData.advanceAmount ?? 0).toString()}
+                onChange={handleChange}
+                placeholder="0"
+              />
+              <Select
+                label="Advance Payment Mode"
+                value={formData.advancePaymentMode || ''}
+                onChange={(v) => setFormData(prev => ({ ...prev, advancePaymentMode: (v || undefined) as PaymentMode | undefined }))}
+                placeholder="Not set"
+                options={[{ value: '', label: 'Not set' }, ...paymentModes.map(pm => ({ value: pm, label: pm }))]}
+              />
+              <Input
+                label="Advance Received On"
+                id="advanceReceivedDate"
+                name="advanceReceivedDate"
+                type="date"
+                value={formData.advanceReceivedDate || ''}
+                onChange={handleChange}
+              />
+              <Input
+                label="Advance Notes"
+                id="advanceNotes"
+                name="advanceNotes"
+                value={formData.advanceNotes || ''}
+                onChange={handleChange}
+                placeholder="e.g., 30% token for logo project"
+              />
+            </div>
           </div>
         </div>
 
