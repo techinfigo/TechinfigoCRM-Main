@@ -134,27 +134,48 @@ export const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({ isOpen, onCl
       if (name === 'discountType' && value === 'None') {
         updated.discountValue = 0;
       }
-      // When a client is chosen on a NEW invoice, pull in what was agreed at
-      // onboarding: their advance, and their agreed services as line items.
+      // When the client changes on a NEW invoice, refill the invoice from THAT
+      // client: their agreed services become the line items, and their advance
+      // carries over. Switching clients re-fills for the newly chosen client.
       if (name === 'clientId' && !invoice) {
         const picked = clients.find(c => c.id === value);
-        alert('Client: ' + (picked?.name || 'none') + '\nServices saved: ' + JSON.stringify(picked?.agreedServices || 'NONE'));
+        const previous = clients.find(c => c.id === prev.clientId);
+
+        // Build what the PREVIOUS client's auto-seeded rows would look like, so we
+        // can tell auto-filled items apart from ones the user typed themselves.
+        const servicesToItems = (svcs?: typeof picked.agreedServices) =>
+          (svcs || []).map(sv => ({
+            description: sv.name + (sv.billingType !== 'One-Time' ? ` (${sv.billingType})` : ''),
+            unitPrice: Number(sv.cost) || 0,
+          }));
+
+        const isEmptyRow = prev.items.length === 0 ||
+          (prev.items.length === 1 && !prev.items[0].description.trim() && !prev.items[0].unitPrice);
+
+        const prevSeed = servicesToItems(previous?.agreedServices);
+        const matchesPrevSeed = prevSeed.length > 0 &&
+          prev.items.length === prevSeed.length &&
+          prev.items.every((it, i) =>
+            it.description === prevSeed[i].description && Number(it.unitPrice) === prevSeed[i].unitPrice);
+
+        // Only overwrite items that were auto-filled (empty, or the last client's
+        // services) — never wipe out line items the user typed by hand.
+        const safeToReplace = isEmptyRow || matchesPrevSeed;
+
         if (picked) {
-          console.log('SEED picked client:', picked.name, '| agreedServices:', picked.agreedServices, '| current items:', JSON.stringify(prev.items));
-          if (!prev.advanceAmount && picked.advanceAmount) {
-            updated.advanceAmount = picked.advanceAmount;
+          // Advance: replace when it also came from the previous client (or is blank).
+          if (!prev.advanceAmount || Number(prev.advanceAmount) === Number(previous?.advanceAmount)) {
+            updated.advanceAmount = picked.advanceAmount || 0;
           }
-          // Seed services only if the user hasn't entered real line items yet
-          // (i.e. items are still the single empty default row).
-          const itemsAreEmpty = prev.items.length === 0 ||
-            (prev.items.length === 1 && !prev.items[0].description.trim() && !prev.items[0].unitPrice);
-          if (itemsAreEmpty && picked.agreedServices && picked.agreedServices.length > 0) {
-            updated.items = picked.agreedServices.map(sv => ({
-              id: `item-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-              description: sv.name + (sv.billingType !== 'One-Time' ? ` (${sv.billingType})` : ''),
-              quantity: 1,
-              unitPrice: Number(sv.cost) || 0,
-            }));
+          if (safeToReplace) {
+            updated.items = (picked.agreedServices && picked.agreedServices.length > 0)
+              ? picked.agreedServices.map(sv => ({
+                  id: `item-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                  description: sv.name + (sv.billingType !== 'One-Time' ? ` (${sv.billingType})` : ''),
+                  quantity: 1,
+                  unitPrice: Number(sv.cost) || 0,
+                }))
+              : [{ id: `item-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, description: '', quantity: 1, unitPrice: 0 }];
           }
         }
       }
