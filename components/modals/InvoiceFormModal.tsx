@@ -139,6 +139,7 @@ export const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({ isOpen, onCl
       if (name === 'clientId' && !invoice) {
         const picked = clients.find(c => c.id === value);
         if (picked) {
+          console.log('SEED picked client:', picked.name, '| agreedServices:', picked.agreedServices, '| current items:', JSON.stringify(prev.items));
           if (!prev.advanceAmount && picked.advanceAmount) {
             updated.advanceAmount = picked.advanceAmount;
           }
