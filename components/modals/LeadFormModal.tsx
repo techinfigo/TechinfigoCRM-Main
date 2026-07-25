@@ -14,6 +14,9 @@ const PRIMARY_GOAL_OPTIONS = ['Get More Leads', 'Lower Ad CPA / CPL', 'Scale Pai
 const OFFER_SENT_OPTIONS = ['Free Audit', 'Creative Mockup', 'Strategy Call', 'Proposal Sent', 'Sample Work', 'Discovery Call Booked', 'Nothing Yet'];
 const BRAND_TONE_OPTIONS = ['Minimalist Premium', 'Direct Response', 'Fun / Playful', 'Professional / Corporate', 'Luxury / High-End', 'Bold / Edgy', 'Warm / Friendly'];
 const MARKETING_CHANNEL_OPTIONS = ['Meta Ads', 'Google Ads', 'TikTok Ads', 'SEO', 'Email Marketing', 'WhatsApp Marketing', 'Instagram Organic', 'YouTube', 'Influencer Marketing'];
+const TARGET_AUDIENCE_OPTIONS = ['Gen Z (18-24)', 'Millennials (25-40)', 'Working Professionals', 'Business Owners / SMEs', 'Homemakers', 'Students', 'Parents', 'Luxury Buyers', 'Budget-Conscious Buyers', 'Local City Audience'];
+const D2C_TECH_OPTIONS = ['Shopify', 'WooCommerce', 'Magento', 'Klaviyo', 'Meta Pixel', 'Google Analytics', 'Yotpo', 'Judge.me', 'Razorpay', 'Shiprocket'];
+const GENERAL_TOOLS_OPTIONS = ['WordPress', 'HubSpot', 'Zoho', 'Salesforce', 'Google Workspace', 'Mailchimp', 'Canva', 'Meta Business Suite', 'Google Ads', 'Tally / Zoho Books'];
 
 /** An input with a dropdown of suggestions that also accepts any typed value. */
 const ComboInput: React.FC<{
@@ -364,7 +367,7 @@ export const LeadFormModal: React.FC<LeadFormModalProps> = ({ isOpen, onClose, o
                 onChange={(v) => handleSelectChange('adStatus', v)}
                 options={[{ value: 'Inactive', label: 'No Active Ads' }, { value: 'Active', label: 'Running Ads' }]}
              />
-            <Input label="Tech Stack (comma-separated)" id="techStack" name="techStack" value={formData.techStack} onChange={handleChange} placeholder="Shopify, Klaviyo, Yotpo..." />
+            <ComboInput label="Tech Stack" id="techStack_d2c" value={formData.techStack || ''} options={D2C_TECH_OPTIONS} onChange={(v) => setFormData(prev => ({ ...prev, techStack: v }))} placeholder="Select or type (comma-separate multiple)" />
             <ComboInput label="Niche / Industry" id="tags_d2c" value={formData.tags || ''} options={INDUSTRY_OPTIONS} onChange={(v) => setFormData(prev => ({ ...prev, tags: v }))} placeholder="Select or type a niche" />
           </div>
         </div>
@@ -395,7 +398,7 @@ export const LeadFormModal: React.FC<LeadFormModalProps> = ({ isOpen, onClose, o
                 options={[{ value: 'Inactive', label: 'Not Running Ads' }, { value: 'Active', label: 'Running Ads' }]}
              />
             <ComboInput label="Industry / Sector" id="tags_gen" value={formData.tags || ''} options={INDUSTRY_OPTIONS} onChange={(v) => setFormData(prev => ({ ...prev, tags: v }))} placeholder="Select or type a sector" />
-            <Input label="Current Tools (comma-separated)" id="techStack" name="techStack" value={formData.techStack} onChange={handleChange} placeholder="e.g., HubSpot, WordPress, Zoho" />
+            <ComboInput label="Current Tools" id="techStack_gen" value={formData.techStack || ''} options={GENERAL_TOOLS_OPTIONS} onChange={(v) => setFormData(prev => ({ ...prev, techStack: v }))} placeholder="Select or type (comma-separate multiple)" />
           </div>
         </div>
         )}
@@ -416,7 +419,7 @@ export const LeadFormModal: React.FC<LeadFormModalProps> = ({ isOpen, onClose, o
               <ComboInput label="Primary Goal / Core Challenge" id="primaryGoal" value={formData.primaryGoal || ''} options={PRIMARY_GOAL_OPTIONS} onChange={(v) => setFormData(prev => ({ ...prev, primaryGoal: v }))} placeholder="Select or type a goal" />
               <Input label="Key Competitors" id="keyCompetitors" name="keyCompetitors" value={formData.keyCompetitors || ''} onChange={handleChange} placeholder="e.g., Glossier, Summer Fridays" />
               <ComboInput label="Active Marketing Channels" id="marketingChannels" value={formData.marketingChannels || ''} options={MARKETING_CHANNEL_OPTIONS} onChange={(v) => setFormData(prev => ({ ...prev, marketingChannels: v }))} placeholder="Select or type (comma-separate multiple)" />
-              <Input label="Target Persona / Audience" id="targetAudience" name="targetAudience" value={formData.targetAudience || ''} onChange={handleChange} placeholder="e.g. Gen Z males, self-improvement seekers" />
+              <ComboInput label="Target Persona / Audience" id="targetAudience" value={formData.targetAudience || ''} options={TARGET_AUDIENCE_OPTIONS} onChange={(v) => setFormData(prev => ({ ...prev, targetAudience: v }))} placeholder="Select or type an audience" />
               <ComboInput label="Brand Design / Copy Tone" id="brandTone" value={formData.brandTone || ''} options={BRAND_TONE_OPTIONS} onChange={(v) => setFormData(prev => ({ ...prev, brandTone: v }))} placeholder="Select or type a tone" />
               <Select
                 label="Pixel & Tracking Health"
