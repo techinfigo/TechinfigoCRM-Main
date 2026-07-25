@@ -72,6 +72,8 @@ const initialFormData: ClientFormData = {
 export const ClientFormModal: React.FC<ClientFormModalProps> = ({ isOpen, onClose, onSave, client, onSetDirty, customFields }) => {
   const [formData, setFormData] = useState<ClientFormData>(initialFormData);
   const [errors, setErrors] = useState<Partial<Record<keyof ClientFormData, string>>>({});
+  const [showErrorSummary, setShowErrorSummary] = useState(false);
+  const summaryRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -168,7 +170,7 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({ isOpen, onClos
     if (formData.primaryContactEmail && !/\S+@\S+\.\S+/.test(formData.primaryContactEmail)) {
         newErrors.primaryContactEmail = t('validation.invalid', { field: t('clients.form.contactEmail') });
     }
-     if (formData.website && !/^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/.test(formData.website)) {
+     if (formData.website && !/^(https?:\/\/)?[\w.-]+\.[a-z]{2,}(\/.*)?$/i.test(formData.website.trim())) {
         newErrors.website = t('validation.invalid', { field: t('clients.form.website') });
     }
     if (formData.documentType === 'GST Invoice' && formData.gstin && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/i.test(formData.gstin)) {
@@ -199,8 +201,15 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({ isOpen, onClos
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate()) return;
-    
+    if (!validate()) {
+      // Make it obvious WHY save was blocked — the failing field is often
+      // scrolled out of view while the Save button sits in the footer.
+      setShowErrorSummary(true);
+      setTimeout(() => summaryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 0);
+      return;
+    }
+    setShowErrorSummary(false);
+
     // Start with the existing client data or defaults for a new client
     const baseClientData = client || {
         id: '', // Will be replaced by parent for new clients
@@ -250,6 +259,16 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({ isOpen, onClos
       }
     >
       <form onSubmit={handleSubmit} className="space-y-4">
+        <div ref={summaryRef}>
+          {showErrorSummary && Object.keys(errors).length > 0 && (
+            <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 text-sm" role="alert">
+              <p className="font-semibold mb-1">Can't save yet — please fix:</p>
+              <ul className="list-disc pl-5 space-y-0.5">
+                {Object.values(errors).filter(Boolean).map((msg, i) => <li key={i}>{msg as string}</li>)}
+              </ul>
+            </div>
+          )}
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input label={`${t('clients.form.name')} *`} id="name" name="name" value={formData.name} onChange={handleChange} error={errors.name} required />
             <Input label={t('clients.form.companyName')} id="companyName" name="companyName" value={formData.companyName || ''} onChange={handleChange} />
@@ -268,7 +287,7 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({ isOpen, onClos
         </div>
         <Input label={t('clients.form.tags')} id="tags" name="tags" placeholder="e.g., key_account, local, b2c" value={formData.tags || ''} onChange={handleChange} />
         <TextArea label={t('clients.form.address')} id="address" name="address" value={formData.address || ''} onChange={handleChange} rows={2} />
-        <TextArea label={t('clients.form.notes')} id="clientNotes" name="clientNotes" value={formData.clientNotes || ''} onChange={handleChange} rows={3} placeholder="Internal notes about the client, preferences, history..."/>
+        <TextArea label={t('clients.form.notes')} id="clientNotes" name="clientNotes" value={formData.clientNotes || ''} onChange={handleChange} rows={3} placeholder="General notes: preferences, history, how you met, etc."/>
 
         <div className="pt-2 border-t border-border-base dark:border-slate-700">
           <h4 className="text-sm font-semibold text-text-base dark:text-text-base mb-3 mt-3">Billing Preferences</h4>
@@ -312,7 +331,7 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({ isOpen, onClos
           )}
 
           <div className="mt-4">
-            <TextArea label="Internal Notes (billing)" id="internalNotes" name="internalNotes" value={formData.internalNotes || ''} onChange={handleChange} rows={2} placeholder="e.g., pays in cash, prefers UPI, no invoice needed..."/>
+            <TextArea label="Billing Notes" id="internalNotes" name="internalNotes" value={formData.internalNotes || ''} onChange={handleChange} rows={2} placeholder="e.g., pays in cash, prefers UPI, no invoice needed..."/>
           </div>
 
           <div className="mt-5 pt-4 border-t border-border-base dark:border-border-muted">
