@@ -1967,8 +1967,31 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
                 client: prefillClient,
               })
             }
-            onAddClientDocument={() => {}}
-            onDeleteClientDocument={() => {}}
+            onAddClientDocument={(clientId, file) => {
+              // No file server — store the file inline as a base64 data URL.
+              // Firestore caps documents at ~1MB, so warn on large files.
+              if (file.size > 800 * 1024) {
+                alert("Please choose a file under 800KB — larger files can't sync to the cloud reliably.");
+                return;
+              }
+              const reader = new FileReader();
+              reader.onload = () => {
+                const doc: ClientDocument = {
+                  id: `doc-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                  clientId,
+                  name: file.name,
+                  url: String(reader.result),
+                  type: file.type || "file",
+                  size: file.size,
+                  uploadDate: new Date().toISOString(),
+                };
+                setClientDocuments((prev) => [doc, ...prev]);
+              };
+              reader.readAsDataURL(file);
+            }}
+            onDeleteClientDocument={(documentId) =>
+              setClientDocuments((prev) => prev.filter((d) => d.id !== documentId))
+            }
             onUpdateProject={handleSaveProject}
             onBatchUpdateProjects={handleBatchUpdateProjects}
             onDeleteProject={(id) => {
