@@ -307,7 +307,7 @@ const ClientDetailView: React.FC<ClientDetailViewProps> = ({
                         <Button
                           variant="primary"
                           size="sm"
-                          onClick={() => { console.log('BUTTON client.agreedServices:', client.agreedServices); onOpenInvoiceModal(null, client); }}
+                          onClick={() => onOpenInvoiceModal(null, client)}
                         >
                           Create Invoice from Agreed Services
                         </Button>

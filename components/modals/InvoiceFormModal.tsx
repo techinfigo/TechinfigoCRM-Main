@@ -134,12 +134,26 @@ export const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({ isOpen, onCl
       if (name === 'discountType' && value === 'None') {
         updated.discountValue = 0;
       }
-      // Advance is recorded on the client at onboarding, before any invoice exists.
-      // Carry it over automatically on a NEW invoice, unless the user already typed one.
-      if (name === 'clientId' && !invoice && !prev.advanceAmount) {
+      // When a client is chosen on a NEW invoice, pull in what was agreed at
+      // onboarding: their advance, and their agreed services as line items.
+      if (name === 'clientId' && !invoice) {
         const picked = clients.find(c => c.id === value);
-        if (picked?.advanceAmount) {
-          updated.advanceAmount = picked.advanceAmount;
+        if (picked) {
+          if (!prev.advanceAmount && picked.advanceAmount) {
+            updated.advanceAmount = picked.advanceAmount;
+          }
+          // Seed services only if the user hasn't entered real line items yet
+          // (i.e. items are still the single empty default row).
+          const itemsAreEmpty = prev.items.length === 0 ||
+            (prev.items.length === 1 && !prev.items[0].description.trim() && !prev.items[0].unitPrice);
+          if (itemsAreEmpty && picked.agreedServices && picked.agreedServices.length > 0) {
+            updated.items = picked.agreedServices.map(sv => ({
+              id: `item-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+              description: sv.name + (sv.billingType !== 'One-Time' ? ` (${sv.billingType})` : ''),
+              quantity: 1,
+              unitPrice: Number(sv.cost) || 0,
+            }));
+          }
         }
       }
       return updated;
@@ -167,7 +181,6 @@ export const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({ isOpen, onCl
         // This is the most robust way to initialize.
         // It guarantees all fields exist and have a default value.
         const getInitialState = (): InvoiceFormData => {
-            console.log('MODAL prefillFromClient:', prefillFromClient?.name, 'services:', prefillFromClient?.agreedServices);
             if (invoice) {
                 // Editing an existing invoice
                 return {
