@@ -2200,7 +2200,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
             currentUser={currentUser}
             emailTemplates={[]}
             customFields={customFields}
-            onSaveRoleDefinitions={() => {}}
+            onSaveRoleDefinitions={(roles) => setRoleDefinitions(roles)}
             onSaveSettings={(newSettings) => setAppSettings(newSettings)}
             onConnectIntegration={() => {}}
             onRevokeApiKey={() => {}}
