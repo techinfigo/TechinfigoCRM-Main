@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Client, CustomField, PaymentMode, ClientDocumentType, paymentModes, clientDocumentTypes } from '../../types';
+import { Client, CustomField, PaymentMode, ClientDocumentType, paymentModes, clientDocumentTypes, AgreedService, ServiceBillingType, serviceBillingTypes } from '../../types';
+import { getTotalAgreedValue, getMonthlyRecurringValue } from '../../selectors/clientBilling';
 import { Modal } from '../common/Modal';
 import { Button } from '../common/Button';
 import { Input, TextArea } from '../common/Input';
@@ -39,6 +40,7 @@ interface ClientFormData {
   advancePaymentMode?: PaymentMode;
   advanceReceivedDate?: string;
   advanceNotes?: string;
+  agreedServices: AgreedService[];
   customFieldValues: { [key: string]: any };
 }
 
@@ -63,6 +65,7 @@ const initialFormData: ClientFormData = {
   advancePaymentMode: undefined,
   advanceReceivedDate: '',
   advanceNotes: '',
+  agreedServices: [],
   customFieldValues: {},
 };
 
@@ -95,6 +98,7 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({ isOpen, onClos
             advancePaymentMode: client.advancePaymentMode,
             advanceReceivedDate: (client.advanceReceivedDate ?? '').split('T')[0],
             advanceNotes: client.advanceNotes || '',
+            agreedServices: client.agreedServices || [],
             customFieldValues: client.customFieldValues || {},
           };
         } else {
@@ -174,6 +178,25 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({ isOpen, onClos
     return Object.keys(newErrors).length === 0;
   };
 
+  const addAgreedService = () => {
+    setFormData(prev => ({
+      ...prev,
+      agreedServices: [
+        ...prev.agreedServices,
+        { id: `svc-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, name: '', cost: 0, billingType: 'One-Time' as ServiceBillingType },
+      ],
+    }));
+  };
+  const updateAgreedService = (id: string, patch: Partial<AgreedService>) => {
+    setFormData(prev => ({
+      ...prev,
+      agreedServices: prev.agreedServices.map(sv => sv.id === id ? { ...sv, ...patch } : sv),
+    }));
+  };
+  const removeAgreedService = (id: string) => {
+    setFormData(prev => ({ ...prev, agreedServices: prev.agreedServices.filter(sv => sv.id !== id) }));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
@@ -202,6 +225,7 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({ isOpen, onClos
       advancePaymentMode: formData.advancePaymentMode,
       advanceReceivedDate: formData.advanceReceivedDate ? new Date(formData.advanceReceivedDate).toISOString() : undefined,
       advanceNotes: formData.advanceNotes?.trim() || undefined,
+      agreedServices: formData.agreedServices.filter(sv => sv.name.trim() || sv.cost),
       customFieldValues: formData.customFieldValues,
     };
 
@@ -331,6 +355,50 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({ isOpen, onClos
               />
             </div>
           </div>
+        </div>
+
+        {/* ---- Services & Pricing (agreed deal scope) ---- */}
+        <div className="pt-2 mt-2 border-t border-border-base dark:border-border-muted">
+          <div className="flex items-center justify-between mb-1">
+            <h3 className="text-sm font-bold text-text-heading dark:text-slate-200 uppercase tracking-wide">Services &amp; Pricing</h3>
+            <Button type="button" variant="secondary" size="sm" onClick={addAgreedService}>+ Add Service</Button>
+          </div>
+          <p className="text-xs text-text-muted mb-3">The deal agreed at onboarding. Mark each service as one-time or recurring.</p>
+
+          {formData.agreedServices.length === 0 ? (
+            <p className="text-sm text-text-muted py-3 text-center border border-dashed border-border-base dark:border-border-muted rounded-lg">
+              No services added yet.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {formData.agreedServices.map((sv) => (
+                <div key={sv.id} className="grid grid-cols-1 md:grid-cols-12 gap-2 items-end p-3 rounded-lg border border-border-base dark:border-border-muted bg-slate-50/60 dark:bg-slate-800/30">
+                  <div className="md:col-span-5">
+                    <Input label="Service" value={sv.name} onChange={(e) => updateAgreedService(sv.id, { name: e.target.value })} placeholder="e.g., Social Media Management" />
+                  </div>
+                  <div className="md:col-span-3">
+                    <Input label="Cost" type="number" min="0" step="0.01" value={(sv.cost ?? 0).toString()} onChange={(e) => updateAgreedService(sv.id, { cost: Number(e.target.value) || 0 })} />
+                  </div>
+                  <div className="md:col-span-3">
+                    <Select
+                      label="Billing"
+                      value={sv.billingType}
+                      onChange={(v) => updateAgreedService(sv.id, { billingType: v as ServiceBillingType })}
+                      options={serviceBillingTypes.map(bt => ({ value: bt, label: bt }))}
+                    />
+                  </div>
+                  <div className="md:col-span-1 flex justify-end">
+                    <Button type="button" variant="ghost" size="sm" onClick={() => removeAgreedService(sv.id)} className="text-red-600 hover:text-red-700">✕</Button>
+                  </div>
+                </div>
+              ))}
+
+              <div className="flex flex-wrap gap-x-8 gap-y-1 justify-end pt-2 text-sm">
+                <span className="text-text-muted">Total Agreed: <strong className="text-text-heading dark:text-slate-100">₹{getTotalAgreedValue(formData.agreedServices).toLocaleString('en-IN')}</strong></span>
+                <span className="text-text-muted">Monthly Recurring: <strong className="text-emerald-600 dark:text-emerald-400">₹{Math.round(getMonthlyRecurringValue(formData.agreedServices)).toLocaleString('en-IN')}</strong></span>
+              </div>
+            </div>
+          )}
         </div>
 
         <DynamicFormFields

@@ -130,6 +130,19 @@ export interface FollowUpLogItem {
 export type FollowUpType = 'Call' | 'Email' | 'Meeting' | 'Other';
 export const followUpTypes: FollowUpType[] = ['Call', 'Email', 'Meeting', 'Other'];
 
+export type ServiceBillingType = 'One-Time' | 'Monthly' | 'Quarterly' | 'Annual';
+export const serviceBillingTypes: ServiceBillingType[] = ['One-Time', 'Monthly', 'Quarterly', 'Annual'];
+
+/** A single agreed service line on a client's contract. This is the deal scope
+ *  decided at onboarding — what will be delivered, at what price, and how often. */
+export interface AgreedService {
+    id: string;
+    name: string;
+    cost: number;
+    billingType: ServiceBillingType;
+    notes?: string;
+}
+
 export type PaymentMode = 'Cash' | 'UPI' | 'Bank Transfer' | 'Cheque';
 export const paymentModes: PaymentMode[] = ['Cash', 'UPI', 'Bank Transfer', 'Cheque'];
 
@@ -163,6 +176,8 @@ export interface Client {
     advancePaymentMode?: PaymentMode;
     advanceReceivedDate?: string; // ISO
     advanceNotes?: string;
+    /** Services & pricing agreed at onboarding (the contract scope). */
+    agreedServices?: AgreedService[];
     convertedFromLeadId?: string;
     customFieldValues?: { [key: string]: any };
     profilePictureUrl?: string;

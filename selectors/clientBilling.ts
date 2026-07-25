@@ -55,3 +55,21 @@ export const paymentModeStyle = (pm?: PaymentMode): { label: string; icon: strin
       return { label: 'Not set', icon: '—', className: 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300' };
   }
 };
+
+import { AgreedService, Invoice } from '../types';
+
+/** Total agreed contract value. Recurring services count one cycle. */
+export const getTotalAgreedValue = (services?: AgreedService[]): number =>
+  (services || []).reduce((sum, s) => sum + (Number(s.cost) || 0), 0);
+
+/** Monthly recurring value: recurring services normalised to a month. */
+export const getMonthlyRecurringValue = (services?: AgreedService[]): number =>
+  (services || []).reduce((sum, s) => {
+    const c = Number(s.cost) || 0;
+    switch (s.billingType) {
+      case 'Monthly': return sum + c;
+      case 'Quarterly': return sum + c / 3;
+      case 'Annual': return sum + c / 12;
+      default: return sum;
+    }
+  }, 0);
