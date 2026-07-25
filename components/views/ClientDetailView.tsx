@@ -262,7 +262,7 @@ const ClientDetailView: React.FC<ClientDetailViewProps> = ({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto p-4" style={{ maxHeight: 'calc(100vh - 180px)' }}>
           {activeTab === 'Overview' && (
             <div className="space-y-4">
               {(client.agreedServices && client.agreedServices.length > 0) || finance.advancePaid > 0 ? (
