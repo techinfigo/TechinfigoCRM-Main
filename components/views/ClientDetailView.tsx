@@ -12,6 +12,7 @@ import { TextArea } from '../common/Input';
 import { ClientCampaignsReportTab } from '@/components/views/ClientCampaignsReportTab';
 import { FileBarChart2, AlertTriangle, FileScan, CircleDollarSign, Rocket, StickyNote, ArrowLeft } from 'lucide-react';
 import { computeClientHealth, computeClientRoi, computeClientNextAction, computeClientRecentActivity, ClientActivityEvent } from '../../selectors/clientHealthSelectors';
+import { getClientFinancialSummary } from '../../selectors/clientBilling';
 
 // Icons
 const FileIcon: React.FC<{className?: string}> = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={className || "w-5 h-5 text-slate-500 dark:text-slate-400"}><path fillRule="evenodd" d="M4.5 2A1.5 1.5 0 003 3.5v13A1.5 1.5 0 004.5 18h11a1.5 1.5 0 001.5-1.5V7.621a1.5 1.5 0 00-.44-1.06l-4.12-4.122A1.5 1.5 0 0011.378 2H4.5zm4.75 8.5a.75.75 0 000 1.5h2.5a.75.75 0 000-1.5h-2.5z" clipRule="evenodd" /></svg>;
@@ -140,6 +141,9 @@ const ClientDetailView: React.FC<ClientDetailViewProps> = ({
   const nextAction = computeClientNextAction(client, invoices, projects);
   const recentActivity = computeClientRecentActivity(client, invoices, proposals, audits);
   const roiPercentage = roi.goal > 0 ? (roi.current / roi.goal) * 100 : 0;
+  const finance = getClientFinancialSummary(client, invoices, client.id);
+  const balanceRemaining = Math.max(0, finance.totalAgreed - finance.advancePaid - finance.invoicedTotal);
+  const inrFmt = (n: number) => '₹' + Math.round(n).toLocaleString('en-IN');
   const isNextActionOverdue = !!nextAction && new Date(nextAction.dueDate) < new Date();
   const formatCurrency = (amount: number) => new Intl.NumberFormat('en-IN', { notation: 'compact', compactDisplay: 'short' }).format(amount);
 
@@ -257,6 +261,62 @@ const ClientDetailView: React.FC<ClientDetailViewProps> = ({
         <div className="flex-1 overflow-y-auto p-4">
           {activeTab === 'Overview' && (
             <div className="space-y-4">
+              {(client.agreedServices && client.agreedServices.length > 0) || finance.advancePaid > 0 ? (
+                <Card title="Financial Summary">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    <div>
+                      <p className="text-xs text-text-muted mb-1">Total Agreed</p>
+                      <p className="text-lg font-bold text-text-heading dark:text-slate-100">{inrFmt(finance.totalAgreed)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-text-muted mb-1">Advance Paid</p>
+                      <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">{inrFmt(finance.advancePaid)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-text-muted mb-1">Invoiced</p>
+                      <p className="text-lg font-bold text-text-heading dark:text-slate-100">{inrFmt(finance.invoicedTotal)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-text-muted mb-1">Balance Remaining</p>
+                      <p className={`text-lg font-bold ${balanceRemaining > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}`}>{inrFmt(balanceRemaining)}</p>
+                    </div>
+                  </div>
+
+                  {client.agreedServices && client.agreedServices.length > 0 && (
+                    <>
+                      <div className="border-t border-border-base dark:border-border-muted pt-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">Agreed Services</p>
+                          {finance.monthlyRecurring > 0 && (
+                            <span className="text-xs text-text-muted">Monthly Recurring: <strong className="text-emerald-600 dark:text-emerald-400">{inrFmt(finance.monthlyRecurring)}</strong></span>
+                          )}
+                        </div>
+                        <div className="space-y-1.5">
+                          {client.agreedServices.map(sv => (
+                            <div key={sv.id} className="flex items-center justify-between text-sm">
+                              <span className="text-text-base dark:text-slate-200">
+                                {sv.name || 'Untitled service'}
+                                <span className={`ml-2 text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${sv.billingType === 'One-Time' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'}`}>{sv.billingType}</span>
+                              </span>
+                              <span className="font-semibold text-text-heading dark:text-slate-100">{inrFmt(sv.cost)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="mt-4">
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => onOpenInvoiceModal(null, client)}
+                        >
+                          Create Invoice from Agreed Services
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </Card>
+              ) : null}
+
               <Card title="Health Cockpit" className="bg-transparent shadow-none border-0">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>

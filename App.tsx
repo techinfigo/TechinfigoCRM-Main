@@ -2608,6 +2608,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
           clients={
             activeModal.props?.client ? [activeModal.props.client] : clients
           }
+          prefillFromClient={activeModal.props?.client || null}
           getNextInvoiceNumber={() => {
             const invoiceNums = invoices
               .map((i) => i.invoiceNumber)

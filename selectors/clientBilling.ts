@@ -73,3 +73,36 @@ export const getMonthlyRecurringValue = (services?: AgreedService[]): number =>
       default: return sum;
     }
   }, 0);
+
+/** A client's running financial position from agreed scope, advance and invoices. */
+export interface ClientFinancialSummary {
+  totalAgreed: number;
+  monthlyRecurring: number;
+  advancePaid: number;
+  invoicedTotal: number;
+  oneTimeAgreed: number;
+}
+
+export const getClientFinancialSummary = (
+  client: { agreedServices?: AgreedService[]; advanceAmount?: number },
+  invoices: Invoice[],
+  clientId: string,
+): ClientFinancialSummary => {
+  const clientInvoices = invoices.filter(i => i.clientId === clientId);
+  const invoicedTotal = clientInvoices.reduce((sum, inv) => {
+    const sub = (inv.items || []).reduce((s, it) => s + it.quantity * it.unitPrice, 0);
+    const tax = sub * ((inv.taxRate ?? 0) / 100);
+    return sum + sub + tax;
+  }, 0);
+  const oneTimeAgreed = (client.agreedServices || [])
+    .filter(s => s.billingType === 'One-Time')
+    .reduce((sum, s) => sum + (Number(s.cost) || 0), 0);
+
+  return {
+    totalAgreed: getTotalAgreedValue(client.agreedServices),
+    monthlyRecurring: getMonthlyRecurringValue(client.agreedServices),
+    advancePaid: Number(client.advanceAmount) || 0,
+    invoicedTotal,
+    oneTimeAgreed,
+  };
+};

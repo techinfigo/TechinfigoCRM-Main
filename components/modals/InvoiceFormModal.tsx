@@ -15,6 +15,7 @@ interface InvoiceFormModalProps {
   getNextInvoiceNumber: () => string;
   appSettings: AppSettings;
   onSetDirty: (isDirty: boolean) => void;
+  prefillFromClient?: Client | null;
 }
 
 interface InvoiceFormData {
@@ -76,7 +77,7 @@ const emptyFormData: InvoiceFormData = {
 };
 
 
-export const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({ isOpen, onClose, onSave, invoice, clients, getNextInvoiceNumber, appSettings, onSetDirty }) => {
+export const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({ isOpen, onClose, onSave, invoice, clients, getNextInvoiceNumber, appSettings, onSetDirty, prefillFromClient }) => {
   const [formData, setFormData] = useState<InvoiceFormData>(emptyFormData);
   const [errors, setErrors] = useState<InvoiceFormErrors>({});
   const [formSummaryErrors, setFormSummaryErrors] = useState<string[]>([]);
@@ -193,11 +194,22 @@ export const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({ isOpen, onCl
                 const today = new Date().toISOString().split('T')[0];
                 const defaultDueDate = new Date(Date.now() + (appSettings.defaultPaymentTerms || 7) * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
                 
+                // When opened from a client's "Create Invoice from Agreed Services",
+                // seed the line items from that client's agreed service list.
+                const seededItems = (prefillFromClient?.agreedServices && prefillFromClient.agreedServices.length > 0)
+                    ? prefillFromClient.agreedServices.map(sv => ({
+                        id: `item-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                        description: sv.name + (sv.billingType !== 'One-Time' ? ` (${sv.billingType})` : ''),
+                        quantity: 1,
+                        unitPrice: Number(sv.cost) || 0,
+                      }))
+                    : [defaultItem()];
+
                 return {
-                    clientId: clients.length > 0 ? clients[0].id : '',
+                    clientId: prefillFromClient?.id || (clients.length > 0 ? clients[0].id : ''),
                     issueDate: today,
                     dueDate: defaultDueDate,
-                    items: [defaultItem()],
+                    items: seededItems,
                     status: 'Draft',
                     notes: '',
                     discountType: 'None',
@@ -219,7 +231,7 @@ export const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({ isOpen, onCl
         onSetDirty(false);
         setErrors({});
     }
-  }, [invoice, clients, isOpen, appSettings.defaultPaymentTerms, appSettings.defaultCurrency, onSetDirty]);
+  }, [invoice, clients, prefillFromClient, isOpen, appSettings.defaultPaymentTerms, appSettings.defaultCurrency, onSetDirty]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     onSetDirty(true);
