@@ -269,6 +269,9 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
   const [roleDefinitions, setRoleDefinitions] = useState<RoleDefinition[]>(() =>
     load(KEYS.roleDefinitions, []),
   );
+  const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>(() =>
+    load(KEYS.emailTemplates, []),
+  );
   const [customFields, setCustomFields] = useState<CustomField[]>(() =>
     load(KEYS.customFields, []),
   );
@@ -402,6 +405,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
     () => save(KEYS.roleDefinitions, roleDefinitions),
     [roleDefinitions],
   );
+  useEffect(() => save(KEYS.emailTemplates, emailTemplates), [emailTemplates]);
   useEffect(() => save(KEYS.notifications, notifications), [notifications]);
   useEffect(() => save(KEYS.sops, sops), [sops]);
   useEffect(() => save(KEYS.audits, audits), [audits]);
@@ -2198,7 +2202,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
             apiKeys={[]}
             webhooks={[]}
             currentUser={currentUser}
-            emailTemplates={[]}
+            emailTemplates={emailTemplates}
             customFields={customFields}
             onSaveRoleDefinitions={(roles) => setRoleDefinitions(roles)}
             onSaveSettings={(newSettings) => setAppSettings(newSettings)}
@@ -2208,7 +2212,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
             onAddWebhook={() => {}}
             onUpdateWebhook={() => {}}
             onDeleteWebhook={() => {}}
-            onSaveEmailTemplates={() => {}}
+            onSaveEmailTemplates={(templates) => setEmailTemplates(templates)}
             onDeleteCustomField={handleDeleteCustomField}
             onOpenCustomFieldFormModal={(field) =>
               openModal("CUSTOM_FIELD_FORM", { field })

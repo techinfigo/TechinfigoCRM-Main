@@ -46,7 +46,12 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ activeSection,
     { id: 'dataExportAndBackup', label: 'Data Export & Backup', icon: <Download className="w-4 h-4" />, group: 'System' },
   ];
   
-  const groupedItems = navItems.reduce((acc, item) => {
+  // Hidden: these need a backend or are unimplemented stubs (developer features
+  // and placeholders). Removing them keeps Settings to what actually works.
+  const HIDDEN_SECTIONS = ['integrations', 'apiAndWebhooks', 'automation', 'formResponses', 'systemLogs', 'billingAndSubscription'];
+  const visibleItems = navItems.filter(item => !HIDDEN_SECTIONS.includes(item.id));
+
+  const groupedItems = visibleItems.reduce((acc, item) => {
     (acc[item.group] = acc[item.group] || []).push(item);
     return acc;
   }, {} as Record<string, typeof navItems>);
