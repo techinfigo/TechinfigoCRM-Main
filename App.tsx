@@ -2675,7 +2675,10 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
                 email: "",
               }
             }
-            onEditAudit={() => {}}
+            onEditAudit={(lead) => {
+              closeModal();
+              openModal("AUDIT_FORM", { lead });
+            }}
             onSend={() =>
               handleSendAuditReport(
                 activeModal.props?.lead || {
