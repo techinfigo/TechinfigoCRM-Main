@@ -282,8 +282,23 @@ export const EmailComposeModal: React.FC<EmailComposeModalProps> = ({
   };
 
 
+  const applyTemplate = (templateId: string) => {
+    const tpl = emailTemplates.find(t => t.id === templateId);
+    if (!tpl) return;
+    // Substitute simple placeholders using the recipient info we have.
+    const recipientName = (initialEmail?.recipientName as string) || to.split('@')[0] || '';
+    const fill = (text: string) => text
+      .replace(/\{\{\s*name\s*\}\}/gi, recipientName)
+      .replace(/\{\{\s*email\s*\}\}/gi, to)
+      .replace(/\{\{\s*sender\s*\}\}/gi, currentUserName)
+      .replace(/\{\{\s*agency\s*\}\}/gi, currentUserName);
+    setSubject(fill(tpl.subject));
+    setBody(fill(tpl.body));
+    onSetDirty(true);
+  };
+
   return (
-    <Modal 
+    <Modal
         isOpen={isOpen} 
         onClose={onClose} 
         title={initialEmail?.id ? "Edit Draft" : "Compose New Email"} 
@@ -312,6 +327,20 @@ export const EmailComposeModal: React.FC<EmailComposeModalProps> = ({
         <Input label="To" id="to" name="to" type="email" placeholder="recipient@example.com" value={to} onChange={handleInputChange(setTo)} containerClassName="text-sm"/>
         <Input label="CC" id="cc" name="cc" type="text" placeholder="cc@example.com (comma-separated)" value={cc} onChange={handleInputChange(setCc)} containerClassName="text-sm"/>
         <Input label="BCC" id="bcc" name="bcc" type="text" placeholder="bcc@example.com (comma-separated)" value={bcc} onChange={handleInputChange(setBcc)} containerClassName="text-sm"/>
+        {emailTemplates && emailTemplates.length > 0 && (
+          <div>
+            <label htmlFor="emailTemplate" className="block text-sm font-medium text-text-muted dark:text-text-muted mb-1">Use a Template</label>
+            <select
+              id="emailTemplate"
+              onChange={(e) => { applyTemplate(e.target.value); e.target.value = ''; }}
+              defaultValue=""
+              className="w-full p-2 bg-bg-base dark:bg-bg-muted border border-border-base dark:border-border-muted rounded-md text-sm text-text-base dark:text-text-base focus:outline-none focus:ring-2 focus:ring-premium-accent"
+            >
+              <option value="" disabled>Select a template to fill subject & body...</option>
+              {emailTemplates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+          </div>
+        )}
         <Input label="Subject" id="subject" name="subject" placeholder="Email Subject" value={subject} onChange={handleInputChange(setSubject)} containerClassName="text-sm"/>
 
         {/* Editor Wrapper */}

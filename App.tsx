@@ -2728,7 +2728,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
           currentUserEmail={currentUser?.email || ""}
           ai={null}
           onSetDirty={() => {}}
-          emailTemplates={[]}
+          emailTemplates={emailTemplates}
         />
       )}
       {activeModal?.type === "VIEW_EMAIL" &&
