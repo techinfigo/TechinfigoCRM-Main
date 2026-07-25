@@ -167,6 +167,7 @@ export const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({ isOpen, onCl
         // This is the most robust way to initialize.
         // It guarantees all fields exist and have a default value.
         const getInitialState = (): InvoiceFormData => {
+            console.log('MODAL prefillFromClient:', prefillFromClient?.name, 'services:', prefillFromClient?.agreedServices);
             if (invoice) {
                 // Editing an existing invoice
                 return {
