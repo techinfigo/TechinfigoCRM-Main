@@ -143,6 +143,27 @@ export interface AgreedService {
     notes?: string;
 }
 
+export type CredentialLoginType = 'Gmail Login' | 'Email + Password' | 'Phone / OTP' | 'Username + Password' | 'Other';
+export const credentialLoginTypes: CredentialLoginType[] = ['Gmail Login', 'Email + Password', 'Phone / OTP', 'Username + Password', 'Other'];
+
+/** A single stored access credential for a client asset (hosting, email, CMS...).
+ *  NOTE: stored as plain text — this is a convenience vault, not encrypted storage. */
+export interface AccessCredential {
+    id: string;
+    label: string;
+    loginType: CredentialLoginType;
+    username?: string;
+    password?: string;
+    phone?: string;
+    securityQuestion?: string;
+    securityAnswer?: string;
+    dob?: string;
+    url?: string;
+    notes?: string;
+    handedOver?: boolean;
+    handedOverDate?: string;
+}
+
 export type PaymentMode = 'Cash' | 'UPI' | 'Bank Transfer' | 'Cheque';
 export const paymentModes: PaymentMode[] = ['Cash', 'UPI', 'Bank Transfer', 'Cheque'];
 
@@ -178,6 +199,8 @@ export interface Client {
     advanceNotes?: string;
     /** Services & pricing agreed at onboarding (the contract scope). */
     agreedServices?: AgreedService[];
+    /** Access credentials vault for handover (plain text — sensitive). */
+    accessCredentials?: AccessCredential[];
     convertedFromLeadId?: string;
     customFieldValues?: { [key: string]: any };
     profilePictureUrl?: string;

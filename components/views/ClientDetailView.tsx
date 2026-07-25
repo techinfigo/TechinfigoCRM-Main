@@ -13,6 +13,7 @@ import { ClientCampaignsReportTab } from '@/components/views/ClientCampaignsRepo
 import { FileBarChart2, AlertTriangle, FileScan, CircleDollarSign, Rocket, StickyNote, ArrowLeft } from 'lucide-react';
 import { computeClientHealth, computeClientRoi, computeClientNextAction, computeClientRecentActivity, ClientActivityEvent } from '../../selectors/clientHealthSelectors';
 import { getClientFinancialSummary } from '../../selectors/clientBilling';
+import { ClientCredentials } from './ClientCredentials';
 
 // Icons
 const FileIcon: React.FC<{className?: string}> = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={className || "w-5 h-5 text-slate-500 dark:text-slate-400"}><path fillRule="evenodd" d="M4.5 2A1.5 1.5 0 003 3.5v13A1.5 1.5 0 004.5 18h11a1.5 1.5 0 001.5-1.5V7.621a1.5 1.5 0 00-.44-1.06l-4.12-4.122A1.5 1.5 0 0011.378 2H4.5zm4.75 8.5a.75.75 0 000 1.5h2.5a.75.75 0 000-1.5h-2.5z" clipRule="evenodd" /></svg>;
@@ -86,6 +87,7 @@ interface ClientDetailViewProps {
   onDeleteInvoice: (invoiceId: string) => void;
   onProcessRecurringInvoices: () => void;
   onRevertClientToLead?: (leadId: string) => void;
+  onUpdateClient?: (client: Client) => void;
 }
 
 const TABS = [
@@ -96,6 +98,7 @@ const TABS = [
   'Invoices',
   'Marketing Audits',
   'Notes/Documents',
+  'Credentials',
 ] as const;
 
 type TabType = typeof TABS[number];
@@ -130,7 +133,8 @@ const ClientDetailView: React.FC<ClientDetailViewProps> = ({
   onUpdateInvoiceStatus,
   onDeleteInvoice,
   onProcessRecurringInvoices,
-  onRevertClientToLead
+  onRevertClientToLead,
+  onUpdateClient
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('Projects');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -447,6 +451,10 @@ const ClientDetailView: React.FC<ClientDetailViewProps> = ({
               onViewAuditDetail={onOpenAuditDetailModal}
               hasPermission={hasPermission}
             />
+          )}
+
+          {activeTab === 'Credentials' && onUpdateClient && (
+            <ClientCredentials client={client} onUpdateClient={onUpdateClient} />
           )}
 
           {activeTab === 'Notes/Documents' && (

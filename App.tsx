@@ -1977,6 +1977,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
             onDeleteInvoice={handleDeleteInvoice}
             onProcessRecurringInvoices={handleProcessRecurringInvoices}
             onRevertClientToLead={handleRevertClientToLead}
+            onUpdateClient={handleSaveClient}
             tasks={allTasks}
           />
         );
