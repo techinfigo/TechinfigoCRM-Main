@@ -10,9 +10,10 @@ interface SOPDetailProps {
   sop: SOP;
   onBack: () => void;
   onEdit: () => void;
+  onDelete: () => void;
 }
 
-export const SOPDetail: React.FC<SOPDetailProps> = ({ sop, onBack, onEdit }) => {
+export const SOPDetail: React.FC<SOPDetailProps> = ({ sop, onBack, onEdit, onDelete }) => {
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
       {/* Header Navigation */}
@@ -106,6 +107,7 @@ export const SOPDetail: React.FC<SOPDetailProps> = ({ sop, onBack, onEdit }) => 
         
         <div className="p-6 bg-slate-50 dark:bg-slate-700/30 border-t border-slate-200 dark:border-slate-700 flex justify-end">
              <Button variant="secondary" onClick={onEdit}>Edit SOP</Button>
+             <Button variant="ghost" onClick={onDelete} className="text-red-500 hover:text-red-600">Delete</Button>
         </div>
       </div>
     </div>

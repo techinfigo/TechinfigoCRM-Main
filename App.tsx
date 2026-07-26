@@ -1464,6 +1464,10 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
     closeModal();
   };
 
+  const handleDeleteSOP = (sopId: string) => {
+    setSops((prev) => prev.filter((s) => s.id !== sopId));
+  };
+
   const handleSaveNewAudit = (audit: Audit) => {
     setAudits((prev) => {
       const exists = prev.find((a) => a.id === audit.id);
@@ -2230,6 +2234,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
             sops={sops}
             onEditSOP={(sop) => openModal("SOP_FORM", { sop })}
             onAddSOP={() => openModal("SOP_FORM")}
+            onDeleteSOP={handleDeleteSOP}
           />
         );
       case "TOOLS":
