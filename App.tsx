@@ -1094,10 +1094,18 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
           const diffMs = origDue.getTime() - origIssue.getTime();
           const nextDue = new Date(gen.occurrenceDate.getTime() + (diffMs > 0 ? diffMs : 14 * 86400000));
 
+          // Per-line recurring: if any line is flagged recurring, the child carries
+          // ONLY those lines (e.g. monthly social media, not the one-time website).
+          // If no line is flagged (older invoices), fall back to carrying all lines.
+          const recurringLines = gen.parentInvoice.items.filter((it) => it.isRecurring);
+          const childItems = recurringLines.length > 0 ? recurringLines : gen.parentInvoice.items;
+
           return {
             ...gen.parentInvoice,
             id: `inv-rec-${Date.now()}-${idx}-${Math.random().toString(36).substr(2, 4)}`,
             invoiceNumber: nextNum,
+            items: childItems.map((it) => ({ ...it, id: `item-${Date.now()}-${Math.random().toString(36).slice(2, 6)}` })),
+            advanceAmount: 0, // advance was a one-time thing on the first invoice
             issueDate: gen.occurrenceDate.toISOString(),
             dueDate: nextDue.toISOString(),
             status: "Draft", // Create in Draft status

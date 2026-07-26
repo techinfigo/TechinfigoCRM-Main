@@ -390,6 +390,11 @@ export interface ServiceItem {
     description: string;
     quantity: number;
     unitPrice: number;
+    /** When true, this line is carried into auto-generated recurring invoices.
+     *  Lets one invoice mix recurring (e.g. social media) and one-time (e.g.
+     *  website) charges — only the recurring lines repeat. */
+    isRecurring?: boolean;
+    hsnSac?: string; // optional HSN/SAC code for GST
 }
 
 export interface Invoice {

@@ -174,6 +174,7 @@ export const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({ isOpen, onCl
                   description: sv.name + (sv.billingType !== 'One-Time' ? ` (${sv.billingType})` : ''),
                   quantity: 1,
                   unitPrice: Number(sv.cost) || 0,
+                  isRecurring: sv.billingType !== 'One-Time',
                 }))
               : [{ id: `item-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, description: '', quantity: 1, unitPrice: 0 }];
           }
@@ -239,6 +240,7 @@ export const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({ isOpen, onCl
                         description: sv.name + (sv.billingType !== 'One-Time' ? ` (${sv.billingType})` : ''),
                         quantity: 1,
                         unitPrice: Number(sv.cost) || 0,
+                        isRecurring: sv.billingType !== 'One-Time',
                       }))
                     : [defaultItem()];
 
@@ -297,7 +299,16 @@ export const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({ isOpen, onCl
     onSetDirty(true);
     const newItems = [...formData.items];
     // @ts-ignore
-    newItems[index][field] = field === 'quantity' || field === 'unitPrice' ? Math.max(0, Number(value)) : value; 
+    if (field === 'quantity' || field === 'unitPrice') {
+      // @ts-ignore
+      newItems[index][field] = Math.max(0, Number(value));
+    } else if (field === 'isRecurring') {
+      // @ts-ignore
+      newItems[index][field] = Boolean(value);
+    } else {
+      // @ts-ignore
+      newItems[index][field] = value;
+    }
     setFormData(prev => ({ ...prev, items: newItems }));
 
     if (errors.items && errors.items[index] !== undefined) {
@@ -551,6 +562,18 @@ export const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({ isOpen, onCl
                     <span className="font-semibold">{formatCurrency((item.quantity ?? 0) * (item.unitPrice ?? 0))}</span>
                   </div>
                   <div className="col-span-12 md:col-span-1 flex justify-end items-center pt-1 md:pt-2"> {formData.items.length > 1 && ( <Button type="button" variant="ghost" size="sm" onClick={() => removeItem(index)} className="text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 p-1" aria-label="Remove item"> <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5"><path fillRule="evenodd" d="M4 10a.75.75 0 01.75-.75h10.5a.75.75 0 010 1.5H4.75A.75.75 0 014 10z" clipRule="evenodd" /></svg> </Button> )} </div>
+                  <div className="col-span-12 flex items-center gap-2 px-1 pt-1">
+                    <input
+                      type="checkbox"
+                      id={`item_recurring_${index}`}
+                      checked={!!item.isRecurring}
+                      onChange={(e) => handleItemChange(index, 'isRecurring', e.target.checked ? 1 : 0)}
+                      className="h-4 w-4 rounded border-slate-300 text-premium-accent focus:ring-premium-accent"
+                    />
+                    <label htmlFor={`item_recurring_${index}`} className="text-xs text-slate-600 dark:text-slate-300 cursor-pointer select-none">
+                      🔁 Recurring line (repeats in auto-generated invoices)
+                    </label>
+                  </div>
                   {itemError && (<div className="col-span-12 text-xs text-red-600 dark:text-red-400 -mt-2 mb-1 px-1">{itemError}</div> )}
                 </div>
             );
