@@ -7,7 +7,8 @@ import {
   clearGmailToken,
   connectGmail,
   fetchGmailMessages,
-  fetchGmailBody,
+  fetchGmailBodyRich,
+  GmailBody,
   sendGmailMessage,
   toggleGmailStar,
   trashGmailMessage,
@@ -15,7 +16,7 @@ import {
 } from '../../services/gmailService';
 import {
   Mail, Inbox, Send, Star, RefreshCw, LogOut, ArrowLeft, AlertTriangle, Loader2,
-  Pencil, Trash2, Reply, X,
+  Pencil, Trash2, Reply, X, Search,
 } from 'lucide-react';
 
 type GmailLabel = 'INBOX' | 'SENT' | 'STARRED';
@@ -61,7 +62,8 @@ export const GmailView: React.FC = () => {
   const [listError, setListError] = useState<string | null>(null);
 
   const [selected, setSelected] = useState<GmailMessage | null>(null);
-  const [body, setBody] = useState<string | null>(null);
+  const [body, setBody] = useState<GmailBody | null>(null);
+  const [search, setSearch] = useState('');
   const [bodyLoading, setBodyLoading] = useState(false);
   const [bodyError, setBodyError] = useState<string | null>(null);
 
@@ -173,6 +175,18 @@ export const GmailView: React.FC = () => {
     }
   };
 
+  const filteredMessages = search.trim()
+    ? messages.filter((m) => {
+        const q = search.toLowerCase();
+        return (
+          m.subject.toLowerCase().includes(q) ||
+          m.fromName.toLowerCase().includes(q) ||
+          m.fromEmail.toLowerCase().includes(q) ||
+          m.snippet.toLowerCase().includes(q)
+        );
+      })
+    : messages;
+
   const handleSelectMessage = async (message: GmailMessage) => {
     if (!token) return;
     setSelected(message);
@@ -180,7 +194,7 @@ export const GmailView: React.FC = () => {
     setBodyError(null);
     setBodyLoading(true);
     try {
-      const fetchedBody = await fetchGmailBody(token, message.id);
+      const fetchedBody = await fetchGmailBodyRich(token, message.id);
       setBody(fetchedBody);
     } catch (err) {
       const errMessage = err instanceof Error ? err.message : 'Failed to load message.';
@@ -288,17 +302,31 @@ export const GmailView: React.FC = () => {
         <div className="flex-1 flex min-w-0 overflow-hidden">
           {/* Message list */}
           <div className={`w-full lg:w-96 flex-shrink-0 border-r border-border-base dark:border-slate-700 overflow-y-auto scrollbar-hide ${selected ? 'hidden lg:block' : 'block'}`}>
+            <div className="p-2 border-b border-border-base dark:border-slate-700 sticky top-0 bg-bg-base dark:bg-slate-900 z-10">
+              <div className="relative">
+                <Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted dark:text-slate-500" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search mail"
+                  className="w-full pl-8 pr-3 py-1.5 text-sm bg-slate-100 dark:bg-slate-800 border border-transparent focus:border-premium-accent focus:bg-white dark:focus:bg-slate-900 rounded-md focus:outline-none transition-colors"
+                />
+              </div>
+            </div>
             {listLoading && messages.length === 0 ? (
               <div className="p-8 flex items-center justify-center text-text-muted dark:text-slate-500">
                 <Loader2 className="w-5 h-5 animate-spin" />
               </div>
             ) : listError ? (
               <div className="p-4 text-sm text-status-negative dark:text-red-400">{listError}</div>
-            ) : messages.length === 0 ? (
-              <div className="p-8 text-center text-sm text-text-muted dark:text-slate-500">No messages here.</div>
+            ) : filteredMessages.length === 0 ? (
+              <div className="p-8 text-center text-sm text-text-muted dark:text-slate-500">
+                {search.trim() ? 'No messages match your search.' : 'No messages here.'}
+              </div>
             ) : (
               <ul className="divide-y divide-border-base dark:divide-slate-700">
-                {messages.map((message) => {
+                {filteredMessages.map((message) => {
                   const sender = message.fromName || message.fromEmail;
                   const isActive = selected?.id === message.id;
                   return (
@@ -387,8 +415,13 @@ export const GmailView: React.FC = () => {
                       </div>
                     ) : bodyError ? (
                       <p className="text-sm text-status-negative dark:text-red-400">{bodyError}</p>
+                    ) : body?.html ? (
+                      <div
+                        className="text-sm break-words [&_a]:text-premium-accent [&_a]:underline [&_img]:max-w-full [&_img]:h-auto"
+                        dangerouslySetInnerHTML={{ __html: body.html }}
+                      />
                     ) : (
-                      <div className="text-sm whitespace-pre-wrap break-words">{body}</div>
+                      <div className="text-sm whitespace-pre-wrap break-words">{body?.plain}</div>
                     )}
                   </div>
                 </div>

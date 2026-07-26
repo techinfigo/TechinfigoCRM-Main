@@ -230,6 +230,35 @@ export const fetchGmailBody = async (token: string, messageId: string): Promise<
   return msg.snippet || '';
 };
 
+export interface GmailBody {
+  html: string | null;   // sanitised HTML if the email had an HTML part
+  plain: string | null;  // plain-text fallback
+}
+
+/** Returns the email body as HTML (preferred) and/or plain text so the UI can
+ *  render real formatting instead of stripped text. */
+export const fetchGmailBodyRich = async (token: string, messageId: string): Promise<GmailBody> => {
+  const msg = await gmailFetch(token, `/messages/${messageId}?format=full`);
+  const { plain, html } = findBody(msg.payload);
+  return {
+    html: html ? sanitizeEmailHtml(html) : null,
+    plain: plain || (html ? null : (msg.snippet || '')),
+  };
+};
+
+/** Minimal HTML sanitiser for rendering email bodies. Strips scripts, inline
+ *  event handlers and javascript: URLs, and forces links to open in a new tab.
+ *  Not a full sanitiser, but removes the common script-injection vectors. */
+const sanitizeEmailHtml = (html: string): string => {
+  let out = html;
+  out = out.replace(/<script[\s\S]*?<\/script>/gi, '');
+  out = out.replace(/<style[\s\S]*?<\/style>/gi, '');
+  out = out.replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '');
+  out = out.replace(/(href|src)\s*=\s*(["'])\s*javascript:[^"']*\2/gi, '$1=$2#$2');
+  out = out.replace(/<a\s/gi, '<a target="_blank" rel="noopener noreferrer" ');
+  return out;
+};
+
 /** POST/PUT helper for Gmail write actions (send, modify labels, trash). */
 const gmailWrite = async (
   token: string,
