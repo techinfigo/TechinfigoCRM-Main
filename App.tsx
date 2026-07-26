@@ -653,7 +653,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
     const exists = projects.find((p) => p.id === project.id);
     const projectWithId = {
       ...project,
-      id: project.id || `proj-${Date.now()}`,
+      id: project.id || `proj-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     };
 
     if (exists) {

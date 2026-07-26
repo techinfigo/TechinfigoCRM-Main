@@ -189,9 +189,10 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({ isOpen, onCl
             <Input label="Project Code" name="projectCode" value={formData.projectCode} onChange={handleChange} />
             <div>
               <label htmlFor="clientId" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Client *</label>
-              <select name="clientId" value={formData.clientId} onChange={handleChange} className={`${selectBaseClass}`} required>
+              <select name="clientId" value={formData.clientId} onChange={handleChange} className={`${selectBaseClass} ${errors.clientId ? 'border-red-500' : ''}`} required>
                 {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
+              {errors.clientId && <p className="mt-1 text-xs text-red-600">{errors.clientId}</p>}
             </div>
         </div>
         <TextArea label="Description" name="description" value={formData.description || ''} onChange={handleChange} rows={3} />
