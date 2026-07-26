@@ -2323,7 +2323,15 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
           onSetGlobalSnooze={(val) => {
             save(KEYS.globalSnoozeUntil, val);
           }}
-          onSnoozeNotification={() => {}}
+          onSnoozeNotification={(taskId) =>
+            setNotifications((prev) =>
+              prev.map((n) =>
+                n.taskId === taskId
+                  ? { ...n, snoozedUntil: new Date(Date.now() + 30 * 60 * 1000).toISOString() }
+                  : n,
+              ),
+            )
+          }
           onOpenTaskFromNotification={(taskId) => {
             const task = allTasks.find((t) => t.id === taskId);
             if (task) openModal("TASK_FORM", { task });

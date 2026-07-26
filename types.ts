@@ -971,6 +971,7 @@ export interface AppNotification {
     severity: 'Low' | 'Medium' | 'High';
     icon: any; // ReactNode
     taskId?: string; // Link to entity
+    snoozedUntil?: string; // ISO — hidden from the list until this time
 }
 
 export type SOPCategory = 'Audit' | 'Ads' | 'Creative' | 'Retention' | 'Reporting' | 'Communication' | 'CRO' | 'Onboarding' | 'Pricing' | 'Other';

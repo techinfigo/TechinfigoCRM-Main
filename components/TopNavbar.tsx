@@ -123,7 +123,7 @@ export const TopNavbar: React.FC<TopNavbarProps> = (props) => {
     const notificationButtonRef = useRef<HTMLButtonElement>(null);
 
     const emailCount = unreadEmails.length;
-    const notificationCount = useMemo(() => notifications.filter(n => !n.isRead).length, [notifications]);
+    const notificationCount = useMemo(() => notifications.filter(n => !n.isRead && (!n.snoozedUntil || new Date(n.snoozedUntil).getTime() <= Date.now())).length, [notifications]);
     
     useEffect(() => {
         if (!globalSnoozeUntil) {
@@ -216,7 +216,10 @@ export const TopNavbar: React.FC<TopNavbarProps> = (props) => {
     const { todayNotifications, earlierNotifications } = useMemo(() => {
         const today: AppNotification[] = [];
         const earlier: AppNotification[] = [];
-        notifications.slice(0, 50).forEach(n => {
+        const nowMs = Date.now();
+        notifications
+          .filter(n => !n.snoozedUntil || new Date(n.snoozedUntil).getTime() <= nowMs)
+          .slice(0, 50).forEach(n => {
             try {
                 const date = parseISO(n.timestamp);
                 if (isToday(date)) {
