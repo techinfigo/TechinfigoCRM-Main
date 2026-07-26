@@ -26,6 +26,26 @@ const LABEL_TABS: { label: GmailLabel; title: string; icon: React.ElementType }[
   { label: 'STARRED', title: 'Starred', icon: Star },
 ];
 
+// Gmail-style helpers for the polished list.
+const smartDate = (iso: string): string => {
+  const d = new Date(iso);
+  const now = new Date();
+  const sameDay = d.toDateString() === now.toDateString();
+  if (sameDay) return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  const sameYear = d.getFullYear() === now.getFullYear();
+  return d.toLocaleDateString([], sameYear ? { month: 'short', day: 'numeric' } : { month: 'short', day: 'numeric', year: '2-digit' });
+};
+
+// Deterministic avatar colour from the sender name so the same person is always
+// the same colour.
+const AVATAR_COLORS = ['bg-rose-500', 'bg-orange-500', 'bg-amber-500', 'bg-emerald-500', 'bg-teal-500', 'bg-sky-500', 'bg-indigo-500', 'bg-violet-500', 'bg-fuchsia-500', 'bg-pink-500'];
+const avatarColor = (name: string): string => {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+};
+const initialOf = (name: string): string => (name.trim()[0] || '?').toUpperCase();
+
 const isExpiredMessage = (message: string) => message.toLowerCase().includes('expired');
 
 export const GmailView: React.FC = () => {
@@ -278,27 +298,57 @@ export const GmailView: React.FC = () => {
               <div className="p-8 text-center text-sm text-text-muted dark:text-slate-500">No messages here.</div>
             ) : (
               <ul className="divide-y divide-border-base dark:divide-slate-700">
-                {messages.map((message) => (
+                {messages.map((message) => {
+                  const sender = message.fromName || message.fromEmail;
+                  const isActive = selected?.id === message.id;
+                  return (
                   <li
                     key={message.id}
                     onClick={() => handleSelectMessage(message)}
-                    className={`p-3 cursor-pointer transition-colors ${selected?.id === message.id ? 'bg-secondary-accent/20 dark:bg-secondary-accent/30' : 'hover:bg-highlight-accent dark:hover:bg-slate-800'}`}
+                    className={`group relative flex gap-3 px-3 py-2.5 cursor-pointer transition-colors ${isActive ? 'bg-secondary-accent/20 dark:bg-secondary-accent/30' : message.isUnread ? 'bg-white dark:bg-slate-800/40 hover:bg-highlight-accent dark:hover:bg-slate-800' : 'hover:bg-highlight-accent dark:hover:bg-slate-800'}`}
                   >
-                    <div className="flex justify-between items-center gap-2 text-xs">
-                      <p className={`truncate ${message.isUnread ? 'font-bold text-text-base dark:text-white' : 'font-semibold text-text-base dark:text-text-base'}`}>
-                        {message.fromName || message.fromEmail}
-                      </p>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {message.isStarred && <Star className="w-3.5 h-3.5 fill-secondary-accent text-secondary-accent" />}
-                        <p className="text-text-muted dark:text-slate-400">{new Date(message.date).toLocaleDateString()}</p>
-                      </div>
+                    <span className={`absolute left-0 top-0 bottom-0 w-1 ${message.isUnread ? 'bg-premium-accent' : 'bg-transparent'}`} />
+
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-semibold shrink-0 ${avatarColor(sender)}`}>
+                      {initialOf(sender)}
                     </div>
-                    <p className={`text-sm truncate mt-1 ${message.isUnread ? 'font-bold text-text-base dark:text-white' : 'font-medium text-text-muted dark:text-slate-300'}`}>
-                      {message.subject}
-                    </p>
-                    <p className="text-xs text-text-muted dark:text-slate-500 truncate mt-1">{message.snippet}</p>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex justify-between items-center gap-2">
+                        <p className={`truncate text-sm ${message.isUnread ? 'font-bold text-text-base dark:text-white' : 'font-medium text-text-base dark:text-slate-200'}`}>
+                          {sender}
+                        </p>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <div className="hidden group-hover:flex items-center gap-1">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleToggleStar(message); }}
+                              className="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10"
+                              title={message.isStarred ? 'Unstar' : 'Star'}
+                            >
+                              <Star className={`w-4 h-4 ${message.isStarred ? 'fill-yellow-400 text-yellow-400' : 'text-text-muted'}`} />
+                            </button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleTrash(message); }}
+                              className="p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 text-text-muted hover:text-red-500"
+                              title="Move to Trash"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                          <div className="flex items-center gap-1.5 group-hover:hidden">
+                            {message.isStarred && <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />}
+                            <p className={`text-xs ${message.isUnread ? 'font-semibold text-text-base dark:text-slate-200' : 'text-text-muted dark:text-slate-400'}`}>{smartDate(message.date)}</p>
+                          </div>
+                        </div>
+                      </div>
+                      <p className={`text-sm truncate ${message.isUnread ? 'font-semibold text-text-base dark:text-white' : 'text-text-muted dark:text-slate-300'}`}>
+                        {message.subject}
+                      </p>
+                      <p className="text-xs text-text-muted dark:text-slate-500 truncate">{message.snippet}</p>
+                    </div>
                   </li>
-                ))}
+                  );
+                })}
               </ul>
             )}
           </div>
