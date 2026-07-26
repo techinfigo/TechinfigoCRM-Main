@@ -7,6 +7,7 @@ import {
   clearGmailToken,
   connectGmail,
   fetchGmailMessages,
+  fetchGmailBody,
   fetchGmailBodyRich,
   GmailBody,
   sendGmailMessage,
@@ -16,7 +17,7 @@ import {
 } from '../../services/gmailService';
 import {
   Mail, Inbox, Send, Star, RefreshCw, LogOut, ArrowLeft, AlertTriangle, Loader2,
-  Pencil, Trash2, Reply, X, Search,
+  Pencil, Trash2, Reply, X,
 } from 'lucide-react';
 
 type GmailLabel = 'INBOX' | 'SENT' | 'STARRED';
@@ -302,17 +303,14 @@ export const GmailView: React.FC = () => {
         <div className="flex-1 flex min-w-0 overflow-hidden">
           {/* Message list */}
           <div className={`w-full lg:w-96 flex-shrink-0 border-r border-border-base dark:border-slate-700 overflow-y-auto scrollbar-hide ${selected ? 'hidden lg:block' : 'block'}`}>
-            <div className="p-2 border-b border-border-base dark:border-slate-700 sticky top-0 bg-bg-base dark:bg-slate-900 z-10">
-              <div className="relative">
-                <Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted dark:text-slate-500" />
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search mail"
-                  className="w-full pl-8 pr-3 py-1.5 text-sm bg-slate-100 dark:bg-slate-800 border border-transparent focus:border-premium-accent focus:bg-white dark:focus:bg-slate-900 rounded-md focus:outline-none transition-colors"
-                />
-              </div>
+            <div className="sticky top-0 z-10 p-2 bg-bg-base dark:bg-slate-900 border-b border-border-base dark:border-slate-700">
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search mail..."
+                className="w-full px-3 py-2 text-sm bg-slate-100 dark:bg-slate-800 border border-transparent focus:border-premium-accent rounded-full focus:outline-none text-text-base dark:text-slate-200 placeholder-text-muted"
+              />
             </div>
             {listLoading && messages.length === 0 ? (
               <div className="p-8 flex items-center justify-center text-text-muted dark:text-slate-500">
@@ -321,9 +319,7 @@ export const GmailView: React.FC = () => {
             ) : listError ? (
               <div className="p-4 text-sm text-status-negative dark:text-red-400">{listError}</div>
             ) : filteredMessages.length === 0 ? (
-              <div className="p-8 text-center text-sm text-text-muted dark:text-slate-500">
-                {search.trim() ? 'No messages match your search.' : 'No messages here.'}
-              </div>
+              <div className="p-8 text-center text-sm text-text-muted dark:text-slate-500">{search.trim() ? 'No matching emails.' : 'No messages here.'}</div>
             ) : (
               <ul className="divide-y divide-border-base dark:divide-slate-700">
                 {filteredMessages.map((message) => {
@@ -417,7 +413,7 @@ export const GmailView: React.FC = () => {
                       <p className="text-sm text-status-negative dark:text-red-400">{bodyError}</p>
                     ) : body?.html ? (
                       <div
-                        className="text-sm break-words [&_a]:text-premium-accent [&_a]:underline [&_img]:max-w-full [&_img]:h-auto"
+                        className="gmail-html-body text-sm break-words max-w-none [&_a]:text-premium-accent [&_a]:underline [&_img]:max-w-full [&_img]:h-auto"
                         dangerouslySetInnerHTML={{ __html: body.html }}
                       />
                     ) : (
