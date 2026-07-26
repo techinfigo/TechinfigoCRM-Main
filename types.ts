@@ -1007,9 +1007,17 @@ export interface CalendarEvent {
     id: string;
     date: Date;
     title: string;
-    type: 'project' | 'task' | 'invoice' | 'lead' | 'audit' | 'anomaly' | 'leave';
+    type: 'project' | 'task' | 'invoice' | 'lead' | 'audit' | 'anomaly' | 'leave' | 'custom';
     originalItem?: any;
     colorClass?: string;
+}
+
+/** A manually-added calendar event (persisted, unlike the aggregated ones). */
+export interface CustomCalendarEvent {
+    id: string;
+    date: string; // ISO
+    title: string;
+    notes?: string;
 }
 
 export interface ToastData {

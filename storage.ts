@@ -50,6 +50,7 @@ export const KEYS = {
     chatContacts: 'crm_chatContacts',
     chatMessages: 'crm_chatMessages',
     leaveRequests: 'crm_leaveRequests',
+    customCalendarEvents: 'crm_customCalendarEvents',
     dailyAttendanceRecords: 'crm_dailyAttendanceRecords',
     performanceReviews: 'crm_performanceReviews',
     hrDocuments: 'crm_hrDocuments',

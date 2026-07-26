@@ -239,6 +239,7 @@ export const calendarEventColors = {
   audit: 'bg-indigo-200 text-indigo-800 dark:bg-indigo-700/50 dark:text-indigo-200',
   anomaly: 'bg-pink-200 text-pink-800 dark:bg-pink-700/50 dark:text-pink-200',
   leave: 'bg-teal-200 text-teal-800 dark:bg-teal-700/50 dark:text-teal-200',
+  custom: 'bg-emerald-200 text-emerald-800 dark:bg-emerald-700/50 dark:text-emerald-200',
 };
 
 export const getDefaultRolePermissions = (): AppFeaturePermission[] => {

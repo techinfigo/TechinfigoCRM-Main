@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useCallback } from 'react';
-import { Project, Invoice, Lead, Task, CalendarEvent, MarketingAuditRequest, CampaignAnomaly, LeaveRequest } from '../../types'; // Updated imports
+import { Project, Invoice, Lead, Task, CalendarEvent, MarketingAuditRequest, CampaignAnomaly, LeaveRequest, CustomCalendarEvent } from '../../types'; // Updated imports
 import { calendarEventColors } from '../../constants';
 import { Button } from '../common/Button';
 import { Card } from '../common/Card';
@@ -14,12 +14,15 @@ interface CalendarViewProps {
   marketingAudits: MarketingAuditRequest[]; 
   campaignAnomalies?: CampaignAnomaly[]; 
   leaveRequests: LeaveRequest[];
+  customEvents?: CustomCalendarEvent[];
+  onAddCustomEvent?: (title: string, date: Date, notes?: string) => void;
+  onDeleteCustomEvent?: (id: string) => void;
 }
 
 const ArrowLeftIcon = () => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5"><path fillRule="evenodd" d="M11.78 5.22a.75.75 0 010 1.06L8.06 10l3.72 3.72a.75.75 0 11-1.06 1.06l-4.25-4.25a.75.75 0 010-1.06l4.25-4.25a.75.75 0 011.06 0z" clipRule="evenodd" /></svg>;
 const ArrowRightIcon = () => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5"><path fillRule="evenodd" d="M8.22 5.22a.75.75 0 011.06 0l4.25 4.25a.75.75 0 010 1.06l-4.25 4.25a.75.75 0 01-1.06-1.06L11.94 10 8.22 6.28a.75.75 0 010-1.06z" clipRule="evenodd" /></svg>;
 
-export const CalendarView: React.FC<CalendarViewProps> = ({ projects, invoices, leads, marketingAudits, campaignAnomalies = [], leaveRequests }) => {
+export const CalendarView: React.FC<CalendarViewProps> = ({ projects, invoices, leads, marketingAudits, campaignAnomalies = [], leaveRequests, customEvents = [], onAddCustomEvent, onDeleteCustomEvent }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -53,8 +56,11 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ projects, invoices, 
         }
       }
     });
+    customEvents.forEach(ce => {
+      events.push({ id: ce.id, date: new Date(ce.date), title: ce.title, type: 'custom', originalItem: ce, colorClass: calendarEventColors.custom || 'bg-premium-accent/20 text-premium-accent' });
+    });
     return events;
-  }, [projects, invoices, leads, marketingAudits, campaignAnomalies, leaveRequests]);
+  }, [projects, invoices, leads, marketingAudits, campaignAnomalies, leaveRequests, customEvents]);
   
   const handleDayClick = (day: Date) => {
     setSelectedDate(day);
@@ -62,10 +68,9 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ projects, invoices, 
   };
   
   const handleAddEvent = (event: Omit<CalendarEvent, 'id' | 'originalItem' | 'colorClass'>) => {
-      // In a real app, this would update state via a callback to App.tsx or use a context.
-      // For this demo, we'll just log it.
-      alert(`Conceptual: Adding new event "${event.title}" on ${event.date.toLocaleDateString()}`);
-      console.log("New Event Added:", event);
+      if (onAddCustomEvent) {
+        onAddCustomEvent(event.title, event.date, (event as any).notes);
+      }
       setIsModalOpen(false);
   };
 

@@ -23,6 +23,7 @@ import {
   ChatContact,
   ChatMessage,
   LeaveRequest,
+  CustomCalendarEvent,
   LeaveRequestStatus,
   DailyAttendanceRecord,
   PerformanceReview,
@@ -254,6 +255,9 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>(() =>
     load(KEYS.leaveRequests, []),
   );
+  const [customCalendarEvents, setCustomCalendarEvents] = useState<CustomCalendarEvent[]>(() =>
+    load(KEYS.customCalendarEvents, []),
+  );
   const [dailyAttendanceRecords, setDailyAttendanceRecords] = useState<
     DailyAttendanceRecord[]
   >(() => load(KEYS.dailyAttendanceRecords, []));
@@ -388,6 +392,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
   useEffect(() => save(KEYS.chatContacts, chatContacts), [chatContacts]);
   useEffect(() => save(KEYS.chatMessages, chatMessages), [chatMessages]);
   useEffect(() => save(KEYS.leaveRequests, leaveRequests), [leaveRequests]);
+  useEffect(() => save(KEYS.customCalendarEvents, customCalendarEvents), [customCalendarEvents]);
   useEffect(
     () => save(KEYS.dailyAttendanceRecords, dailyAttendanceRecords),
     [dailyAttendanceRecords],
@@ -2207,6 +2212,16 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
             leads={leads}
             marketingAudits={marketingAudits}
             leaveRequests={leaveRequests}
+            customEvents={customCalendarEvents}
+            onAddCustomEvent={(title, date, notes) =>
+              setCustomCalendarEvents((prev) => [
+                ...prev,
+                { id: `cal-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, title, date: date.toISOString(), notes },
+              ])
+            }
+            onDeleteCustomEvent={(id) =>
+              setCustomCalendarEvents((prev) => prev.filter((e) => e.id !== id))
+            }
           />
         );
       case "SOP_LIBRARY":
