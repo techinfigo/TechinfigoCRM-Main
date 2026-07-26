@@ -14,6 +14,7 @@ interface AuditDetailProps {
   onBack: () => void;
   onEdit?: (audit: Audit) => void;
   onMarkSent?: (audit: Audit) => void;
+  onDelete?: (audit: Audit) => void;
 }
 
 const ScoreProgressBar = ({ label, score, max, colorClass }: { label: string, score: number, max: number, colorClass: string }) => {
@@ -31,7 +32,7 @@ const ScoreProgressBar = ({ label, score, max, colorClass }: { label: string, sc
     );
 };
 
-export const AuditDetail: React.FC<AuditDetailProps> = ({ audit, onBack, onEdit, onMarkSent }) => {
+export const AuditDetail: React.FC<AuditDetailProps> = ({ audit, onBack, onEdit, onMarkSent, onDelete }) => {
   const brandAuditType = audit.brandAuditType || (audit.d2cAuditData ? 'D2C' : 'B2B_Other');
   const [activeTab, setActiveTab] = useState('Overview');
 
@@ -287,6 +288,9 @@ export const AuditDetail: React.FC<AuditDetailProps> = ({ audit, onBack, onEdit,
                 {audit.score !== undefined && <ScoreBadge score={audit.score} className="text-lg px-4 py-2" />}
                 {onEdit && (
                     <Button variant="primary" onClick={() => onEdit(audit)} leftIcon={<Edit className="w-4 h-4"/>}>Edit Audit</Button>
+                )}
+                {onDelete && (
+                     <Button variant="ghost" onClick={() => onDelete(audit)} className="text-red-500 hover:text-red-600">Delete</Button>
                 )}
                 {onMarkSent && audit.status !== 'Sent' && (
                      <Button variant="outline" onClick={() => onMarkSent(audit)} leftIcon={<Send className="w-4 h-4"/>}>Mark Sent</Button>

@@ -8,6 +8,7 @@ import { AuditDetail } from '../audits/AuditDetail';
 interface AuditsViewProps {
   audits: Audit[];
   onSaveAudit: (audit: Audit) => void;
+  onDeleteAudit?: (auditId: string) => void;
   prefillData?: { type: 'Lead' | 'Client', id: string, name: string };
   leads?: Lead[];
   clients?: Client[];
@@ -15,7 +16,7 @@ interface AuditsViewProps {
 
 type SubView = 'LIST' | 'CREATE' | 'DETAIL';
 
-export const AuditsView: React.FC<AuditsViewProps> = ({ audits, onSaveAudit, prefillData, leads = [], clients = [] }) => {
+export const AuditsView: React.FC<AuditsViewProps> = ({ audits, onSaveAudit, onDeleteAudit, prefillData, leads = [], clients = [] }) => {
   const [subView, setSubView] = useState<SubView>(prefillData ? 'CREATE' : 'LIST');
   const [selectedAudit, setSelectedAudit] = useState<Audit | null>(null);
 
@@ -47,11 +48,23 @@ export const AuditsView: React.FC<AuditsViewProps> = ({ audits, onSaveAudit, pre
   } : undefined;
 
   if (subView === 'CREATE') {
-    return <AuditBuilder onBack={handleBack} onSave={handleSave} initialData={initialData} leads={leads} clients={clients} />;
+    // If we arrived here via Edit, seed the builder with the existing audit.
+    return <AuditBuilder onBack={handleBack} onSave={handleSave} initialData={selectedAudit || initialData} leads={leads} clients={clients} />;
   }
 
   if (subView === 'DETAIL' && selectedAudit) {
-    return <AuditDetail audit={selectedAudit} onBack={handleBack} />;
+    return <AuditDetail
+      audit={selectedAudit}
+      onBack={handleBack}
+      onEdit={(a) => { setSelectedAudit(a); setSubView('CREATE'); }}
+      onMarkSent={(a) => onSaveAudit({ ...a, status: 'Sent' })}
+      onDelete={(a) => {
+        if (window.confirm('Delete this audit? This cannot be undone.')) {
+          onDeleteAudit && onDeleteAudit(a.id);
+          handleBack();
+        }
+      }}
+    />;
   }
 
   return <AuditsList audits={audits} onSelectAudit={handleSelectAudit} onCreateAudit={handleCreateAudit} />;

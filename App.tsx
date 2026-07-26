@@ -1476,6 +1476,10 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
     });
   };
 
+  const handleDeleteAudit = (auditId: string) => {
+    setAudits((prev) => prev.filter((a) => a.id !== auditId));
+  };
+
   const handleSaveCustomField = (field: CustomField) => {
     setCustomFields((prev) => {
       const exists = prev.find((f) => f.id === field.id);
@@ -2205,6 +2209,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
           <AuditsView
             audits={audits}
             onSaveAudit={handleSaveNewAudit}
+            onDeleteAudit={handleDeleteAudit}
             prefillData={auditPrefillData}
           />
         );
