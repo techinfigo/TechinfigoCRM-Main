@@ -6,6 +6,7 @@ import { Input, TextArea } from '../common/Input';
 import { Task, Project, TeamMember, TaskPriority, taskPriorities, TaskWorkflowStatus, taskWorkflowStatuses, Subtask, Comment, Activity, ActivityType, TaskReminderPrefs, TaskAttachment, TaskLink, ToastData } from '../../types';
 import { Trash2, CheckCircle, Copy, Edit2, Plus, Edit, User, MessageSquare, ListChecks, History, Send, Trash, Eye, Users as UsersIcon, CalendarPlus, Bell, Paperclip, Link2, Upload, FileText, PlusCircle, CornerDownRight, ArrowUpRight, MoreVertical } from 'lucide-react';
 import { Checkbox } from '../common/Checkbox';
+import { Select } from '../common/Select';
 import { ToggleSwitch } from '../common/ToggleSwitch';
 import { isValid } from 'date-fns';
 import parseISO from 'date-fns/parseISO';
@@ -193,6 +194,12 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
       onSetDirty(true);
       const { name, value } = e.target;
+      setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    // The custom Select returns a raw value (not an event), so it needs its own setter.
+    const setField = (name: keyof TaskFormData, value: string) => {
+      onSetDirty(true);
       setFormData(prev => ({ ...prev, [name]: value }));
     };
   
@@ -584,11 +591,11 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
 
         {/* Sidebar */}
         <div className="lg:col-span-1 space-y-4 pt-2">
-            <div><label className="text-xs font-semibold uppercase text-text-muted">Status</label><select name="status" value={formData.status} onChange={handleChange} className={`${selectBaseClass} mt-1`}><option value="">--</option>{taskWorkflowStatuses.map(s=><option key={s} value={s}>{s}</option>)}</select></div>
-            <div><label className="text-xs font-semibold uppercase text-text-muted">Assignee</label><select name="assignedMemberId" value={formData.assignedMemberId} onChange={handleChange} className={`${selectBaseClass} mt-1`}><option value="">Unassigned</option>{teamMembers.map(tm=><option key={tm.id} value={tm.id}>{tm.name}</option>)}</select></div>
-            <div><label className="text-xs font-semibold uppercase text-text-muted">Project</label><select name="projectId" value={formData.projectId} onChange={handleChange} className={`${selectBaseClass} mt-1`}><option value="">Global</option>{projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></div>
+            <div><label className="text-xs font-semibold uppercase text-text-muted">Status</label><div className="mt-1"><Select value={formData.status} onChange={(v) => setField('status', v)} placeholder="Select status" options={taskWorkflowStatuses.map(s => ({ value: s, label: s }))} /></div></div>
+            <div><label className="text-xs font-semibold uppercase text-text-muted">Assignee</label><div className="mt-1"><Select value={formData.assignedMemberId} onChange={(v) => setField('assignedMemberId', v)} placeholder="Unassigned" searchable options={[{ value: '', label: 'Unassigned' }, ...teamMembers.map(tm => ({ value: tm.id, label: tm.name }))]} /></div></div>
+            <div><label className="text-xs font-semibold uppercase text-text-muted">Project</label><div className="mt-1"><Select value={formData.projectId} onChange={(v) => setField('projectId', v)} placeholder="Global" searchable options={[{ value: '', label: 'Global (no project)' }, ...projects.map(p => ({ value: p.id, label: p.name }))]} /></div></div>
             <div><label className="text-xs font-semibold uppercase text-text-muted">Due Date</label><Input name="dueDate" type="date" value={formData.dueDate} onChange={handleChange} className="mt-1"/></div>
-            <div><label className="text-xs font-semibold uppercase text-text-muted">Priority</label><select name="priority" value={formData.priority} onChange={handleChange} className={`${selectBaseClass} mt-1`}><option value="">--</option>{taskPriorities.map(p=><option key={p} value={p}>{p}</option>)}</select></div>
+            <div><label className="text-xs font-semibold uppercase text-text-muted">Priority</label><div className="mt-1"><Select value={formData.priority} onChange={(v) => setField('priority', v)} placeholder="Select priority" options={taskPriorities.map(p => ({ value: p, label: p }))} /></div></div>
             
             {task && (
               <div className="pt-3 border-t border-border-base dark:border-slate-700">
