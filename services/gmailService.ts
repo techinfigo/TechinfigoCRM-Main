@@ -141,13 +141,20 @@ const parseFromHeader = (value: string): { name: string; email: string } => {
   return { name: value.trim(), email: value.trim() };
 };
 
+export interface GmailPage {
+  messages: GmailMessage[];
+  nextPageToken: string | null;
+}
+
 export const fetchGmailMessages = async (
   token: string,
   labelId: 'INBOX' | 'SENT' | 'STARRED' | 'TRASH' = 'INBOX',
   maxResults = 25,
-): Promise<GmailMessage[]> => {
+  pageToken?: string | null,
+): Promise<GmailPage> => {
   // The list endpoint only returns ids — each message's metadata needs its own request.
-  const listData = await gmailFetch(token, `/messages?labelIds=${labelId}&maxResults=${maxResults}`);
+  const pageParam = pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : '';
+  const listData = await gmailFetch(token, `/messages?labelIds=${labelId}&maxResults=${maxResults}${pageParam}`);
   const ids: string[] = (listData.messages || []).map((m: any) => m.id);
 
   const messages = await Promise.all(
@@ -183,9 +190,12 @@ export const fetchGmailMessages = async (
     }),
   );
 
-  return messages
-    .filter((m): m is GmailMessage => m !== null)
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  return {
+    messages: messages
+      .filter((m): m is GmailMessage => m !== null)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+    nextPageToken: listData.nextPageToken || null,
+  };
 };
 
 // Gmail's base64 is URL-safe (- and _ instead of + and /) and the decoded bytes

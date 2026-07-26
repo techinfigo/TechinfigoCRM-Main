@@ -59,6 +59,8 @@ export const GmailView: React.FC = () => {
 
   const [activeLabel, setActiveLabel] = useState<GmailLabel>('INBOX');
   const [messages, setMessages] = useState<GmailMessage[]>([]);
+  const [nextPageToken, setNextPageToken] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [listLoading, setListLoading] = useState(false);
   const [listError, setListError] = useState<string | null>(null);
 
@@ -79,8 +81,9 @@ export const GmailView: React.FC = () => {
     setListLoading(true);
     setListError(null);
     try {
-      const msgs = await fetchGmailMessages(activeToken, label, 25);
-      setMessages(msgs);
+      const page = await fetchGmailMessages(activeToken, label, 25);
+      setMessages(page.messages);
+      setNextPageToken(page.nextPageToken);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load messages.';
       setListError(message);
@@ -92,6 +95,25 @@ export const GmailView: React.FC = () => {
       setListLoading(false);
     }
   }, []);
+
+  const loadMore = async () => {
+    if (!token || !nextPageToken || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const page = await fetchGmailMessages(token, activeLabel, 25, nextPageToken);
+      setMessages((prev) => {
+        const seen = new Set(prev.map((m) => m.id));
+        return [...prev, ...page.messages.filter((m) => !seen.has(m.id))];
+      });
+      setNextPageToken(page.nextPageToken);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to load more.';
+      setListError(message);
+      if (isExpiredMessage(message)) setToken(null);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   useEffect(() => {
     if (token) {
@@ -374,6 +396,13 @@ export const GmailView: React.FC = () => {
                   );
                 })}
               </ul>
+            )}
+            {!search.trim() && nextPageToken && messages.length > 0 && (
+              <div className="p-3 flex justify-center border-t border-border-base dark:border-slate-700">
+                <Button variant="outline" size="sm" onClick={loadMore} isLoading={loadingMore}>
+                  {loadingMore ? 'Loading…' : 'Load more'}
+                </Button>
+              </div>
             )}
           </div>
 
