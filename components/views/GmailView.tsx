@@ -8,10 +8,14 @@ import {
   connectGmail,
   fetchGmailMessages,
   fetchGmailBody,
+  sendGmailMessage,
+  toggleGmailStar,
+  trashGmailMessage,
   GmailMessage,
 } from '../../services/gmailService';
 import {
   Mail, Inbox, Send, Star, RefreshCw, LogOut, ArrowLeft, AlertTriangle, Loader2,
+  Pencil, Trash2, Reply, X,
 } from 'lucide-react';
 
 type GmailLabel = 'INBOX' | 'SENT' | 'STARRED';
@@ -40,6 +44,13 @@ export const GmailView: React.FC = () => {
   const [body, setBody] = useState<string | null>(null);
   const [bodyLoading, setBodyLoading] = useState(false);
   const [bodyError, setBodyError] = useState<string | null>(null);
+
+  const [composeOpen, setComposeOpen] = useState(false);
+  const [composeTo, setComposeTo] = useState('');
+  const [composeSubject, setComposeSubject] = useState('');
+  const [composeBody, setComposeBody] = useState('');
+  const [sending, setSending] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const loadMessages = useCallback(async (activeToken: string, label: GmailLabel) => {
     setListLoading(true);
@@ -85,6 +96,61 @@ export const GmailView: React.FC = () => {
     setMessages([]);
     setSelected(null);
     setBody(null);
+  };
+
+  const openCompose = (opts?: { to?: string; subject?: string; body?: string }) => {
+    setComposeTo(opts?.to || '');
+    setComposeSubject(opts?.subject || '');
+    setComposeBody(opts?.body || '');
+    setActionError(null);
+    setComposeOpen(true);
+  };
+
+  const handleSend = async () => {
+    if (!token) return;
+    if (!composeTo.trim() || !composeSubject.trim()) {
+      setActionError('Recipient and subject are required.');
+      return;
+    }
+    setSending(true);
+    setActionError(null);
+    try {
+      await sendGmailMessage(token, composeTo.trim(), composeSubject.trim(), composeBody);
+      setComposeOpen(false);
+      if (activeLabel === 'SENT') loadMessages(token, 'SENT');
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Failed to send email.');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleToggleStar = async (message: GmailMessage) => {
+    if (!token) return;
+    try {
+      await toggleGmailStar(token, message.id, message.isStarred);
+      const nowStarred = !message.isStarred;
+      setMessages(prev => prev.map(m => m.id === message.id ? { ...m, isStarred: nowStarred } : m));
+      if (selected?.id === message.id) setSelected({ ...selected, isStarred: nowStarred });
+      if (activeLabel === 'STARRED' && !nowStarred) {
+        setMessages(prev => prev.filter(m => m.id !== message.id));
+        if (selected?.id === message.id) setSelected(null);
+      }
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Failed to update star.');
+    }
+  };
+
+  const handleTrash = async (message: GmailMessage) => {
+    if (!token) return;
+    if (!window.confirm('Move this email to Trash?')) return;
+    try {
+      await trashGmailMessage(token, message.id);
+      setMessages(prev => prev.filter(m => m.id !== message.id));
+      if (selected?.id === message.id) setSelected(null);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Failed to move to Trash.');
+    }
   };
 
   const handleSelectMessage = async (message: GmailMessage) => {
@@ -172,6 +238,14 @@ export const GmailView: React.FC = () => {
           </div>
           <div className="flex items-center gap-2">
             <Button
+              variant="primary"
+              size="sm"
+              onClick={() => openCompose()}
+              leftIcon={<Pencil className="w-4 h-4" />}
+            >
+              Compose
+            </Button>
+            <Button
               variant="outline"
               size="sm"
               onClick={() => loadMessages(token, activeLabel)}
@@ -238,6 +312,15 @@ export const GmailView: React.FC = () => {
                     <ArrowLeft className="w-5 h-5" />
                   </Button>
                   <h3 className="text-lg font-semibold truncate flex-1">{selected.subject}</h3>
+                  <Button variant="ghost" size="sm" className="p-2" onClick={() => handleToggleStar(selected)} title={selected.isStarred ? 'Unstar' : 'Star'}>
+                    <Star className={`w-5 h-5 ${selected.isStarred ? 'fill-yellow-400 text-yellow-400' : ''}`} />
+                  </Button>
+                  <Button variant="ghost" size="sm" className="p-2" onClick={() => openCompose({ to: selected.fromEmail, subject: `Re: ${selected.subject}` })} title="Reply">
+                    <Reply className="w-5 h-5" />
+                  </Button>
+                  <Button variant="ghost" size="sm" className="p-2 text-red-500 hover:text-red-600" onClick={() => handleTrash(selected)} title="Move to Trash">
+                    <Trash2 className="w-5 h-5" />
+                  </Button>
                 </div>
                 <div className="overflow-y-auto scrollbar-hide p-4 space-y-4">
                   <div>
@@ -269,6 +352,30 @@ export const GmailView: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {composeOpen && (
+        <div className="fixed inset-0 z-[1200] flex items-center justify-center p-4 bg-black/50" onClick={() => !sending && setComposeOpen(false)}>
+          <div className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-border-base dark:border-slate-700 flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b border-border-base dark:border-slate-700">
+              <h3 className="font-semibold text-text-heading dark:text-slate-100">New Message</h3>
+              <button onClick={() => !sending && setComposeOpen(false)} className="text-text-muted hover:text-text-base"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="p-4 space-y-3 overflow-y-auto">
+              {actionError && <p className="text-sm text-red-600 dark:text-red-400">{actionError}</p>}
+              <input type="email" value={composeTo} onChange={(e) => setComposeTo(e.target.value)} placeholder="To"
+                className="w-full p-2.5 bg-bg-base dark:bg-bg-muted border border-border-base dark:border-border-muted rounded-md text-sm text-text-base dark:text-text-base focus:outline-none focus:ring-2 focus:ring-premium-accent" />
+              <input type="text" value={composeSubject} onChange={(e) => setComposeSubject(e.target.value)} placeholder="Subject"
+                className="w-full p-2.5 bg-bg-base dark:bg-bg-muted border border-border-base dark:border-border-muted rounded-md text-sm text-text-base dark:text-text-base focus:outline-none focus:ring-2 focus:ring-premium-accent" />
+              <textarea value={composeBody} onChange={(e) => setComposeBody(e.target.value)} placeholder="Write your message..." rows={10}
+                className="w-full p-2.5 bg-bg-base dark:bg-bg-muted border border-border-base dark:border-border-muted rounded-md text-sm text-text-base dark:text-text-base focus:outline-none focus:ring-2 focus:ring-premium-accent resize-none" />
+            </div>
+            <div className="flex items-center justify-end gap-2 p-4 border-t border-border-base dark:border-slate-700">
+              <Button variant="ghost" size="sm" onClick={() => setComposeOpen(false)} disabled={sending}>Cancel</Button>
+              <Button variant="primary" size="sm" onClick={handleSend} isLoading={sending} leftIcon={<Send className="w-4 h-4" />}>Send</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -229,3 +229,80 @@ export const fetchGmailBody = async (token: string, messageId: string): Promise<
   if (html) return stripHtml(html);
   return msg.snippet || '';
 };
+
+/** POST/PUT helper for Gmail write actions (send, modify labels, trash). */
+const gmailWrite = async (
+  token: string,
+  path: string,
+  body: any,
+  method: 'POST' | 'PUT' = 'POST',
+): Promise<any> => {
+  const res = await fetch(`${GMAIL_API_BASE}${path}`, {
+    method,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+  if (res.status === 401) {
+    clearGmailToken();
+    throw new Error('Your Gmail session has expired. Please reconnect.');
+  }
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`Gmail API request failed (${res.status}): ${text || res.statusText}`);
+  }
+  return res.json().catch(() => ({}));
+};
+
+/** Base64url-encode a UTF-8 string (Gmail requires url-safe base64). */
+const toBase64Url = (str: string): string => {
+  const b64 = window.btoa(unescape(encodeURIComponent(str)));
+  return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+};
+
+/** Send a plain-text email from the connected account. */
+export const sendGmailMessage = async (
+  token: string,
+  to: string,
+  subject: string,
+  body: string,
+): Promise<void> => {
+  const raw = [
+    `To: ${to}`,
+    `Subject: ${subject}`,
+    'Content-Type: text/plain; charset="UTF-8"',
+    '',
+    body,
+  ].join('\r\n');
+  await gmailWrite(token, '/messages/send', { raw: toBase64Url(raw) });
+};
+
+/** Add or remove a label on a message (used for star / unstar). */
+export const modifyGmailLabels = async (
+  token: string,
+  messageId: string,
+  addLabelIds: string[],
+  removeLabelIds: string[],
+): Promise<void> => {
+  await gmailWrite(token, `/messages/${messageId}/modify`, { addLabelIds, removeLabelIds });
+};
+
+export const toggleGmailStar = async (
+  token: string,
+  messageId: string,
+  currentlyStarred: boolean,
+): Promise<void> => {
+  await modifyGmailLabels(
+    token,
+    messageId,
+    currentlyStarred ? [] : ['STARRED'],
+    currentlyStarred ? ['STARRED'] : [],
+  );
+};
+
+/** Move a message to Trash (recoverable in Gmail for 30 days). */
+export const trashGmailMessage = async (token: string, messageId: string): Promise<void> => {
+  await gmailWrite(token, `/messages/${messageId}/trash`, {});
+};
