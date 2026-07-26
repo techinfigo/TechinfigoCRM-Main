@@ -249,8 +249,8 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
     load(KEYS.chatMessages, []),
   );
   const [activeCommunicationTab, setActiveCommunicationTab] = useState<
-    "email" | "chat" | "gmail"
-  >("email");
+    "chat" | "gmail"
+  >("gmail");
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>(() =>
     load(KEYS.leaveRequests, []),
   );

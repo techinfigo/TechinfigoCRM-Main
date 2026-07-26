@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { EmailView } from './EmailView';
 import { ChatView } from './ChatView';
 import { GmailView } from './GmailView';
 import {
@@ -26,8 +25,8 @@ interface CommunicationViewProps {
   onMarkContactAsRead: (contactId: string) => void;
   // General Props
   currentUser: TeamMember | null;
-  activeTab: 'email' | 'chat' | 'gmail';
-  setActiveTab: (tab: 'email' | 'chat' | 'gmail') => void;
+  activeTab: 'chat' | 'gmail';
+  setActiveTab: (tab: 'chat' | 'gmail') => void;
 }
 
 export const CommunicationView: React.FC<CommunicationViewProps> = (props) => {
@@ -44,17 +43,6 @@ export const CommunicationView: React.FC<CommunicationViewProps> = (props) => {
                 <h2 className="text-xl font-bold text-text-heading dark:text-text-heading">Communication Hub</h2>
                 
                 <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-lg border border-slate-200 dark:border-slate-700 ml-auto sm:ml-4">
-                    <button
-                        onClick={() => setActiveTab('email')}
-                        className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200 ${
-                            activeTab === 'email' 
-                            ? 'bg-white dark:bg-slate-600 text-premium-accent dark:text-white shadow-sm' 
-                            : 'text-text-muted hover:text-text-base dark:text-slate-400 dark:hover:text-slate-200'
-                        }`}
-                    >
-                        <Mail className="w-4 h-4" />
-                        <span>Email</span>
-                    </button>
                     <button
                         onClick={() => setActiveTab('chat')}
                         className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200 ${
@@ -81,7 +69,6 @@ export const CommunicationView: React.FC<CommunicationViewProps> = (props) => {
             </div>
         }
       >
-        {activeTab === 'email' && <EmailView {...props} />}
         {activeTab === 'chat' && <ChatView {...props} />}
         {activeTab === 'gmail' && <GmailView />}
       </Card>
