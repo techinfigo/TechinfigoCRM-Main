@@ -8,6 +8,10 @@ interface UserManagementSettingsProps {
   teamMembers: TeamMember[];
   roleDefinitions: RoleDefinition[];
   hasPermission: (featureKey: FeatureKey, action: PermissionAction) => boolean;
+  onAddTeamMember: () => void;
+  onEditTeamMember: (member: TeamMember) => void;
+  onDeleteTeamMember: (memberId: string) => void;
+  onViewTeamMember: (member: TeamMember) => void;
 }
 
 export const UserManagementSettingsView: React.FC<UserManagementSettingsProps> = (props) => {
@@ -22,10 +26,10 @@ export const UserManagementSettingsView: React.FC<UserManagementSettingsProps> =
       <div className="p-4">
         <TeamView
           teamMembers={props.teamMembers}
-          onAddMember={() => { /* Modal is opened by parent */ }}
-          onEditMember={() => { /* Modal is opened by parent */ }}
-          onDeleteMember={() => { /* Handled by parent */ }}
-          onViewMemberDetail={() => { /* Handled by parent */ }}
+          onAddMember={props.onAddTeamMember}
+          onEditMember={props.onEditTeamMember}
+          onDeleteMember={props.onDeleteTeamMember}
+          onViewMemberDetail={props.onViewTeamMember}
           hasPermission={props.hasPermission}
           roleDefinitions={props.roleDefinitions}
         />

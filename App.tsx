@@ -2269,6 +2269,14 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
             customFields={customFields}
             onSaveRoleDefinitions={(roles) => setRoleDefinitions(roles)}
             onSaveSettings={(newSettings) => setAppSettings(newSettings)}
+            onAddTeamMember={() => openModal("TEAM_MEMBER_HR_FORM")}
+            onEditTeamMember={(m) => openModal("TEAM_MEMBER_HR_FORM", { member: m })}
+            onViewTeamMember={(m) => openModal("TEAM_MEMBER_HR_DETAIL", { member: m })}
+            onDeleteTeamMember={(memberId) => {
+              if (window.confirm("Remove this team member? This cannot be undone.")) {
+                handleDeleteTeamMemberHR(memberId);
+              }
+            }}
             onConnectIntegration={() => {}}
             onRevokeApiKey={() => {}}
             onAddApiKey={() => {}}

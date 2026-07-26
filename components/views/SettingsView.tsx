@@ -48,6 +48,10 @@ interface SettingsViewProps {
 
   onSaveRoleDefinitions: (roleDefs: RoleDefinition[]) => void;
   onSaveSettings: (settings: AppSettings) => void;
+  onAddTeamMember: () => void;
+  onEditTeamMember: (member: TeamMember) => void;
+  onDeleteTeamMember: (memberId: string) => void;
+  onViewTeamMember: (member: TeamMember) => void;
   onConnectIntegration: (platformId: string) => void;
   onRevokeApiKey: (keyId: string) => void;
   onAddApiKey: (label: string) => void;
@@ -76,7 +80,7 @@ export const SettingsView: React.FC<SettingsViewProps> = (props) => {
         return <GeneralSettingsView appSettings={props.appSettings} onSaveSettings={props.onSaveSettings} hasPermission={hasPermission} />;
       
       case 'userManagement':
-        return <UserManagementSettingsView teamMembers={props.teamMembers} roleDefinitions={props.roleDefinitions} hasPermission={hasPermission} />;
+        return <UserManagementSettingsView teamMembers={props.teamMembers} roleDefinitions={props.roleDefinitions} hasPermission={hasPermission} onAddTeamMember={props.onAddTeamMember} onEditTeamMember={props.onEditTeamMember} onDeleteTeamMember={props.onDeleteTeamMember} onViewTeamMember={props.onViewTeamMember} />;
       
       case 'rolesAndPermissions':
         return <RolesPermissionsSettingsView roleDefinitions={props.roleDefinitions} onSaveRoleDefinitions={props.onSaveRoleDefinitions} hasPermission={hasPermission} />;
