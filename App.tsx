@@ -2103,7 +2103,14 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
             onUpdateLeaveStatus={handleUpdateLeaveStatus}
             onCancelLeaveRequest={handleCancelLeaveRequest}
             dailyAttendanceRecords={dailyAttendanceRecords}
-            onSaveAttendance={() => {}}
+            onSaveAttendance={(record) =>
+              setDailyAttendanceRecords((prev) => {
+                const exists = prev.some((r) => r.date === record.date);
+                return exists
+                  ? prev.map((r) => (r.date === record.date ? record : r))
+                  : [...prev, record];
+              })
+            }
             onOpenMarkAttendanceModal={() => openModal("MARK_ATTENDANCE")}
             performanceReviews={performanceReviews}
             onOpenPerformanceReviewModal={(emp, rev) =>
@@ -2906,7 +2913,14 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
           onClose={closeModal}
           teamMembers={teamMembers}
           onSaveAttendance={(record) => {
-            setDailyAttendanceRecords((prev) => [...prev, record]);
+            // Attendance is stored one record per date. Replace the existing
+            // record for that date instead of appending a duplicate.
+            setDailyAttendanceRecords((prev) => {
+              const exists = prev.some((r) => r.date === record.date);
+              return exists
+                ? prev.map((r) => (r.date === record.date ? record : r))
+                : [...prev, record];
+            });
             closeModal();
           }}
         />
