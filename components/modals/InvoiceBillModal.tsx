@@ -11,6 +11,7 @@ interface InvoiceBillModalProps {
   invoice: Invoice;
   client?: Client | null;
   appSettings: AppSettings;
+  onMarkSent?: (invoiceId: string) => void;
 }
 
 /* Brand palette taken from the official Techinfigo invoice template */
@@ -145,7 +146,7 @@ const totalValueStyle: React.CSSProperties = {
   fontWeight: 600,
 };
 
-export const InvoiceBillModal: React.FC<InvoiceBillModalProps> = ({ isOpen, onClose, invoice, client, appSettings }) => {
+export const InvoiceBillModal: React.FC<InvoiceBillModalProps> = ({ isOpen, onClose, invoice, client, appSettings, onMarkSent }) => {
   const [isDownloading, setIsDownloading] = useState(false);
   const [isEmailing, setIsEmailing] = useState(false);
 
@@ -218,7 +219,7 @@ export const InvoiceBillModal: React.FC<InvoiceBillModalProps> = ({ isOpen, onCl
         margin: [0, 0, 0, 0], // Top, Right, Bottom, Left
         filename: `Invoice_${invoice.invoiceNumber.replace(/[^a-z0-9]/gi, '_')}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 3, useCORS: true, logging: false, backgroundColor: '#ffffff', scrollX: 0, scrollY: 0, windowWidth: element.scrollWidth, width: element.scrollWidth },
+        html2canvas: { scale: 3, useCORS: true, logging: false, backgroundColor: '#ffffff', scrollX: 0, scrollY: 0, x: 0, y: 0, width: 794, windowWidth: 794 },
         pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
@@ -264,17 +265,48 @@ export const InvoiceBillModal: React.FC<InvoiceBillModalProps> = ({ isOpen, onCl
       const opt = {
         margin: [0, 0, 0, 0],
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 3, useCORS: true, logging: false, backgroundColor: '#ffffff', scrollX: 0, scrollY: 0, windowWidth: element.scrollWidth, width: element.scrollWidth },
+        html2canvas: { scale: 3, useCORS: true, logging: false, backgroundColor: '#ffffff', scrollX: 0, scrollY: 0, x: 0, y: 0, width: 794, windowWidth: 794 },
         pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
       };
       const dataUri: string = await html2pdfLib().set(opt).from(element).outputPdf('datauristring');
       const base64 = dataUri.split(',')[1] || '';
-      const subject = `Invoice ${invoice.invoiceNumber} from ${appSettings.agencyName || 'Techinfigo'}`;
-      const body = `Hi ${client?.name || ''},\n\nPlease find attached your invoice ${invoice.invoiceNumber}.\n\nThank you for your business.\n\nBest regards,\n${appSettings.agencyName || 'Techinfigo'}`;
+      const clientAny = client as any;
+      const salutation = clientAny?.salutation
+        ? `${clientAny.salutation} ${client?.name || ''}`.trim()
+        : (client?.name ? client.name : 'Sir/Ma\'am');
+
+      const serviceNames = invoice.items
+        .map((it) => (it.description || '').replace(/\s*\((Monthly|Quarterly|Annual|One-Time)\)\s*/gi, '').trim())
+        .filter(Boolean);
+      const servicesForSubject = serviceNames.length
+        ? serviceNames.slice(0, 3).join(', ') + (serviceNames.length > 3 ? ' & more' : '')
+        : 'Services';
+
+      const curr = invoice.currency || appSettings.defaultCurrency || 'INR';
+      const money = (n: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: curr, maximumFractionDigits: 0 }).format(n || 0);
+      const lineList = invoice.items
+        .map((it) => `  • ${it.description} — ${money((it.quantity || 1) * (it.unitPrice || 0))}`)
+        .join('\n');
+      const dueDateStr = invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+
+      const subject = `Invoice ${invoice.invoiceNumber} — ${servicesForSubject} | ${appSettings.agencyName || 'Techinfigo'}`;
+      const body =
+        `Dear ${salutation},\n\n` +
+        `Please find attached your invoice ${invoice.invoiceNumber} from ${appSettings.agencyName || 'Techinfigo'}.\n\n` +
+        `Invoice Details:\n` +
+        `Invoice No: ${invoice.invoiceNumber}\n` +
+        (dueDateStr ? `Due Date: ${dueDateStr}\n` : '') +
+        `\nServices:\n${lineList}\n\n` +
+        (invoice.advanceAmount && invoice.advanceAmount > 0
+          ? `Advance Received: -${money(invoice.advanceAmount)}\n`
+          : '') +
+        `\nThe detailed invoice with tax breakup and payment details is attached as a PDF.\n\n` +
+        `Thank you for your business.\n\nBest regards,\n${appSettings.agencyName || 'Techinfigo'}`;
       const filename = `Invoice_${invoice.invoiceNumber.replace(/[^a-z0-9]/gi, '_')}.pdf`;
       await sendGmailWithAttachment(token, to, subject, body, base64, filename);
-      alert(`Invoice emailed to ${to} with the PDF attached.`);
+      if (onMarkSent) onMarkSent(invoice.id);
+      alert(`Invoice emailed to ${to} with the PDF attached. Status set to Sent.`);
     } catch (err) {
       console.error('Gmail send failed', err);
       alert(err instanceof Error ? err.message : 'Failed to send the invoice via Gmail.');
@@ -389,7 +421,7 @@ export const InvoiceBillModal: React.FC<InvoiceBillModalProps> = ({ isOpen, onCl
         <div className="flex-1 overflow-y-auto font-sans" style={{ background: CREAM }}>
           <div
             id="invoice-pdf-content"
-            style={{ width: '210mm', minHeight: '296mm', margin: 0, background: CREAM, color: '#111', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+            style={{ width: '794px', maxWidth: '794px', minHeight: '1123px', margin: '0 auto', background: CREAM, color: '#111', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
           >
             {/* 1. Top gold bar */}
             <div style={{ height: 10, background: GOLD, flexShrink: 0 }} />

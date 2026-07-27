@@ -2845,6 +2845,15 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
               (c) => c.id === activeModal.props.invoice.clientId,
             )}
             appSettings={appSettings}
+            onMarkSent={(invoiceId) =>
+              setInvoices((prev) =>
+                prev.map((i) =>
+                  i.id === invoiceId && i.status !== "Paid"
+                    ? { ...i, status: "Sent" as InvoiceStatus }
+                    : i,
+                ),
+              )
+            }
           />
         )}
       {activeModal?.type === "LEAD_FORM" && (
