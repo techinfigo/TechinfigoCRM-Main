@@ -306,7 +306,8 @@ export const InvoiceBillModal: React.FC<InvoiceBillModalProps> = ({ isOpen, onCl
       const filename = `Invoice_${invoice.invoiceNumber.replace(/[^a-z0-9]/gi, '_')}.pdf`;
       await sendGmailWithAttachment(token, to, subject, body, base64, filename);
       if (onMarkSent) onMarkSent(invoice.id);
-      alert(`Invoice emailed to ${to} with the PDF attached. Status set to Sent.`);
+      alert(`Invoice sent to ${to}. Status updated to Sent.`);
+      onClose();
     } catch (err) {
       console.error('Gmail send failed', err);
       alert(err instanceof Error ? err.message : 'Failed to send the invoice via Gmail.');
