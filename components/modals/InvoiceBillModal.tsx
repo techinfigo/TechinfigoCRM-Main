@@ -216,7 +216,7 @@ export const InvoiceBillModal: React.FC<InvoiceBillModalProps> = ({ isOpen, onCl
         margin: [0, 0, 0, 0], // Top, Right, Bottom, Left
         filename: `Invoice_${invoice.invoiceNumber.replace(/[^a-z0-9]/gi, '_')}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 3, useCORS: true, logging: false, windowWidth: 794, backgroundColor: '#ffffff' },
+        html2canvas: { scale: 3, useCORS: true, logging: false, backgroundColor: '#ffffff', scrollX: 0, scrollY: 0, windowWidth: element.scrollWidth, width: element.scrollWidth },
         pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
@@ -333,7 +333,7 @@ export const InvoiceBillModal: React.FC<InvoiceBillModalProps> = ({ isOpen, onCl
         <div className="flex-1 overflow-y-auto font-sans" style={{ background: CREAM }}>
           <div
             id="invoice-pdf-content"
-            style={{ width: '210mm', minHeight: '296mm', margin: '0 auto', background: CREAM, color: '#111', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+            style={{ width: '210mm', minHeight: '296mm', margin: 0, background: CREAM, color: '#111', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
           >
             {/* 1. Top gold bar */}
             <div style={{ height: 10, background: GOLD, flexShrink: 0 }} />
