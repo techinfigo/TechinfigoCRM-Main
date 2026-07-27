@@ -290,19 +290,26 @@ export const InvoiceBillModal: React.FC<InvoiceBillModalProps> = ({ isOpen, onCl
         .join('\n');
       const dueDateStr = invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
 
-      const subject = `Invoice ${invoice.invoiceNumber} — ${servicesForSubject} | ${appSettings.agencyName || 'Techinfigo'}`;
+      const agency = appSettings.agencyName || 'Techinfigo';
+      const hasAdvance = !!(invoice.advanceAmount && invoice.advanceAmount > 0);
+      const payable = hasAdvance ? balanceDue : grandTotal;
+
+      const subject = `Invoice ${invoice.invoiceNumber} for ${servicesForSubject} — ${agency}`;
       const body =
         `Dear ${salutation},\n\n` +
-        `Please find attached your invoice ${invoice.invoiceNumber} from ${appSettings.agencyName || 'Techinfigo'}.\n\n` +
-        `Invoice Details:\n` +
-        `Invoice No: ${invoice.invoiceNumber}\n` +
-        (dueDateStr ? `Due Date: ${dueDateStr}\n` : '') +
-        `\nServices:\n${lineList}\n\n` +
-        (invoice.advanceAmount && invoice.advanceAmount > 0
-          ? `Advance Received: -${money(invoice.advanceAmount)}\n`
+        `Thank you for choosing ${agency}. Here is a summary of your invoice for the following ${serviceNames.length === 1 ? 'service' : 'services'}:\n\n` +
+        `${lineList}\n\n` +
+        `Subtotal: ${money(subTotal)}\n` +
+        `Tax (GST ${taxRate}%): ${money(taxTotal)}\n` +
+        `Total: ${money(grandTotal)}\n` +
+        (hasAdvance
+          ? `Advance already received: -${money(invoice.advanceAmount || 0)}\n` +
+            `Balance now payable: ${money(payable)}\n`
           : '') +
-        `\nThe detailed invoice with tax breakup and payment details is attached as a PDF.\n\n` +
-        `Thank you for your business.\n\nBest regards,\n${appSettings.agencyName || 'Techinfigo'}`;
+        (dueDateStr ? `\nKindly arrange the payment by ${dueDateStr}.` : '') +
+        `\n\nThe complete invoice (with GST breakup and our bank/UPI payment details) is attached as a PDF for your records.\n\n` +
+        `If you have any questions about this invoice, just reply to this email and we'll be happy to help.\n\n` +
+        `Warm regards,\n${agency}`;
       const filename = `Invoice_${invoice.invoiceNumber.replace(/[^a-z0-9]/gi, '_')}.pdf`;
       await sendGmailWithAttachment(token, to, subject, body, base64, filename);
       if (onMarkSent) onMarkSent(invoice.id);
@@ -422,7 +429,7 @@ export const InvoiceBillModal: React.FC<InvoiceBillModalProps> = ({ isOpen, onCl
         <div className="flex-1 overflow-y-auto font-sans" style={{ background: CREAM }}>
           <div
             id="invoice-pdf-content"
-            style={{ width: '794px', maxWidth: '794px', minHeight: '1123px', margin: '0 auto', background: CREAM, color: '#111', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+            style={{ width: '794px', maxWidth: '794px', margin: '0 auto', background: CREAM, color: '#111', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
           >
             {/* 1. Top gold bar */}
             <div style={{ height: 10, background: GOLD, flexShrink: 0 }} />
@@ -597,7 +604,7 @@ export const InvoiceBillModal: React.FC<InvoiceBillModalProps> = ({ isOpen, onCl
             </div>
 
             {/* 6. Bottom gold bar */}
-            <div style={{ height: 14, background: GOLD, marginTop: 'auto' }} />
+            <div style={{ height: 14, background: GOLD, marginTop: 24 }} />
           </div>
         </div>
       </div>
