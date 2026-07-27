@@ -159,6 +159,29 @@ export const FinanceSettingsView: React.FC<FinanceSettingsViewProps> = ({ appSet
             </div>
           </FormField>
 
+          <FormField label="Invoice Logo Size" htmlFor="invoiceLogoHeight">
+            <div className="flex items-center gap-4">
+              <input
+                id="invoiceLogoHeight"
+                type="range"
+                min="40"
+                max="200"
+                step="5"
+                value={formData.invoiceLogoHeight ?? 100}
+                onChange={(e) => { setFormData(prev => ({ ...prev, invoiceLogoHeight: Number(e.target.value) })); setIsChanged(true); }}
+                disabled={!canManage}
+                className="flex-1 accent-premium-accent"
+              />
+              <span className="text-sm text-text-muted w-16 text-right">{formData.invoiceLogoHeight ?? 100}px</span>
+            </div>
+            <p className="text-xs text-text-muted mt-1">Adjust how large your logo appears on the invoice PDF.</p>
+            {formData.agencyLogoUrl && (
+              <div className="mt-3 p-3 rounded-lg bg-[#0C2B2B] flex justify-center">
+                <img src={formData.agencyLogoUrl} alt="Logo size preview" style={{ height: (formData.invoiceLogoHeight ?? 100), maxWidth: 420, objectFit: 'contain' }} />
+              </div>
+            )}
+          </FormField>
+
           <FormField label="Invoice Terms & Conditions (one per line)" htmlFor="invoiceTerms">
             <TextArea
               id="invoiceTerms"

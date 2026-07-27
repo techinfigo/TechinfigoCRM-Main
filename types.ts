@@ -897,6 +897,8 @@ export interface AppSettings {
     agencyGstin?: string;
     /** One term per line. When empty the invoice falls back to built-in defaults. */
     invoiceTerms?: string;
+    /** Logo height on the invoice PDF, in px. Defaults to 100. */
+    invoiceLogoHeight?: number;
     defaultCurrency: 'USD' | 'INR' | 'EUR' | 'GBP';
     defaultPaymentTerms?: number;
     leadsModule: {
