@@ -453,27 +453,38 @@ export const InvoiceBillModal: React.FC<InvoiceBillModalProps> = ({ isOpen, onCl
                   </tbody>
                 </table>
 
-                <div style={{ background: INK, color: '#fff', padding: '10px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 8 }}>
-                  <span style={{ fontWeight: 700, fontSize: 13 }}>TOTAL</span>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 20, fontWeight: 800, lineHeight: 1.2 }}>{inrWhole(grandTotal)}</div>
-                    <div style={{ fontSize: 8, opacity: 0.85, marginTop: 2 }}>{amountInWordsINR(grandTotal)}</div>
+                {advanceAmount > 0 ? (
+                  <>
+                    {/* When an advance was taken, TOTAL and advance are shown as
+                        secondary rows, and BALANCE DUE is the highlighted amount. */}
+                    <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 8 }}>
+                      <tbody>
+                        <tr>
+                          <td style={{ ...totalLabelStyle, fontWeight: 700 }}>Total</td>
+                          <td style={{ ...totalValueStyle, fontWeight: 700 }}>{inr(grandTotal)}</td>
+                        </tr>
+                        <tr>
+                          <td style={totalLabelStyle}>Less: Advance Received</td>
+                          <td style={totalValueStyle}>-{inr(advanceAmount)}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <div style={{ background: INK, color: '#fff', padding: '10px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 8 }}>
+                      <span style={{ fontWeight: 700, fontSize: 13 }}>BALANCE DUE</span>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: 20, fontWeight: 800, lineHeight: 1.2 }}>{inrWhole(balanceDue)}</div>
+                        <div style={{ fontSize: 8, opacity: 0.85, marginTop: 2 }}>{amountInWordsINR(balanceDue)}</div>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ background: INK, color: '#fff', padding: '10px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 8 }}>
+                    <span style={{ fontWeight: 700, fontSize: 13 }}>TOTAL</span>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: 20, fontWeight: 800, lineHeight: 1.2 }}>{inrWhole(grandTotal)}</div>
+                      <div style={{ fontSize: 8, opacity: 0.85, marginTop: 2 }}>{amountInWordsINR(grandTotal)}</div>
+                    </div>
                   </div>
-                </div>
-
-                {advanceAmount > 0 && (
-                  <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 8 }}>
-                    <tbody>
-                      <tr>
-                        <td style={totalLabelStyle}>Less: Advance Received</td>
-                        <td style={totalValueStyle}>-{inr(advanceAmount)}</td>
-                      </tr>
-                      <tr>
-                        <td style={{ ...totalLabelStyle, fontWeight: 700 }}>Balance Due</td>
-                        <td style={{ ...totalValueStyle, fontWeight: 800 }}>{inr(balanceDue)}</td>
-                      </tr>
-                    </tbody>
-                  </table>
                 )}
 
                 <div style={{ textAlign: 'center', marginTop: 36 }}>
