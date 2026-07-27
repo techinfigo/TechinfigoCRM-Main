@@ -414,7 +414,7 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({ isOpen, onClos
 
               <div className="flex flex-wrap gap-x-8 gap-y-1 justify-end pt-2 text-sm">
                 <span className="text-text-muted">Total Agreed: <strong className="text-text-heading dark:text-slate-100">₹{getTotalAgreedValue(formData.agreedServices).toLocaleString('en-IN')}</strong></span>
-                <span className="text-text-muted">Monthly Recurring: <strong className="text-emerald-600 dark:text-emerald-400">₹{Math.round(getMonthlyRecurringValue(formData.agreedServices)).toLocaleString('en-IN')}</strong></span>
+                <span className="text-text-muted" title="Monthly equivalent — annual ÷ 12, quarterly ÷ 3. Each service still bills at its own cycle.">Recurring ≈ <strong className="text-emerald-600 dark:text-emerald-400">₹{Math.round(getMonthlyRecurringValue(formData.agreedServices)).toLocaleString('en-IN')}</strong>/mo</span>
               </div>
             </div>
           )}

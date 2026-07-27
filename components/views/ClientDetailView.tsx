@@ -292,7 +292,7 @@ const ClientDetailView: React.FC<ClientDetailViewProps> = ({
                         <div className="flex items-center justify-between mb-2">
                           <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">Agreed Services</p>
                           {finance.monthlyRecurring > 0 && (
-                            <span className="text-xs text-text-muted">Monthly Recurring: <strong className="text-emerald-600 dark:text-emerald-400">{inrFmt(finance.monthlyRecurring)}</strong></span>
+                            <span className="text-xs text-text-muted" title="Recurring services normalised to a per-month figure (annual ÷ 12, quarterly ÷ 3). Each service is still billed at its own cycle shown below.">Recurring ≈ <strong className="text-emerald-600 dark:text-emerald-400">{inrFmt(finance.monthlyRecurring)}</strong>/mo</span>
                           )}
                         </div>
                         <div className="space-y-1.5">
@@ -302,7 +302,7 @@ const ClientDetailView: React.FC<ClientDetailViewProps> = ({
                                 {sv.name || 'Untitled service'}
                                 <span className={`ml-2 text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${sv.billingType === 'One-Time' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'}`}>{sv.billingType}</span>
                               </span>
-                              <span className="font-semibold text-text-heading dark:text-slate-100">{inrFmt(sv.cost)}</span>
+                              <span className="font-semibold text-text-heading dark:text-slate-100">{inrFmt(sv.cost)}{sv.billingType === 'Monthly' ? '/mo' : sv.billingType === 'Quarterly' ? '/qtr' : sv.billingType === 'Annual' ? '/yr' : ''}</span>
                             </div>
                           ))}
                         </div>
