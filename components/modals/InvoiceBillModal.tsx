@@ -342,7 +342,7 @@ export const InvoiceBillModal: React.FC<InvoiceBillModalProps> = ({ isOpen, onCl
             <div style={{ background: INK, color: '#fff', padding: '28px 40px 24px', flexShrink: 0 }}>
               <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 18 }}>
                 {appSettings.agencyLogoUrl
-                  ? <img src={appSettings.agencyLogoUrl} alt={agencyName} style={{ height: 56, objectFit: 'contain' }} />
+                  ? <img src={appSettings.agencyLogoUrl} alt={agencyName} style={{ height: 100, maxHeight: 100, maxWidth: 340, objectFit: 'contain' }} />
                   : <TechinfigoLogoSvg className="h-14 w-auto" />
                 }
               </div>
