@@ -4,7 +4,7 @@ import { DigitalPatternBackground } from './DigitalPatternBackground';
 import { load, save, KEYS } from '../storage';
 
 interface LoginPageProps {
-  onLogin: (email: string, password: string) => Promise<string | null>; // returns null on success, error message on failure
+  onLogin: (email: string, password: string, rememberMe: boolean) => Promise<string | null>; // returns null on success, error message on failure
   mode: 'signin' | 'signup';
   onToggleMode: () => void;
 }
@@ -83,7 +83,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, mode, onToggleMode }) =>
       return;
     }
     setIsSubmitting(true);
-    const errorMessage = await onLogin(email, password);
+    const errorMessage = await onLogin(email, password, rememberMe);
     setIsSubmitting(false);
     if (errorMessage) {
       setError(errorMessage);

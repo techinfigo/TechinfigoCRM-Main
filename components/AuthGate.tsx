@@ -5,6 +5,9 @@ import {
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
   signOut,
+  setPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence,
   User,
 } from 'firebase/auth';
 import { auth, isFirebaseConfigured } from '../firebase';
@@ -60,8 +63,35 @@ export const AuthGate: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
-  const handleLogin = async (email: string, password: string): Promise<string | null> => {
+  // Auto sign-out after a period of no interaction, for security on shared/office
+  // machines. Runs only while signed in. 30 minutes of inactivity ends the session.
+  useEffect(() => {
+    if (gateState !== 'ready' || !isFirebaseConfigured) return;
+    const INACTIVITY_MS = 30 * 60 * 1000; // 30 minutes
+    let timer: ReturnType<typeof setTimeout>;
+    const reset = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => { signOut(auth); }, INACTIVITY_MS);
+    };
+    const events = ['mousedown', 'keydown', 'scroll', 'touchstart', 'mousemove'];
+    events.forEach((e) => window.addEventListener(e, reset, { passive: true }));
+    reset();
+    return () => {
+      clearTimeout(timer);
+      events.forEach((e) => window.removeEventListener(e, reset));
+    };
+  }, [gateState]);
+
+  const handleLogin = async (email: string, password: string, rememberMe: boolean = false): Promise<string | null> => {
     try {
+      // Remember me -> local persistence (stays signed in after closing the tab).
+      // Otherwise -> session persistence (signs out when the tab/browser closes).
+      await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
+      if (rememberMe) {
+        localStorage.setItem('crm_remember_me', '1');
+      } else {
+        localStorage.removeItem('crm_remember_me');
+      }
       if (mode === 'signup') {
         await createUserWithEmailAndPassword(auth, email, password);
       } else {
