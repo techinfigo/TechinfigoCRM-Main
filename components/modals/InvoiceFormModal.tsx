@@ -134,49 +134,16 @@ export const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({ isOpen, onCl
       if (name === 'discountType' && value === 'None') {
         updated.discountValue = 0;
       }
-      // When the client changes on a NEW invoice, refill the invoice from THAT
-      // client: their agreed services become the line items, and their advance
-      // carries over. Switching clients re-fills for the newly chosen client.
+      // When the client changes on a NEW invoice, carry over their advance and
+      // clear the line items — the user then picks which agreed services to add
+      // via the "Add from agreed services" picker (so new services can be billed
+      // without re-dumping already-invoiced ones).
       if (name === 'clientId' && !invoice) {
         const picked = clients.find(c => c.id === value);
         const previous = clients.find(c => c.id === prev.clientId);
-
-        // Build what the PREVIOUS client's auto-seeded rows would look like, so we
-        // can tell auto-filled items apart from ones the user typed themselves.
-        const servicesToItems = (svcs?: typeof picked.agreedServices) =>
-          (svcs || []).map(sv => ({
-            description: sv.name + (sv.billingType !== 'One-Time' ? ` (${sv.billingType})` : ''),
-            unitPrice: Number(sv.cost) || 0,
-          }));
-
-        const isEmptyRow = prev.items.length === 0 ||
-          (prev.items.length === 1 && !prev.items[0].description.trim() && !prev.items[0].unitPrice);
-
-        const prevSeed = servicesToItems(previous?.agreedServices);
-        const matchesPrevSeed = prevSeed.length > 0 &&
-          prev.items.length === prevSeed.length &&
-          prev.items.every((it, i) =>
-            it.description === prevSeed[i].description && Number(it.unitPrice) === prevSeed[i].unitPrice);
-
-        // Only overwrite items that were auto-filled (empty, or the last client's
-        // services) — never wipe out line items the user typed by hand.
-        const safeToReplace = isEmptyRow || matchesPrevSeed;
-
         if (picked) {
-          // Advance: replace when it also came from the previous client (or is blank).
           if (!prev.advanceAmount || Number(prev.advanceAmount) === Number(previous?.advanceAmount)) {
             updated.advanceAmount = picked.advanceAmount || 0;
-          }
-          if (safeToReplace) {
-            updated.items = (picked.agreedServices && picked.agreedServices.length > 0)
-              ? picked.agreedServices.map(sv => ({
-                  id: `item-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-                  description: sv.name + (sv.billingType !== 'One-Time' ? ` (${sv.billingType})` : ''),
-                  quantity: 1,
-                  unitPrice: Number(sv.cost) || 0,
-                  isRecurring: sv.billingType !== 'One-Time',
-                }))
-              : [{ id: `item-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, description: '', quantity: 1, unitPrice: 0 }];
           }
         }
       }
@@ -329,6 +296,23 @@ export const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({ isOpen, onCl
       ...prev,
       items: [...prev.items, { id: Date.now().toString(), description: '', quantity: 1, unitPrice: 0 }],
     }));
+  };
+
+  // Add one of the selected client's agreed services as a line item. Replaces a
+  // single empty starter row if present, so the first pick doesn't leave a blank.
+  const addServiceAsItem = (svc: { name: string; cost: number; billingType: string }) => {
+    onSetDirty(true);
+    const newItem = {
+      id: `item-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      description: svc.name + (svc.billingType !== 'One-Time' ? ` (${svc.billingType})` : ''),
+      quantity: 1,
+      unitPrice: Number(svc.cost) || 0,
+      isRecurring: svc.billingType !== 'One-Time',
+    };
+    setFormData(prev => {
+      const onlyEmptyRow = prev.items.length === 1 && !prev.items[0].description.trim() && !prev.items[0].unitPrice;
+      return { ...prev, items: onlyEmptyRow ? [newItem] : [...prev.items, newItem] };
+    });
   };
 
   const removeItem = (index: number) => {
@@ -531,6 +515,32 @@ export const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({ isOpen, onCl
 
         <div className="space-y-3 pt-2">
           <h4 className="text-md font-semibold text-slate-700 dark:text-slate-200 border-b border-slate-200 dark:border-slate-700 pb-2 mb-1">Invoice Items</h4>
+
+          {(() => {
+            const selectedClient = clients.find(c => c.id === formData.clientId);
+            const svcs = selectedClient?.agreedServices || [];
+            if (svcs.length === 0) return null;
+            return (
+              <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-2">Add from agreed services</p>
+                <div className="flex flex-wrap gap-2">
+                  {svcs.map(sv => (
+                    <button
+                      key={sv.id}
+                      type="button"
+                      onClick={() => addServiceAsItem(sv)}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 hover:border-premium-accent hover:text-premium-accent transition-colors"
+                      title="Add this service to the invoice"
+                    >
+                      + {sv.name}
+                      <span className="text-slate-400">₹{(Number(sv.cost)||0).toLocaleString('en-IN')}{sv.billingType==='Monthly'?'/mo':sv.billingType==='Quarterly'?'/qtr':sv.billingType==='Annual'?'/yr':''}</span>
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[11px] text-slate-400 mt-2">Tick only the services you want to bill on this invoice. Existing recurring services keep running separately.</p>
+              </div>
+            );
+          })()}
           
           {/* Table Header for Desktop */}
           <div className="hidden md:grid grid-cols-12 gap-x-2 px-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
