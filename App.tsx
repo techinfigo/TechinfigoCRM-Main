@@ -2583,7 +2583,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
               appSettings={appSettings}
               payments={payments}
               onOpenSendModal={(inv) =>
-                openModal("SEND_INVOICE", { invoice: inv })
+                openModal("INVOICE_BILL_VIEW", { invoice: inv })
               }
               onUpdateStatus={(id, status) =>
                 setInvoices(
