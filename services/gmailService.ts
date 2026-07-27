@@ -345,3 +345,35 @@ export const toggleGmailStar = async (
 export const trashGmailMessage = async (token: string, messageId: string): Promise<void> => {
   await gmailWrite(token, `/messages/${messageId}/trash`, {});
 };
+
+/** Send an email with a single file attachment (e.g. an invoice PDF).
+ *  attachmentBase64 is the raw base64 (no data: prefix). */
+export const sendGmailWithAttachment = async (
+  token: string,
+  to: string,
+  subject: string,
+  body: string,
+  attachmentBase64: string,
+  attachmentName: string,
+  attachmentMime = 'application/pdf',
+): Promise<void> => {
+  const boundary = `bnd_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+  const nl = '\r\n';
+  const message =
+    `To: ${to}${nl}` +
+    `Subject: ${subject}${nl}` +
+    `MIME-Version: 1.0${nl}` +
+    `Content-Type: multipart/mixed; boundary="${boundary}"${nl}${nl}` +
+    `--${boundary}${nl}` +
+    `Content-Type: text/plain; charset="UTF-8"${nl}${nl}` +
+    `${body}${nl}${nl}` +
+    `--${boundary}${nl}` +
+    `Content-Type: ${attachmentMime}; name="${attachmentName}"${nl}` +
+    `Content-Transfer-Encoding: base64${nl}` +
+    `Content-Disposition: attachment; filename="${attachmentName}"${nl}${nl}` +
+    `${attachmentBase64}${nl}` +
+    `--${boundary}--`;
+  const encoded = btoa(unescape(encodeURIComponent(message)))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  await gmailWrite(token, '/messages/send', { raw: encoded });
+};

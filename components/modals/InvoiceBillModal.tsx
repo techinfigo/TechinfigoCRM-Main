@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Invoice, Client, AppSettings, ServiceItem } from '../../types';
 import { Button } from '../common/Button';
 import { safeFormatDate } from '@/utils';
-import { Printer, Download } from 'lucide-react';
+import { Printer, Download, Mail } from 'lucide-react';
+import { getStoredGmailToken, connectGmail, sendGmailWithAttachment, isGmailConfigured } from '../../services/gmailService';
 
 interface InvoiceBillModalProps {
   isOpen: boolean;
@@ -146,6 +147,7 @@ const totalValueStyle: React.CSSProperties = {
 
 export const InvoiceBillModal: React.FC<InvoiceBillModalProps> = ({ isOpen, onClose, invoice, client, appSettings }) => {
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isEmailing, setIsEmailing] = useState(false);
 
   if (!isOpen) return null;
 
@@ -238,6 +240,49 @@ export const InvoiceBillModal: React.FC<InvoiceBillModalProps> = ({ isOpen, onCl
 
   const paddingRowsNeeded = Math.max(0, 3 - invoice.items.length);
 
+  const handleSendViaGmail = async () => {
+    if (!isGmailConfigured()) {
+      alert('Gmail is not connected yet. Open the Communication tab and connect Gmail first.');
+      return;
+    }
+    const to = client?.email;
+    if (!to) {
+      alert('This client has no email address on file.');
+      return;
+    }
+    const element = document.getElementById('invoice-pdf-content');
+    // @ts-ignore
+    const html2pdfLib = window.html2pdf;
+    if (!element || typeof html2pdfLib === 'undefined') {
+      alert('Could not generate the PDF. Please try the Download button instead.');
+      return;
+    }
+    setIsEmailing(true);
+    try {
+      let token = getStoredGmailToken();
+      if (!token) token = await connectGmail();
+      const opt = {
+        margin: [0, 0, 0, 0],
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 3, useCORS: true, logging: false, backgroundColor: '#ffffff', scrollX: 0, scrollY: 0, windowWidth: element.scrollWidth, width: element.scrollWidth },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      };
+      const dataUri: string = await html2pdfLib().set(opt).from(element).outputPdf('datauristring');
+      const base64 = dataUri.split(',')[1] || '';
+      const subject = `Invoice ${invoice.invoiceNumber} from ${appSettings.agencyName || 'Techinfigo'}`;
+      const body = `Hi ${client?.name || ''},\n\nPlease find attached your invoice ${invoice.invoiceNumber}.\n\nThank you for your business.\n\nBest regards,\n${appSettings.agencyName || 'Techinfigo'}`;
+      const filename = `Invoice_${invoice.invoiceNumber.replace(/[^a-z0-9]/gi, '_')}.pdf`;
+      await sendGmailWithAttachment(token, to, subject, body, base64, filename);
+      alert(`Invoice emailed to ${to} with the PDF attached.`);
+    } catch (err) {
+      console.error('Gmail send failed', err);
+      alert(err instanceof Error ? err.message : 'Failed to send the invoice via Gmail.');
+    } finally {
+      setIsEmailing(false);
+    }
+  };
+
   return (
     <div
       className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm z-[1100] flex items-center justify-center p-0 sm:p-4 print-container-wrapper"
@@ -318,14 +363,25 @@ export const InvoiceBillModal: React.FC<InvoiceBillModalProps> = ({ isOpen, onCl
               Print
             </Button>
             <Button
-              variant="primary"
+              variant="outline"
               onClick={handleDownloadPDF}
-              leftIcon={isDownloading ? <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" /> : <Download className="w-4 h-4" />}
+              leftIcon={isDownloading ? <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" /> : <Download className="w-4 h-4" />}
               size="sm"
               disabled={isDownloading}
             >
               {isDownloading ? 'Generating...' : 'Download PDF'}
             </Button>
+            {client?.email && (
+              <Button
+                variant="primary"
+                onClick={handleSendViaGmail}
+                leftIcon={isEmailing ? <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" /> : <Mail className="w-4 h-4" />}
+                size="sm"
+                disabled={isEmailing}
+              >
+                {isEmailing ? 'Sending...' : 'Send via Gmail'}
+              </Button>
+            )}
           </div>
         </div>
 
