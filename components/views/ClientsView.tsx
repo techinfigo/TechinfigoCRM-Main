@@ -98,17 +98,21 @@ export const ClientsView: React.FC<ClientsViewProps> = ({ clients, invoices, pay
   // against those invoices - any advance on file. Positive = client still owes.
   const balanceForClient = (clientId: string): number => {
     const clientInvoices = invoices.filter(i => i.clientId === clientId);
-    const invoicedTotal = clientInvoices.reduce((sum, inv) => {
+    // Only unpaid/partially-paid invoices count toward the outstanding balance.
+    // An invoice marked "Paid" (via Mark as Paid OR fully covered by payments)
+    // contributes nothing, so the balance clears either way.
+    const outstanding = clientInvoices.reduce((sum, inv) => {
+      if (inv.status === 'Paid') return sum;
       const sub = (inv.items || []).reduce((sA, it) => sA + it.quantity * it.unitPrice, 0);
       const tax = sub * ((inv.taxRate ?? 0) / 100);
-      return sum + sub + tax;
+      const invTotal = sub + tax;
+      const paidOnThis = payments
+        .filter(p => p.invoiceId === inv.id)
+        .reduce((s2, p) => s2 + (Number(p.amount) || 0), 0);
+      return sum + Math.max(0, invTotal - paidOnThis);
     }, 0);
-    const invoiceIds = new Set(clientInvoices.map(i => i.id));
-    const paidTotal = payments
-      .filter(p => invoiceIds.has(p.invoiceId))
-      .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
     const advance = Number(clients.find(c => c.id === clientId)?.advanceAmount) || 0;
-    return Math.max(0, invoicedTotal - paidTotal - advance);
+    return Math.max(0, outstanding - advance);
   };
   const inrFmt = (n: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n || 0);
 
