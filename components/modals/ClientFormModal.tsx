@@ -247,7 +247,7 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({ isOpen, onClos
       isOpen={isOpen}
       onClose={onClose}
       title={t(client ? 'clients.editTitle' : 'clients.addTitle')}
-      size="2xl" 
+      size="3xl" 
       overrideZIndex="z-[1050]"
       footer={
         <>
@@ -285,9 +285,11 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({ isOpen, onClos
             <Input label={t('clients.form.contactName')} id="primaryContactName" name="primaryContactName" value={formData.primaryContactName || ''} onChange={handleChange} />
             <Input label={t('clients.form.contactEmail')} id="primaryContactEmail" name="primaryContactEmail" type="email" value={formData.primaryContactEmail || ''} onChange={handleChange} error={errors.primaryContactEmail}/>
         </div>
-        <Input label={t('clients.form.tags')} id="tags" name="tags" placeholder="e.g., key_account, local, b2c" value={formData.tags || ''} onChange={handleChange} />
-        <TextArea label={t('clients.form.address')} id="address" name="address" value={formData.address || ''} onChange={handleChange} rows={2} />
-        <TextArea label={t('clients.form.notes')} id="clientNotes" name="clientNotes" value={formData.clientNotes || ''} onChange={handleChange} rows={3} placeholder="General notes: preferences, history, how you met, etc."/>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input label={t('clients.form.tags')} id="tags" name="tags" placeholder="e.g., key_account, local, b2c" value={formData.tags || ''} onChange={handleChange} />
+            <TextArea label={t('clients.form.address')} id="address" name="address" value={formData.address || ''} onChange={handleChange} rows={2} />
+        </div>
+        <TextArea label={t('clients.form.notes')} id="clientNotes" name="clientNotes" value={formData.clientNotes || ''} onChange={handleChange} rows={2} placeholder="General notes: preferences, history, how you met, etc."/>
 
         <div className="pt-2 border-t border-border-base dark:border-slate-700">
           <h4 className="text-sm font-semibold text-text-base dark:text-text-base mb-3 mt-3">Billing Preferences</h4>
