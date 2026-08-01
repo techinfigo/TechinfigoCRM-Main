@@ -1896,6 +1896,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
           <ClientsView
             clients={clients}
             invoices={invoices}
+            payments={payments}
             projects={projects}
             marketingAudits={marketingAudits}
             onViewAuditDetail={(a) =>

@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Client, FeatureKey, PermissionAction, MarketingAuditRequest, ProjectsDrawerConfig, Invoice, Project, paymentModes, clientDocumentTypes } from '../../types';
+import { Client, FeatureKey, PermissionAction, MarketingAuditRequest, ProjectsDrawerConfig, Invoice, Payment, Project, paymentModes, clientDocumentTypes } from '../../types';
 import { Button } from '../common/Button';
 import { Card } from '../common/Card';
 import { Input } from '../common/Input';
@@ -41,6 +41,7 @@ const UserCircleIcon = () => (
 interface ClientsViewProps {
   clients: Client[];
   invoices: Invoice[];
+  payments?: Payment[];
   projects: Project[];
   marketingAudits: MarketingAuditRequest[];
   onViewAuditDetail: (audit: MarketingAuditRequest) => void;
@@ -57,7 +58,7 @@ const getHealthBadgeClasses = (status: 'Healthy' | 'At Risk') =>
     ? 'bg-status-negative/10 text-status-negative'
     : 'bg-status-info/10 text-status-info';
 
-export const ClientsView: React.FC<ClientsViewProps> = ({ clients, invoices, projects, marketingAudits, onViewAuditDetail, onAddClient, onEditClient, onDeleteClient, hasPermission, onSelectClientForDetail, onOpenProjectsDrawer }) => {
+export const ClientsView: React.FC<ClientsViewProps> = ({ clients, invoices, payments = [], projects, marketingAudits, onViewAuditDetail, onAddClient, onEditClient, onDeleteClient, hasPermission, onSelectClientForDetail, onOpenProjectsDrawer }) => {
   const canCreateClients = hasPermission('clients', 'canCreate');
   const canEditClients = hasPermission('clients', 'canEdit');
   const canDeleteClients = hasPermission('clients', 'canDelete');
@@ -92,6 +93,24 @@ export const ClientsView: React.FC<ClientsViewProps> = ({ clients, invoices, pro
     'name-asc': 'Name A-Z',
     'companyName-asc': 'Company A-Z',
   };
+
+  // Outstanding balance per client = total invoiced (incl. tax) - payments recorded
+  // against those invoices - any advance on file. Positive = client still owes.
+  const balanceForClient = (clientId: string): number => {
+    const clientInvoices = invoices.filter(i => i.clientId === clientId);
+    const invoicedTotal = clientInvoices.reduce((sum, inv) => {
+      const sub = (inv.items || []).reduce((sA, it) => sA + it.quantity * it.unitPrice, 0);
+      const tax = sub * ((inv.taxRate ?? 0) / 100);
+      return sum + sub + tax;
+    }, 0);
+    const invoiceIds = new Set(clientInvoices.map(i => i.id));
+    const paidTotal = payments
+      .filter(p => invoiceIds.has(p.invoiceId))
+      .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+    const advance = Number(clients.find(c => c.id === clientId)?.advanceAmount) || 0;
+    return Math.max(0, invoicedTotal - paidTotal - advance);
+  };
+  const inrFmt = (n: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n || 0);
 
   const allIndustries = useMemo(() => Array.from(new Set(clients.map(c => c.industry).filter(Boolean))), [clients]);
   const allTags = useMemo(() => Array.from(new Set(clients.flatMap(c => c.tags || []))), [clients]);
@@ -324,6 +343,7 @@ export const ClientsView: React.FC<ClientsViewProps> = ({ clients, invoices, pro
                     <th scope="col" className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Industry</th>
                     <th scope="col" className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Payment Mode</th>
                     <th scope="col" className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Document Type</th>
+                    <th scope="col" className="px-6 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Balance Due</th>
                     <th scope="col" className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Health</th>
                     <th scope="col" className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Audit</th>
                     {(canEditClients || canDeleteClients) && <th scope="col" className="px-6 py-3.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Actions</th>}
@@ -377,6 +397,12 @@ export const ClientsView: React.FC<ClientsViewProps> = ({ clients, invoices, pro
                                     )}
                                 </div>
                             );
+                        })()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold">
+                        {(() => {
+                            const bal = balanceForClient(client.id);
+                            return <span className={bal > 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}>{bal > 0 ? inrFmt(bal) : 'Settled'}</span>;
                         })()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
