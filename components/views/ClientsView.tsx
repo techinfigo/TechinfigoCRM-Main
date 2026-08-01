@@ -336,10 +336,7 @@ export const ClientsView: React.FC<ClientsViewProps> = ({ clients, invoices, pay
             <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
                 <thead className="bg-slate-50 dark:bg-slate-700/50">
                 <tr>
-                    <th scope="col" className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Name</th>
-                    <th scope="col" className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Company</th>
-                    <th scope="col" className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Email</th>
-                    <th scope="col" className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Website</th>
+                    <th scope="col" className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Client</th>
                     <th scope="col" className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Industry</th>
                     <th scope="col" className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Payment Mode</th>
                     <th scope="col" className="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Document Type</th>
@@ -359,13 +356,13 @@ export const ClientsView: React.FC<ClientsViewProps> = ({ clients, invoices, pay
                         className={`transition-colors cursor-pointer hover:bg-highlight-accent dark:hover:bg-slate-700/60 ${index % 2 === 0 ? 'bg-white dark:bg-slate-800' : 'bg-slate-50/50 dark:bg-slate-800/50'}`}
                         onClick={() => onSelectClientForDetail(client)}
                     >
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-premium-accent dark:text-premium-accent-dark">{client.name}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-300">{client.companyName || 'N/A'}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-300">{client.email}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-300">
-                        {client.website ? <a href={client.website.startsWith('http') ? client.website : `https://${client.website}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-sky-600 dark:text-sky-400 hover:underline">{client.website}</a> : 'N/A'}
+                    <td className="px-6 py-3 align-top text-sm">
+                        <div className="font-semibold text-premium-accent dark:text-premium-accent-dark">{client.name}</div>
+                        {client.companyName && <div className="text-slate-600 dark:text-slate-300">{client.companyName}</div>}
+                        {client.email && <div className="text-xs text-slate-500 dark:text-slate-400">{client.email}</div>}
+                        {client.website && <a href={client.website.startsWith('http') ? client.website : `https://${client.website}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-xs text-sky-600 dark:text-sky-400 hover:underline">{client.website.replace(/^https?:\/\//,'').replace(/\/$/,'')}</a>}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-300">{client.industry || 'N/A'}</td>
+                    <td className="px-6 py-3 align-top text-sm text-slate-600 dark:text-slate-300">{client.industry || 'N/A'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                         {(() => {
                             const pmStyle = paymentModeStyle(client.paymentMode);
