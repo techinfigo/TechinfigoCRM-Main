@@ -17,13 +17,14 @@ interface InvoiceDetailPanelProps {
   onUpdateStatus: (invoiceId: string, status: InvoiceStatus) => void;
   onEditInvoice: (invoice: Invoice) => void;
   onOpenBillModal: (invoice: Invoice) => void;
+  onRecordPayment?: (invoice: Invoice) => void;
   payments: Payment[];
 }
 
 const formatCurrency = (amount: number, currencyCode: string) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: currencyCode }).format(amount);
 
 export const InvoiceDetailPanel: React.FC<InvoiceDetailPanelProps> = ({
-  isOpen, onClose, invoice, client, appSettings, onOpenSendModal, onUpdateStatus, onEditInvoice, onOpenBillModal, payments = []
+  isOpen, onClose, invoice, client, appSettings, onOpenSendModal, onUpdateStatus, onEditInvoice, onOpenBillModal, onRecordPayment, payments = []
 }) => {
   const currency = invoice.currency || appSettings.defaultCurrency || 'INR';
 
@@ -71,6 +72,9 @@ export const InvoiceDetailPanel: React.FC<InvoiceDetailPanelProps> = ({
                       <div className="flex flex-wrap gap-2">
                         <Button size="sm" variant="outline" onClick={() => onEditInvoice(invoice)} leftIcon={<Edit className="w-4 h-4"/>}>Edit</Button>
                         <Button size="sm" variant="outline" onClick={() => onOpenSendModal(invoice)} leftIcon={<Send className="w-4 h-4"/>}>Send Invoice</Button>
+                        {onRecordPayment && invoice.status !== 'Paid' && (
+                          <Button size="sm" variant="outline" onClick={() => onRecordPayment(invoice)} leftIcon={<CheckCircle className="w-4 h-4"/>}>Record Payment</Button>
+                        )}
                         <Button size="sm" variant="outline" onClick={() => onUpdateStatus(invoice.id, 'Paid')} leftIcon={<CheckCircle className="w-4 h-4"/>}>Mark as Paid</Button>
                         <Button size="sm" variant="primary" onClick={() => onOpenBillModal(invoice)} leftIcon={<Download className="w-4 h-4"/>}>Download PDF</Button>
                       </div>

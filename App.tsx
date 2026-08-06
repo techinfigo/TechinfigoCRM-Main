@@ -2586,6 +2586,9 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
               onOpenSendModal={(inv) =>
                 openModal("INVOICE_BILL_VIEW", { invoice: inv })
               }
+              onRecordPayment={(inv) =>
+                openModal("PAYMENT_FORM", { prefillInvoiceId: inv.id })
+              }
               onUpdateStatus={(id, status) =>
                 setInvoices(
                   invoices.map((i) => (i.id === id ? { ...i, status } : i)),
@@ -2904,6 +2907,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
           onSave={handleRecordPayment}
           invoices={invoices}
           appSettings={appSettings}
+          prefillInvoiceId={activeModal.props?.prefillInvoiceId}
           onSetDirty={() => {}}
         />
       )}
