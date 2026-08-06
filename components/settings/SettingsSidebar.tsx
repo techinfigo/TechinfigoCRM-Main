@@ -48,7 +48,9 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ activeSection,
   
   // Hidden: these need a backend or are unimplemented stubs (developer features
   // and placeholders). Removing them keeps Settings to what actually works.
-  const HIDDEN_SECTIONS = ['integrations', 'apiAndWebhooks', 'automation', 'formResponses', 'systemLogs', 'billingAndSubscription'];
+  // Hidden: developer/backend features + module-settings pages whose toggles
+  // don't persist or control real behaviour yet. Finance settings stays (it's real).
+  const HIDDEN_SECTIONS = ['integrations', 'apiAndWebhooks', 'automation', 'formResponses', 'systemLogs', 'billingAndSubscription', 'leadsSettings', 'clientsSettings', 'projectsSettings', 'hrModuleSettings', 'calendarSettings', 'notifications'];
   const visibleItems = navItems.filter(item => !HIDDEN_SECTIONS.includes(item.id));
 
   const groupedItems = visibleItems.reduce((acc, item) => {
