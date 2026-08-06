@@ -2529,8 +2529,6 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
             if (selectedLead?.id === leadId)
               setSelectedLead((prev) => (prev ? { ...prev, status } : null));
           }}
-          onMarkStageManually={() => {}}
-          onRevertManualMark={() => {}}
           openPanel={(type, props) => setActivePanel({ type, props })}
           onOpenProposalPanel={(p) =>
             setActivePanel({
@@ -2538,8 +2536,6 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
               props: { proposal: p },
             })
           }
-          onSendProposal={() => {}}
-          onSendAuditReport={() => {}}
           ai={null}
           onUpdateLeadField={(leadId, field, value) => {
             const lead = leads.find((l) => l.id === leadId);

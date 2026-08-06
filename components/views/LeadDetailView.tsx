@@ -34,12 +34,8 @@ interface LeadDetailViewProps {
   onConvertLeadToClient: (lead: Lead, customAttributes?: any) => void;
   onRevertClientToLead?: (leadId: string) => void;
   onUpdateStatus: (leadId: string, status: LeadStatus) => void;
-  onMarkStageManually: (leadId: string, stageKey: string) => void;
-  onRevertManualMark: (leadId: string, stageKey: string) => void;
   openPanel: (type: PanelType, props?: any) => void;
   onOpenProposalPanel: (proposal: Proposal) => void;
-  onSendProposal: (leadId: string, emailData: { subject: string, body: string, to: string }) => void;
-  onSendAuditReport: (leadId: string, emailData: { subject: string, body: string, to: string }) => void;
   ai: GoogleGenAI | null;
   onUpdateLeadField: <K extends keyof Lead>(leadId: string, field: K, value: Lead[K]) => void;
   clients: Client[];
