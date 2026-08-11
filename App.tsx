@@ -697,18 +697,22 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
         if (exists) {
           finalInvoiceNumber = exists.invoiceNumber;
         } else {
-          const invoiceNums = prev
-            .map((i) => i.invoiceNumber)
-            .filter((num) => typeof num === 'string' && /^\d+$/.test(num));
+          // Indian financial year: 1 Apr -> 31 Mar. Numbers reset each FY.
+          // Format: "YYYY-YY/NNN" e.g. 2025-26/001.
+          const now = new Date(invoice.issueDate || Date.now());
+          const y = now.getFullYear();
+          const fyStart = now.getMonth() >= 3 ? y : y - 1;
+          const fyLabel = `${fyStart}-${String((fyStart + 1) % 100).padStart(2, '0')}`;
+          const prefix = `${fyLabel}/`;
 
-          let maxNum = 1035;
-          invoiceNums.forEach((num) => {
-            const val = parseInt(num, 10);
-            if (!isNaN(val) && val > maxNum) {
-              maxNum = val;
+          let maxSeq = 0;
+          prev.forEach((i) => {
+            if (typeof i.invoiceNumber === 'string' && i.invoiceNumber.startsWith(prefix)) {
+              const seq = parseInt(i.invoiceNumber.slice(prefix.length), 10);
+              if (!isNaN(seq) && seq > maxSeq) maxSeq = seq;
             }
           });
-          finalInvoiceNumber = String(maxNum + 1);
+          finalInvoiceNumber = `${prefix}${String(maxSeq + 1).padStart(3, '0')}`;
         }
       }
 
@@ -1011,21 +1015,29 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
       return;
     }
 
-    // Helper to generate sequential next invoice numbers
-    const invoiceNums = invoices
-      .map((i) => i.invoiceNumber)
-      .filter((num) => /^\d+$/.test(num));
+    // Generate financial-year-based next numbers for each pending invoice,
+    // matching the manual scheme "YYYY-YY/NNN" (resets each FY).
+    const fyLabelFor = (d: Date) => {
+      const y = d.getFullYear();
+      const fyStart = d.getMonth() >= 3 ? y : y - 1;
+      return `${fyStart}-${String((fyStart + 1) % 100).padStart(2, '0')}`;
+    };
 
-    let maxNum = 1035;
-    invoiceNums.forEach((num) => {
-      const val = parseInt(num, 10);
-      if (!isNaN(val) && val > maxNum) {
-        maxNum = val;
+    const seqSoFar: Record<string, number> = {};
+    invoices.forEach((i) => {
+      const m = typeof i.invoiceNumber === 'string' && i.invoiceNumber.match(/^(\d{4}-\d{2})\/(\d+)$/);
+      if (m) {
+        const seq = parseInt(m[2], 10);
+        if (!seqSoFar[m[1]] || seq > seqSoFar[m[1]]) seqSoFar[m[1]] = seq;
       }
     });
 
-    const nextInvoiceNumbers = pendingGenerations.map((_, idx) => {
-      return String(maxNum + 1 + idx);
+    // Each child is issued on its own occurrence date, so a batch spanning
+    // 31 Mar -> 1 Apr correctly splits across two financial years.
+    const nextInvoiceNumbers = pendingGenerations.map((gen) => {
+      const fy = fyLabelFor(gen.occurrenceDate || new Date());
+      seqSoFar[fy] = (seqSoFar[fy] || 0) + 1;
+      return `${fy}/${String(seqSoFar[fy]).padStart(3, '0')}`;
     });
 
     const formatCurrency = (amount: number) => {
@@ -2702,17 +2714,19 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
           }
           prefillFromClient={activeModal.props?.client || null}
           getNextInvoiceNumber={() => {
-            const invoiceNums = invoices
-              .map((i) => i.invoiceNumber)
-              .filter((num) => typeof num === 'string' && /^\d+$/.test(num));
-            let maxNum = 1035;
-            invoiceNums.forEach((num) => {
-              const val = parseInt(num, 10);
-              if (!isNaN(val) && val > maxNum) {
-                maxNum = val;
+            // Must match the scheme in handleSaveInvoice: "YYYY-YY/NNN", reset each FY.
+            const now = new Date();
+            const y = now.getFullYear();
+            const fyStart = now.getMonth() >= 3 ? y : y - 1;
+            const prefix = `${fyStart}-${String((fyStart + 1) % 100).padStart(2, '0')}/`;
+            let maxSeq = 0;
+            invoices.forEach((i) => {
+              if (typeof i.invoiceNumber === 'string' && i.invoiceNumber.startsWith(prefix)) {
+                const seq = parseInt(i.invoiceNumber.slice(prefix.length), 10);
+                if (!isNaN(seq) && seq > maxSeq) maxSeq = seq;
               }
             });
-            return String(maxNum + 1);
+            return `${prefix}${String(maxSeq + 1).padStart(3, '0')}`;
           }}
           appSettings={appSettings}
           onSetDirty={() => {}}
