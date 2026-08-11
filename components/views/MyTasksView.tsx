@@ -12,6 +12,7 @@ import { isDateInRange } from '@/utils';
 import { ListTodo, Filter, Check, Clock, ChevronDown, Briefcase } from 'lucide-react';
 
 interface MyTasksViewProps {
+  tasks?: Task[];
   projects: Project[];
   teamMembers: TeamMember[];
   currentUser: TeamMember | null;
@@ -98,18 +99,31 @@ export const MyTasksView: React.FC<MyTasksViewProps> = (props) => {
 
     const myTasks = useMemo(() => {
         if (!props.currentUser || !Array.isArray(props.projects)) return [];
-        return props.projects.flatMap(p => 
+        // Tasks embedded in projects.
+        const projectTasks = props.projects.flatMap(p =>
             (p.tasks || [])
              .filter(t => t.assignedMemberId === props.currentUser?.id)
-             .map(t => ({ 
-                 ...t, 
-                 projectName: p.name, 
+             .map(t => ({
+                 ...t,
+                 projectName: p.name,
                  clientName: p.clientName, // Add client name
-                 projectId: p.id, 
-                 updatedAt: p.updatedAt 
+                 projectId: p.id,
+                 updatedAt: p.updatedAt
             }))
         );
-    }, [props.projects, props.currentUser]);
+        // Standalone / global tasks (no project) from the top-level tasks array.
+        const seen = new Set(projectTasks.map(t => t.id));
+        const globalTasks = (props.tasks || [])
+            .filter(t => !t.projectId && t.assignedMemberId === props.currentUser?.id && !seen.has(t.id))
+            .map(t => ({
+                ...t,
+                projectName: 'Global',
+                clientName: undefined,
+                projectId: '',
+                updatedAt: (t as any).updatedAt,
+            }));
+        return [...globalTasks, ...projectTasks];
+    }, [props.projects, props.tasks, props.currentUser]);
 
     const filteredAndSortedTasks = useMemo(() => {
         const today = new Date();
