@@ -457,29 +457,48 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
   };
 
   const handleUpdateProfilePicture = async (file: File) => {
-    return new Promise<boolean>((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const dataUrl = reader.result as string;
-        if (currentUser) {
-          const updatedUser = { ...currentUser, profilePictureUrl: dataUrl };
-          setCurrentUser(updatedUser);
-          setTeamMembers(prev => prev.map(m => m.id === currentUser.id ? updatedUser : m));
-          save(KEYS.lastUser, {
-            email: updatedUser.email,
-            name: updatedUser.name,
-            profilePictureUrl: updatedUser.profilePictureUrl
-          });
-          resolve(true);
-        } else {
-          resolve(false);
-        }
-      };
-      reader.onerror = () => {
-        resolve(false);
-      };
-      reader.readAsDataURL(file);
-    });
+    // Resize/compress to a small square avatar before saving. A raw phone photo
+    // as base64 can be several MB — too big for the 1MB Firestore doc limit and
+    // wasteful. We downscale to max 256px and re-encode as JPEG (~30-50KB).
+    const resizeToAvatar = (f: File): Promise<string> =>
+      new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error('read failed'));
+        reader.onloadend = () => {
+          const img = new Image();
+          img.onerror = () => reject(new Error('image decode failed'));
+          img.onload = () => {
+            const MAX = 256;
+            let { width, height } = img;
+            if (width > height) { if (width > MAX) { height = Math.round(height * MAX / width); width = MAX; } }
+            else { if (height > MAX) { width = Math.round(width * MAX / height); height = MAX; } }
+            const canvas = document.createElement('canvas');
+            canvas.width = width; canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) { reject(new Error('no canvas ctx')); return; }
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', 0.85));
+          };
+          img.src = reader.result as string;
+        };
+        reader.readAsDataURL(f);
+      });
+
+    try {
+      const dataUrl = await resizeToAvatar(file);
+      if (!currentUser) return false;
+      const updatedUser = { ...currentUser, profilePictureUrl: dataUrl };
+      setCurrentUser(updatedUser);
+      setTeamMembers(prev => prev.map(m => m.id === currentUser.id ? updatedUser : m));
+      save(KEYS.lastUser, {
+        email: updatedUser.email,
+        name: updatedUser.name,
+        profilePictureUrl: updatedUser.profilePictureUrl
+      });
+      return true;
+    } catch {
+      return false;
+    }
   };
 
   // Theme Handler

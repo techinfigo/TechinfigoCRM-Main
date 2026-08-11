@@ -112,8 +112,8 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ currentUser, o
     setProfilePictureError(null);
     const file = event.target.files?.[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) { // 2MB limit
-        setProfilePictureError("File is too large. Max 2MB.");
+      if (file.size > 10 * 1024 * 1024) { // 10MB source limit (it gets compressed after)
+        setProfilePictureError("File is too large. Max 10MB.");
         setSelectedFile(null);
         setNewProfilePicturePreview(null);
         return;
