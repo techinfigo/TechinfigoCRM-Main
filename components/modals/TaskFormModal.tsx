@@ -142,7 +142,7 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
         setLinks(task.links || []);
         initialFormStateRef.current = JSON.parse(JSON.stringify(initialFormState)); // Deep copy for change tracking
       } else {
-        const initialFormState = { ...initialFormData, projectId: projects[0]?.id || '', assignedMemberId: currentUser.id };
+        const initialFormState = { ...initialFormData, projectId: '', assignedMemberId: currentUser.id }; // default to Global (no project)
         setFormData(initialFormState);
         setSubtasks([]);
         setComments([]);
