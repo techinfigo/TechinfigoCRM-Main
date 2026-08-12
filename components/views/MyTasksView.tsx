@@ -10,6 +10,7 @@ import { EmptyStatePlaceholder } from '../partials/EmptyStatePlaceholder';
 import { DateRangePicker, DateRange } from '../common/DateRangePicker';
 import { isDateInRange } from '@/utils';
 import { ListTodo, Filter, Check, Clock, ChevronDown, Briefcase, Pencil, Trash2 } from 'lucide-react';
+import { Select } from '../common/Select';
 
 interface MyTasksViewProps {
   tasks?: Task[];
@@ -193,18 +194,49 @@ export const MyTasksView: React.FC<MyTasksViewProps> = (props) => {
                     <DateRangePicker onApply={setDateRange} initialRange={dateRange || undefined} />
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <select value={filters.status} onChange={e => handleFilterChange('status', e.target.value)} className="w-full p-2 bg-bg-base dark:bg-slate-800 border border-border-base rounded-lg text-sm">
-                        <option value="All">All Statuses</option><option value="Pending">Pending</option><option value="ToDo">To Do</option><option value="InProgress">In Progress</option><option value="Review">Review</option><option value="Done">Done</option>
-                    </select>
-                    <select value={filters.priority} onChange={e => handleFilterChange('priority', e.target.value)} className="w-full p-2 bg-bg-base dark:bg-slate-800 border border-border-base rounded-lg text-sm">
-                        <option value="All">All Priorities</option><option value="High">High</option><option value="Medium">Medium</option><option value="Low">Low</option>
-                    </select>
-                    <select value={filters.due} onChange={e => handleFilterChange('due', e.target.value)} className="w-full p-2 bg-bg-base dark:bg-slate-800 border border-border-base rounded-lg text-sm">
-                        <option value="All">All Due Dates</option><option value="Overdue">Overdue</option><option value="Today">Today</option><option value="This Week">This Week</option>
-                    </select>
-                    <select value={sort} onChange={e => setSort(e.target.value as SortKey)} className="w-full p-2 bg-bg-base dark:bg-slate-800 border border-border-base rounded-lg text-sm">
-                        <option value="dueDate">Sort by Due Date</option><option value="priority">Sort by Priority</option><option value="projectName">Sort by Project</option><option value="updatedAt">Sort by Update</option>
-                    </select>
+                    <Select
+                        value={filters.status}
+                        onChange={(v) => handleFilterChange('status', v)}
+                        options={[
+                            { value: 'All', label: 'All Statuses' },
+                            { value: 'Pending', label: 'Pending' },
+                            { value: 'ToDo', label: 'To Do' },
+                            { value: 'InProgress', label: 'In Progress' },
+                            { value: 'Review', label: 'Review' },
+                            { value: 'Done', label: 'Done' },
+                        ]}
+                    />
+                    <Select
+                        value={filters.priority}
+                        onChange={(v) => handleFilterChange('priority', v)}
+                        options={[
+                            { value: 'All', label: 'All Priorities' },
+                            { value: 'Critical', label: 'Critical' },
+                            { value: 'High', label: 'High' },
+                            { value: 'Medium', label: 'Medium' },
+                            { value: 'Low', label: 'Low' },
+                        ]}
+                    />
+                    <Select
+                        value={filters.due}
+                        onChange={(v) => handleFilterChange('due', v)}
+                        options={[
+                            { value: 'All', label: 'All Due Dates' },
+                            { value: 'Overdue', label: 'Overdue' },
+                            { value: 'Today', label: 'Today' },
+                            { value: 'This Week', label: 'This Week' },
+                        ]}
+                    />
+                    <Select
+                        value={sort}
+                        onChange={(v) => setSort(v as SortKey)}
+                        options={[
+                            { value: 'dueDate', label: 'Sort by Due Date' },
+                            { value: 'priority', label: 'Sort by Priority' },
+                            { value: 'projectName', label: 'Sort by Project' },
+                            { value: 'updatedAt', label: 'Sort by Update' },
+                        ]}
+                    />
                 </div>
             </div>
             {paginatedData.length > 0 ? (
