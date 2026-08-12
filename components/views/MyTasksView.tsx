@@ -9,7 +9,7 @@ import { Pagination } from '../common/Pagination';
 import { EmptyStatePlaceholder } from '../partials/EmptyStatePlaceholder';
 import { DateRangePicker, DateRange } from '../common/DateRangePicker';
 import { isDateInRange } from '@/utils';
-import { ListTodo, Filter, Check, Clock, ChevronDown, Briefcase } from 'lucide-react';
+import { ListTodo, Filter, Check, Clock, ChevronDown, Briefcase, Pencil, Trash2 } from 'lucide-react';
 
 interface MyTasksViewProps {
   tasks?: Task[];
@@ -19,7 +19,11 @@ interface MyTasksViewProps {
   onMarkTaskAsDone: (taskId: string, projectId: string) => void;
   onOpenTimeLogModal: (log: TimeLog | null, defaults?: { projectId?: string, taskId?: string }) => void;
   onOpenTaskModal: () => void;
+  onEditTask?: (task: Task) => void;
+  onDeleteTask?: (taskId: string) => void;
   onOpenProjectDetailModal: (project: Project) => void;
+  onOpenLeadDetail?: (leadId: string) => void;
+  onOpenClientDetail?: (clientId: string) => void;
   setCurrentView: (view: View) => void;
 }
 
@@ -46,7 +50,9 @@ const TaskItem: React.FC<{
     onMarkDone: () => void;
     onViewProject: () => void;
     onLogTime: () => void;
-}> = ({ task, onMarkDone, onViewProject, onLogTime }) => {
+    onEdit?: () => void;
+    onDelete?: () => void;
+}> = ({ task, onMarkDone, onViewProject, onLogTime, onEdit, onDelete }) => {
     const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'Done';
     return (
         <div className={`p-3 rounded-lg border-l-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 ${getPriorityClasses(task.priority)}`}>
@@ -85,6 +91,16 @@ const TaskItem: React.FC<{
                 >
                     <Clock size={14} />
                 </Button>
+                {onEdit && (
+                  <Button variant="ghost" size="xs" className="!p-1.5" title="Edit task" onClick={(e) => { e.stopPropagation(); onEdit(); }}>
+                    <Pencil size={14} />
+                  </Button>
+                )}
+                {onDelete && (
+                  <Button variant="ghost" size="xs" className="!p-1.5 text-red-500 hover:text-red-600" title="Delete task" onClick={(e) => { e.stopPropagation(); if (window.confirm('Delete this task?')) onDelete(); }}>
+                    <Trash2 size={14} />
+                  </Button>
+                )}
                 <Button variant="secondary" size="xs" onClick={onMarkDone} leftIcon={<Check size={14} />}>Done</Button>
             </div>
         </div>
@@ -203,6 +219,13 @@ export const MyTasksView: React.FC<MyTasksViewProps> = (props) => {
                                 const project = props.projects.find(p => p.id === task.projectId);
                                 if (project) props.onOpenProjectDetailModal(project);
                             }}
+                            onEdit={props.onEditTask ? () => {
+                                // Drop the display-only fields this view grafts on, so the
+                                // form (which spreads the task it's given) can't persist them.
+                                const { projectName, clientName, updatedAt, ...cleanTask } = task;
+                                props.onEditTask!(cleanTask as Task);
+                            } : undefined}
+                            onDelete={props.onDeleteTask ? () => props.onDeleteTask!(task.id) : undefined}
                         />
                     ))}
                     <Pagination {...paginationProps} />

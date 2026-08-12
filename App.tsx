@@ -2136,6 +2136,16 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
                 });
             }}
             onEditTask={(task) => openModal("TASK_FORM", { task })}
+            onDeleteTask={(taskId) => {
+              const toDelete = tasks.find((t) => t.id === taskId);
+              if (!toDelete) return;
+              if (currentUid) deleteTaskFromCloud(currentUid, taskId);
+              setTasks(tasks.filter((t) => t.id !== taskId), {
+                type: "delete",
+                payload: toDelete,
+                description: "Deleted task",
+              });
+            }}
             onOpenTimeLogModal={(log, defaults) =>
               openModal("TIME_LOG_FORM", { timeLog: log, ...defaults })
             }
