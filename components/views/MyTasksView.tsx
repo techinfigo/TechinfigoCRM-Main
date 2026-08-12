@@ -211,7 +211,7 @@ export const MyTasksView: React.FC<MyTasksViewProps> = (props) => {
                         onChange={(v) => handleFilterChange('priority', v)}
                         options={[
                             { value: 'All', label: 'All Priorities' },
-                            { value: 'Critical', label: 'Critical' },
+                            { value: 'Urgent', label: 'Urgent' },
                             { value: 'High', label: 'High' },
                             { value: 'Medium', label: 'Medium' },
                             { value: 'Low', label: 'Low' },
