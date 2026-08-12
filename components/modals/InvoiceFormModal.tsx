@@ -9,7 +9,7 @@ import { Select, SelectOption } from '../common/Select';
 interface InvoiceFormModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (invoice: Omit<Invoice, 'id' | 'clientName'> & { id?: string; invoiceNumber?: string; clientName?: string }) => void;
+  onSave: (invoice: Omit<Invoice, 'id' | 'clientName' | 'invoiceNumber'> & { id?: string; invoiceNumber?: string; clientName?: string }) => void;
   invoice: Invoice | null;
   clients: Client[];
   getNextInvoiceNumber: () => string;
@@ -32,6 +32,7 @@ interface InvoiceFormData {
   paymentInstructions?: string;
   paymentTerms?: string; // Added paymentTerms
   isRecurring?: boolean;
+  isOfficial?: boolean;
   recurrenceFrequency?: RecurrenceFrequency;
   recurrenceEndDate?: string;
   currency: string;
@@ -71,6 +72,7 @@ const emptyFormData: InvoiceFormData = {
   paymentInstructions: '',
   paymentTerms: '',
   isRecurring: false,
+  isOfficial: true,
   recurrenceFrequency: 'Monthly',
   recurrenceEndDate: '',
   currency: 'INR',
@@ -190,6 +192,7 @@ export const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({ isOpen, onCl
                     paymentInstructions: invoice.paymentInstructions ?? '',
                     paymentTerms: invoice.paymentTerms ?? `Payment due within ${appSettings.defaultPaymentTerms || 7} days of invoice date.`,
                     isRecurring: invoice.isRecurring ?? false,
+                    isOfficial: invoice.isOfficial ?? true,
                     recurrenceFrequency: invoice.recurrenceFrequency ?? 'Monthly',
                     recurrenceEndDate: (invoice.recurrenceEndDate ?? '').split('T')[0],
                     currency: invoice.currency || appSettings.defaultCurrency || 'INR',
@@ -224,6 +227,7 @@ export const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({ isOpen, onCl
                     paymentInstructions: 'Bank Transfer / UPI',
                     paymentTerms: `Payment due within ${appSettings.defaultPaymentTerms || 7} days of invoice date.`,
                     isRecurring: false,
+                    isOfficial: true,
                     recurrenceFrequency: 'Monthly',
                     recurrenceEndDate: '',
                     currency: appSettings.defaultCurrency || 'INR',
@@ -425,10 +429,13 @@ export const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({ isOpen, onCl
     }
     setFormSummaryErrors([]);
 
-    const saveData: Omit<Invoice, 'id' | 'clientName'> & { id?: string; invoiceNumber?: string; clientName?: string } = {
+    const saveData: Omit<Invoice, 'id' | 'clientName' | 'invoiceNumber'> & { id?: string; invoiceNumber?: string; clientName?: string } = {
         ...formData,
         id: invoice?.id, 
-        invoiceNumber: invoice ? invoice.invoiceNumber : getNextInvoiceNumber(),
+        // For a NEW invoice, leave invoiceNumber empty so App decides based on
+        // isOfficial (official -> sequential FY number, else -> REC-xxx record).
+        invoiceNumber: invoice ? invoice.invoiceNumber : (formData.isOfficial === false ? '' : getNextInvoiceNumber()),
+        isOfficial: formData.isOfficial !== false,
         clientName: clients.find(c => c.id === formData.clientId)?.name,
         discountValue: Number(formData.discountValue) || 0,
         taxRate: Number(formData.taxRate) || 0,
@@ -446,7 +453,13 @@ export const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({ isOpen, onCl
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={invoice ? `Edit Invoice #${invoice.invoiceNumber}` : `Create New Invoice (Est. #${suggestedInvoiceNumber})`}
+      title={
+        invoice
+          ? `Edit Invoice #${invoice.invoiceNumber}`
+          : formData.isOfficial === false
+            ? 'Create New Record (internal — no GST number)'
+            : `Create New Invoice (Est. #${suggestedInvoiceNumber})`
+      }
       size="4xl" 
       overrideZIndex="z-[1050]"
       footer={
@@ -602,6 +615,23 @@ export const InvoiceFormModal: React.FC<InvoiceFormModalProps> = ({ isOpen, onCl
             <Input label={`Value ${formData.discountType === 'Percentage' ? '(%)' : formData.discountType === 'Fixed' ? `(${formData.currency})` : ''}`} id="discountValue" name="discountValue" type="number" value={(formData.discountValue ?? 0).toString()} onChange={handleInputChange} min="0" step="0.01" disabled={formData.discountType === 'None'} error={errors.discountValue}/>
             <Input label="Total Tax Rate (%)" id="taxRate" name="taxRate" type="number" value={(formData.taxRate ?? 0).toString()} onChange={handleInputChange} min="0" step="0.01" error={errors.taxRate}/>
             <Input label="Advance Received" id="advanceAmount" name="advanceAmount" type="number" value={(formData.advanceAmount ?? 0).toString()} onChange={handleInputChange} min="0" step="0.01" placeholder="0" />
+        </div>
+
+        <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700">
+          <label className="flex items-start gap-2.5 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={formData.isOfficial !== false}
+              onChange={(e) => { onSetDirty(true); setFormData(prev => ({ ...prev, isOfficial: e.target.checked })); }}
+              className="h-4 w-4 mt-0.5 rounded border-slate-300 text-premium-accent focus:ring-premium-accent"
+            />
+            <span className="text-sm">
+              <span className="font-medium text-text-base dark:text-slate-200">Official GST invoice (gets a sequential number)</span>
+              <span className="block text-xs text-text-muted mt-0.5">
+                Uncheck for cash / non-GST clients — it's still saved as a record (labelled REC-xxx) but does NOT take a number from your official GST sequence, so 001, 002, 003… stays unbroken.
+              </span>
+            </span>
+          </label>
         </div>
 
         {/* Recurring Invoice Section */}

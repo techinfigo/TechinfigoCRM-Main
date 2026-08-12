@@ -411,6 +411,10 @@ export interface Invoice {
     discountType?: DiscountType;
     discountValue?: number;
     taxRate?: number;
+    /** When false, this is an internal record only (e.g. cash / non-GST client)
+     *  and does NOT consume an official sequential invoice number, so the GST
+     *  invoice sequence stays unbroken. Defaults to true (official). */
+    isOfficial?: boolean;
     /** Advance / deposit taken before work started. Shown on the invoice and
      *  deducted from the total to give the balance due. */
     advanceAmount?: number;

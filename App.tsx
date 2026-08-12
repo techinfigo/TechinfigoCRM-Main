@@ -715,6 +715,17 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
       if (!finalInvoiceNumber) {
         if (exists) {
           finalInvoiceNumber = exists.invoiceNumber;
+        } else if (invoice.isOfficial === false) {
+          // Non-official record (cash / non-GST client). Does NOT consume a
+          // sequential number so the official GST sequence stays unbroken.
+          let maxRec = 0;
+          prev.forEach((i) => {
+            if (typeof i.invoiceNumber === 'string' && i.invoiceNumber.startsWith('REC-')) {
+              const seq = parseInt(i.invoiceNumber.slice(4), 10);
+              if (!isNaN(seq) && seq > maxRec) maxRec = seq;
+            }
+          });
+          finalInvoiceNumber = `REC-${String(maxRec + 1).padStart(3, '0')}`;
         } else {
           // Indian financial year: 1 Apr -> 31 Mar. Numbers reset each FY.
           // Format: "YYYY-YY/NNN" e.g. 2025-26/001.
@@ -1043,17 +1054,29 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
     };
 
     const seqSoFar: Record<string, number> = {};
+    let recSoFar = 0;
     invoices.forEach((i) => {
       const m = typeof i.invoiceNumber === 'string' && i.invoiceNumber.match(/^(\d{4}-\d{2})\/(\d+)$/);
       if (m) {
         const seq = parseInt(m[2], 10);
         if (!seqSoFar[m[1]] || seq > seqSoFar[m[1]]) seqSoFar[m[1]] = seq;
       }
+      const r = typeof i.invoiceNumber === 'string' && i.invoiceNumber.match(/^REC-(\d+)$/);
+      if (r) {
+        const seq = parseInt(r[1], 10);
+        if (seq > recSoFar) recSoFar = seq;
+      }
     });
 
     // Each child is issued on its own occurrence date, so a batch spanning
     // 31 Mar -> 1 Apr correctly splits across two financial years.
+    // A non-official parent (cash / non-GST client) spawns non-official
+    // children, so they never eat into the official GST sequence.
     const nextInvoiceNumbers = pendingGenerations.map((gen) => {
+      if (gen.parentInvoice.isOfficial === false) {
+        recSoFar += 1;
+        return `REC-${String(recSoFar).padStart(3, '0')}`;
+      }
       const fy = fyLabelFor(gen.occurrenceDate || new Date());
       seqSoFar[fy] = (seqSoFar[fy] || 0) + 1;
       return `${fy}/${String(seqSoFar[fy]).padStart(3, '0')}`;
