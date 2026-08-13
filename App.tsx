@@ -2137,30 +2137,34 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
             }}
             onEditTask={(task) => openModal("TASK_FORM", { task })}
             onDeleteTask={(taskId) => {
+              // Tasks can live in TWO places: the top-level tasks array (global
+              // tasks, synced per-doc to Firestore) and embedded inside a project
+              // (projects blob). Delete from BOTH, or a project task reappears
+              // because the projects state still holds it.
               if (currentUid) deleteTaskFromCloud(currentUid, taskId);
-              // A task may live in the top-level tasks array (global) and/or
-              // embedded inside a project. Remove it from BOTH so it disappears
-              // regardless of where it was stored.
-              const toDelete =
-                tasks.find((t) => t.id === taskId) ||
-                projects.flatMap((p) => p.tasks || []).find((t) => t.id === taskId);
-              setTasks(tasks.filter((t) => t.id !== taskId), {
-                type: "delete",
-                payload: toDelete || ({ id: taskId } as Task),
-                description: "Deleted task",
-              });
-              setProjects(
-                projects.map((p) =>
-                  (p.tasks || []).some((t) => t.id === taskId)
-                    ? { ...p, tasks: p.tasks!.filter((t) => t.id !== taskId) }
-                    : p,
-                ),
-                {
-                  type: "update",
-                  payload: {},
-                  description: "Deleted task from project",
-                },
+              const inTopLevel = tasks.find((t) => t.id === taskId);
+              if (inTopLevel) {
+                setTasks(tasks.filter((t) => t.id !== taskId), {
+                  type: "delete",
+                  payload: inTopLevel,
+                  description: "Deleted task",
+                });
+              }
+              const owningProject = projects.find((p) =>
+                (p.tasks || []).some((t) => t.id === taskId),
               );
+              if (owningProject) {
+                const updatedProjects = projects.map((p) =>
+                  p.id === owningProject.id
+                    ? { ...p, tasks: (p.tasks || []).filter((t) => t.id !== taskId) }
+                    : p,
+                );
+                setProjects(updatedProjects, {
+                  type: "batch",
+                  payload: null,
+                  description: "Deleted task from project",
+                });
+              }
             }}
             onOpenTimeLogModal={(log, defaults) =>
               openModal("TIME_LOG_FORM", { timeLog: log, ...defaults })
