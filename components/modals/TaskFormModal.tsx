@@ -522,8 +522,14 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-4">
-            <div><label className="text-xs font-semibold uppercase text-text-muted">Title</label><Input ref={titleInputRef} name="title" value={formData.title} onChange={handleChange} error={errors.title} placeholder="Task Title..." className="mt-1"/></div>
-            <div><label className="text-xs font-semibold uppercase text-text-muted">Description</label><TextArea name="description" value={formData.description} onChange={handleChange} rows={5} placeholder="Add a description..." className="mt-1"/></div>
+            <div>
+                <label className="text-xs font-semibold uppercase text-text-muted">Task Title</label>
+                <Input ref={titleInputRef} name="title" value={formData.title} onChange={handleChange} error={errors.title} placeholder="e.g. Follow up with client" className="mt-1 !text-base !font-medium"/>
+            </div>
+            <div>
+                <label className="text-xs font-semibold uppercase text-text-muted">Description</label>
+                <TextArea name="description" value={formData.description} onChange={handleChange} rows={6} placeholder="Add more detail about this task..." className="mt-1"/>
+            </div>
             {task && (
                 <>
                 <div className="pt-3 border-t border-border-base dark:border-slate-700">
