@@ -244,7 +244,7 @@ export const InvoicesView: React.FC<InvoicesViewProps> = (props) => {
                         <ChevronDown className={`w-4 h-4 ml-2 transition-transform ${isSortDropdownOpen ? 'rotate-180' : ''}`} />
                     </button>
                     {isSortDropdownOpen && (
-                        <div className="absolute top-full right-0 mt-2 w-48 bg-white dark:bg-zinc-900 rounded-xl shadow-2xl border border-gray-100 dark:border-zinc-800 z-20 p-1.5 animate-in fade-in zoom-in-95 duration-200 origin-top-right ring-1 ring-black/5">
+                        <div className="absolute top-full right-0 mt-2 w-48 bg-white dark:bg-zinc-900 rounded-xl shadow-2xl border border-gray-100 dark:border-zinc-800 z-20 p-1.5 ring-1 ring-black/5">
                             <ul className="p-1">
                                 {Object.entries(sortOptions).map(([value, label]) => (
                                     <li key={value}>
@@ -264,7 +264,7 @@ export const InvoicesView: React.FC<InvoicesViewProps> = (props) => {
                 <div className="relative">
                 <Button ref={filterButtonRef} variant="outline" onClick={() => setIsFilterOpen(p => !p)} leftIcon={<SlidersHorizontal className="w-4 h-4"/>}>Filter</Button>
                 {isFilterOpen && createPortal(
-                    <div ref={filterPanelRef} style={filterPanelStyle} className="w-80 bg-white dark:bg-zinc-900 rounded-xl shadow-2xl border border-gray-100 dark:border-zinc-800 p-4 space-y-4 animate-in fade-in zoom-in-95 duration-200 ring-1 ring-black/5 z-[9999]">
+                    <div ref={filterPanelRef} style={filterPanelStyle} className="w-80 bg-white dark:bg-zinc-900 rounded-xl shadow-2xl border border-gray-100 dark:border-zinc-800 p-4 space-y-4 ring-1 ring-black/5 z-[9999]">
                         <div className="flex justify-between items-center"><h4 className="font-semibold text-gray-900 dark:text-white">Filters</h4><Button variant="ghost" size="xs" onClick={clearFilters}>Clear All</Button></div>
                         <div><p className="text-xs font-semibold mb-1 text-gray-500 dark:text-gray-400 uppercase">Status</p><div className="space-y-1">{allStatuses.map(s => <Checkbox key={s} label={s} checked={statusFilters.has(s)} onChange={() => toggleFilter(setStatusFilters, s)}/>)}</div></div>
                         <div><p className="text-xs font-semibold mb-1 text-gray-500 dark:text-gray-400 uppercase">Client</p><div className="space-y-1 max-h-32 overflow-y-auto">{clients.map(c => <Checkbox key={c.id} label={c.name} checked={clientFilters.has(c.id)} onChange={() => toggleFilter(setClientFilters, c.id)}/>)}</div></div>

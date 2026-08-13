@@ -48,7 +48,7 @@ const CreditCardIcon: React.FC = () => (
 
 export const FinanceView: React.FC<FinanceViewProps> = (props) => {
   const [activeTab, setActiveTab] = useState<FinanceTab>('invoices');
-  const [viewCurrency, setViewCurrency] = useState<string>(props.appSettings.defaultCurrency || 'INR');
+  const [viewCurrency, setViewCurrency] = useState<string>('All');
   const [isCurrencyDropdownOpen, setIsCurrencyDropdownOpen] = useState(false);
   const currencyDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -64,15 +64,15 @@ export const FinanceView: React.FC<FinanceViewProps> = (props) => {
   }, []);
 
   // Filter data based on selected currency
-  const filteredInvoices = props.invoices.filter(inv => (inv.currency || props.appSettings.defaultCurrency || 'INR') === viewCurrency);
-  const filteredExpenses = props.expenses.filter(exp => (exp.currency || props.appSettings.defaultCurrency || 'INR') === viewCurrency);
+  const filteredInvoices = viewCurrency === 'All' ? props.invoices : props.invoices.filter(inv => (inv.currency || props.appSettings.defaultCurrency || 'INR') === viewCurrency);
+  const filteredExpenses = viewCurrency === 'All' ? props.expenses : props.expenses.filter(exp => (exp.currency || props.appSettings.defaultCurrency || 'INR') === viewCurrency);
 
   // Invoices and expenses are filtered by the selected currency, so records in
   // another currency vanish with no explanation. Warn instead of showing "0".
-  const hiddenByCurrency =
+  const hiddenByCurrency = viewCurrency === 'All' ? 0 : (
     activeTab === 'invoices'
       ? props.invoices.length - filteredInvoices.length
-      : props.expenses.length - filteredExpenses.length;
+      : props.expenses.length - filteredExpenses.length);
 
   const currencyHint = hiddenByCurrency > 0 ? (
     <div className="mb-4 p-3 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 text-sm text-amber-800 dark:text-amber-200">
@@ -112,6 +112,7 @@ export const FinanceView: React.FC<FinanceViewProps> = (props) => {
   };
 
   const currencyOptions = [
+    { value: 'All', label: 'All Currencies' },
     { value: 'INR', label: 'INR (₹)' },
     { value: 'USD', label: 'USD ($)' },
     { value: 'EUR', label: 'EUR (€)' },
@@ -140,18 +141,18 @@ export const FinanceView: React.FC<FinanceViewProps> = (props) => {
                 <div className="relative" ref={currencyDropdownRef}>
                     <button
                         onClick={() => setIsCurrencyDropdownOpen(!isCurrencyDropdownOpen)}
-                        className="flex items-center gap-2 px-3.5 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-premium-accent/50 dark:focus:ring-premium-accent/40 text-slate-700 dark:text-slate-200"
+                        className="flex items-center gap-2 px-3.5 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-premium-accent/50 dark:focus:ring-premium-accent/40 text-slate-700 dark:text-slate-200"
                         aria-expanded={isCurrencyDropdownOpen}
                         aria-haspopup="listbox"
                     >
                         <span className="text-sm font-semibold">
                             {currencyOptions.find(opt => opt.value === viewCurrency)?.label || viewCurrency}
                         </span>
-                        <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isCurrencyDropdownOpen ? 'rotate-180' : ''}`} />
+                        <ChevronDown className={`w-4 h-4 text-slate-400 ${isCurrencyDropdownOpen ? 'rotate-180' : ''}`} />
                     </button>
 
                     {isCurrencyDropdownOpen && (
-                        <div className="absolute right-0 top-full mt-2 w-40 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 p-1.5 z-50 animate-in fade-in zoom-in-95 duration-200 origin-top-right ring-1 ring-black/5">
+                        <div className="absolute right-0 top-full mt-2 w-40 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 p-1.5 z-50 ring-1 ring-black/5">
                             {currencyOptions.map((option) => (
                                 <button
                                     key={option.value}
@@ -159,7 +160,7 @@ export const FinanceView: React.FC<FinanceViewProps> = (props) => {
                                         setViewCurrency(option.value);
                                         setIsCurrencyDropdownOpen(false);
                                     }}
-                                    className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg transition-colors duration-150 ${
+                                    className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg ${
                                         viewCurrency === option.value 
                                         ? 'bg-secondary-accent/10 text-secondary-accent font-semibold' 
                                         : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/60'
