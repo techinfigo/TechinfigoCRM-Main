@@ -522,8 +522,8 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-4">
-            <Input ref={titleInputRef} name="title" value={formData.title} onChange={handleChange} error={errors.title} placeholder="Task Title..." className="!text-lg !font-semibold !p-2 !border-0 focus:!ring-0 !shadow-none"/>
-            <TextArea name="description" value={formData.description} onChange={handleChange} rows={5} placeholder="Add a description..."/>
+            <div><label className="text-xs font-semibold uppercase text-text-muted">Title</label><Input ref={titleInputRef} name="title" value={formData.title} onChange={handleChange} error={errors.title} placeholder="Task Title..." className="mt-1"/></div>
+            <div><label className="text-xs font-semibold uppercase text-text-muted">Description</label><TextArea name="description" value={formData.description} onChange={handleChange} rows={5} placeholder="Add a description..." className="mt-1"/></div>
             {task && (
                 <>
                 <div className="pt-3 border-t border-border-base dark:border-slate-700">
@@ -590,7 +590,7 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
         </div>
 
         {/* Sidebar */}
-        <div className="lg:col-span-1 space-y-4 pt-2">
+        <div className="lg:col-span-1 space-y-4">
             <div><label className="text-xs font-semibold uppercase text-text-muted">Status</label><div className="mt-1"><Select value={formData.status} onChange={(v) => setField('status', v)} placeholder="Select status" options={taskWorkflowStatuses.map(s => ({ value: s, label: s }))} /></div></div>
             <div><label className="text-xs font-semibold uppercase text-text-muted">Assignee</label><div className="mt-1"><Select value={formData.assignedMemberId} onChange={(v) => setField('assignedMemberId', v)} placeholder="Unassigned" searchable options={[{ value: '', label: 'Unassigned' }, ...teamMembers.map(tm => ({ value: tm.id, label: tm.name }))]} /></div></div>
             <div><label className="text-xs font-semibold uppercase text-text-muted">Project</label><div className="mt-1"><Select value={formData.projectId} onChange={(v) => setField('projectId', v)} placeholder="Global" searchable options={[{ value: '', label: 'Global (no project)' }, ...projects.map(p => ({ value: p.id, label: p.name }))]} /></div></div>
