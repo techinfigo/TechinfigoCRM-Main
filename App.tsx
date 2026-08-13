@@ -2141,12 +2141,12 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
             }}
             onEditTask={(task) => openModal("TASK_FORM", { task })}
             onDeleteTask={(taskId) => {
+              // Remember this deletion so a lagging cloud snapshot can't re-add it.
+              deletedTaskIdsRef.current.add(taskId);
               // Tasks can live in TWO places: the top-level tasks array (global
               // tasks, synced per-doc to Firestore) and embedded inside a project
               // (projects blob). Delete from BOTH, or a project task reappears
               // because the projects state still holds it.
-              // Remember the id so an in-flight cloud snapshot can't re-add it.
-              deletedTaskIdsRef.current.add(taskId);
               if (currentUid) deleteTaskFromCloud(currentUid, taskId);
               const inTopLevel = tasks.find((t) => t.id === taskId);
               if (inTopLevel) {
