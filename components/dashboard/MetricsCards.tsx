@@ -82,12 +82,12 @@ export const MetricsCards: React.FC<MetricsCardsProps> = ({ summary, appSettings
     };
 
     const metrics: MetricCardProps[] = [
-        { title: t('dashboard.totalRevenue'), value: formatCurrency(summary.totalRevenue), icon: LucideTrendingUpIcon, change: { value: 12.5, period: "vs last month" } },
-        { title: t('dashboard.netProfit'), value: formatCurrency(summary.netProfit), icon: LucideCircleDollarSignIcon, description: "(Revenue - Expenses)", change: { value: 8.2, period: "vs last month" } },
-        { title: t('dashboard.totalExpenses'), value: formatCurrency(summary.totalExpenses), icon: CreditCardIcon, change: { value: 4.5, period: "vs last month" } },
-        { title: t('dashboard.outstandingRevenue'), value: formatCurrency(summary.outstandingRevenue), icon: WalletIcon, change: { value: -2.1, period: "vs last month" } },
-        { title: t('dashboard.leadsThisMonth'), value: summary.leadsThisMonth.toString(), icon: UsersIcon, change: { value: -5.2, period: "vs last month" } },
-        { title: t('dashboard.leadConversionRate'), value: `${summary.leadConversionRate.toFixed(1)}%`, icon: LineChartIcon, change: { value: 1.8, period: "vs last month" } },
+        { title: t('dashboard.totalRevenue'), value: formatCurrency(summary.totalRevenue), icon: LucideTrendingUpIcon },
+        { title: t('dashboard.netProfit'), value: formatCurrency(summary.netProfit), icon: LucideCircleDollarSignIcon, description: "(Revenue - Expenses)" },
+        { title: t('dashboard.totalExpenses'), value: formatCurrency(summary.totalExpenses), icon: CreditCardIcon },
+        { title: t('dashboard.outstandingRevenue'), value: formatCurrency(summary.outstandingRevenue), icon: WalletIcon },
+        { title: t('dashboard.leadsThisMonth'), value: summary.leadsThisMonth.toString(), icon: UsersIcon },
+        { title: t('dashboard.leadConversionRate'), value: `${summary.leadConversionRate.toFixed(1)}%`, icon: LineChartIcon },
     ];
 
     return (
