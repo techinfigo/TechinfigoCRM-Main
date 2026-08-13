@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { GoogleGenAI } from "@google/genai";
 import {
   Lead,
@@ -201,10 +201,14 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
   // refresh. currentUid is stable for the lifetime of this component — the
   // AuthGate wrapper only mounts App after sign-in completes.
   const currentUid = isFirebaseConfigured ? auth.currentUser?.uid ?? null : null;
+  // Ids of tasks the user deleted locally. The cloud snapshot can briefly still
+  // include a just-deleted task (delete is async / eventually consistent), which
+  // would otherwise re-add it. We filter these out of every hydration.
+  const deletedTaskIdsRef = useRef<Set<string>>(new Set());
   useEffect(() => {
     if (!currentUid) return;
     const unsubscribe = subscribeToTasks(currentUid, (cloudTasks) => {
-      hydrateTasks(cloudTasks);
+      hydrateTasks(cloudTasks.filter((t) => !deletedTaskIdsRef.current.has(t.id)));
     });
     return unsubscribe;
   }, [currentUid, hydrateTasks]);
@@ -2141,6 +2145,8 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
               // tasks, synced per-doc to Firestore) and embedded inside a project
               // (projects blob). Delete from BOTH, or a project task reappears
               // because the projects state still holds it.
+              // Remember the id so an in-flight cloud snapshot can't re-add it.
+              deletedTaskIdsRef.current.add(taskId);
               if (currentUid) deleteTaskFromCloud(currentUid, taskId);
               const inTopLevel = tasks.find((t) => t.id === taskId);
               if (inTopLevel) {
