@@ -1,9 +1,9 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { TimeLog, Project, Task, TeamMember } from '../../types';
 import { Modal } from '../common/Modal';
 import { Button } from '../common/Button';
 import { Input, TextArea } from '../common/Input';
+import { Select } from '../common/Select';
 
 interface TimeLogFormModalProps {
   isOpen: boolean;
@@ -11,7 +11,7 @@ interface TimeLogFormModalProps {
   onSave: (timeLog: TimeLog) => void;
   timeLog: TimeLog | null;
   projects: Project[];
-  tasks: Task[]; // All tasks from all projects, or filter based on selected project
+  tasks: Task[];
   teamMembers: TeamMember[];
   currentUserId: string;
   defaultProjectId?: string;
@@ -24,7 +24,7 @@ interface TimeLogFormData {
   taskId?: string;
   memberId: string;
   date: string;
-  hours: string; // Stored as string for input
+  hours: string;
   notes?: string;
 }
 
@@ -51,9 +51,8 @@ export const TimeLogFormModal: React.FC<TimeLogFormModalProps> = ({
   const [errors, setErrors] = useState<TimeLogFormErrors>({});
   const initialFormStateRef = useRef<TimeLogFormData | null>(null);
 
-
-  const availableTasksForSelectedProject = formData.projectId 
-    ? tasks.filter(task => projects.find(p => p.id === formData.projectId)?.tasks.some(pt => pt.id === task.id)) 
+  const availableTasksForSelectedProject = formData.projectId
+    ? tasks.filter(task => projects.find(p => p.id === formData.projectId)?.tasks.some(pt => pt.id === task.id))
     : [];
 
   useEffect(() => {
@@ -82,7 +81,7 @@ export const TimeLogFormModal: React.FC<TimeLogFormModalProps> = ({
         setErrors({});
     }
   }, [timeLog, isOpen, currentUserId, projects, defaultProjectId, defaultTaskId, onSetDirty]);
-  
+
   useEffect(() => {
     if (!isOpen) return;
     if (JSON.stringify(formData) !== JSON.stringify(initialFormStateRef.current)) {
@@ -93,23 +92,23 @@ export const TimeLogFormModal: React.FC<TimeLogFormModalProps> = ({
   }, [formData, isOpen, onSetDirty]);
 
   useEffect(() => {
-    // If defaultProjectId is set and it's a new log, pre-select it
     if (!timeLog && defaultProjectId && projects.find(p => p.id === defaultProjectId)) {
       setFormData(prev => ({ ...prev, projectId: defaultProjectId, taskId: defaultTaskId || '' }));
     }
   }, [defaultProjectId, defaultTaskId, timeLog, projects, isOpen]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     if (errors[name as keyof TimeLogFormErrors]) {
       setErrors(prev => ({ ...prev, [name]: undefined }));
     }
-    if (name === "projectId") { // Reset task if project changes
-        setFormData(prev => ({ ...prev, taskId: '' }));
-    }
   };
-  
+
+  const clearError = (name: keyof TimeLogFormErrors) => {
+    if (errors[name]) setErrors(prev => ({ ...prev, [name]: undefined }));
+  };
+
   const validate = (): boolean => {
     const newErrors: TimeLogFormErrors = {};
     if (!formData.projectId) newErrors.projectId = "Project is required.";
@@ -122,7 +121,6 @@ export const TimeLogFormModal: React.FC<TimeLogFormModalProps> = ({
     } else if (parseFloat(formData.hours) > 24) {
       newErrors.hours = "Hours cannot exceed 24 for a single day.";
     }
-    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -130,22 +128,21 @@ export const TimeLogFormModal: React.FC<TimeLogFormModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
-    
     const logToSave: TimeLog = {
-      id: timeLog?.id || '', // ID will be set by App.tsx for new logs
+      id: timeLog?.id || '',
       projectId: formData.projectId,
       taskId: formData.taskId || undefined,
       memberId: formData.memberId,
       date: formData.date,
       hours: parseFloat(formData.hours),
       notes: formData.notes?.trim() || undefined,
-      dateLogged: timeLog?.dateLogged || new Date().toISOString(), // Keep original log date or set new
+      dateLogged: timeLog?.dateLogged || new Date().toISOString(),
     };
     onSave(logToSave);
     onSetDirty(false);
   };
 
-  const selectBaseClass = "w-full p-3 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-sky-500 dark:focus:border-sky-400 text-slate-900 dark:text-slate-100";
+  const labelClass = "block text-xs font-semibold uppercase tracking-wide text-text-muted mb-1.5";
 
   return (
     <Modal
@@ -162,39 +159,57 @@ export const TimeLogFormModal: React.FC<TimeLogFormModalProps> = ({
         </>
       }
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div>
-            <label htmlFor="projectId" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Project *</label>
-            <select id="projectId" name="projectId" value={formData.projectId} onChange={handleChange} className={`${selectBaseClass} ${errors.projectId ? 'border-red-500' : ''}`} required>
-              <option value="">Select Project</option>
-              {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
+            <label className={labelClass}>Project *</label>
+            <Select
+              value={formData.projectId}
+              onChange={(v) => { setFormData(prev => ({ ...prev, projectId: v, taskId: '' })); clearError('projectId'); }}
+              placeholder="Select project"
+              searchable
+              options={projects.map(p => ({ value: p.id, label: p.name }))}
+            />
             {errors.projectId && <p className="mt-1 text-xs text-red-600">{errors.projectId}</p>}
           </div>
           <div>
-            <label htmlFor="taskId" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Task (Optional)</label>
-            <select id="taskId" name="taskId" value={formData.taskId} onChange={handleChange} className={selectBaseClass} disabled={!formData.projectId || availableTasksForSelectedProject.length === 0}>
-              <option value="">Select Task (Optional)</option>
-              {availableTasksForSelectedProject.map(t => <option key={t.id} value={t.id}>{t.title}</option>)}
-            </select>
+            <label className={labelClass}>Task (Optional)</label>
+            <Select
+              value={formData.taskId || ''}
+              onChange={(v) => setFormData(prev => ({ ...prev, taskId: v }))}
+              placeholder={!formData.projectId ? 'Select a project first' : 'Select task (optional)'}
+              searchable
+              options={[{ value: '', label: 'No specific task' }, ...availableTasksForSelectedProject.map(t => ({ value: t.id, label: t.title }))]}
+            />
           </div>
         </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Input label="Date *" id="date" name="date" type="date" value={formData.date} onChange={handleChange} error={errors.date} required />
-          <Input label="Hours *" id="hours" name="hours" type="number" placeholder="e.g., 2.5" value={formData.hours} onChange={handleChange} error={errors.hours} min="0.1" step="0.1" required />
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           <div>
-            <label htmlFor="memberId" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Team Member *</label>
-            <select id="memberId" name="memberId" value={formData.memberId} onChange={handleChange} className={`${selectBaseClass} ${errors.memberId ? 'border-red-500' : ''}`} required>
-              {/* Typically, this would be auto-set or admin-selectable. For simplicity, listing all. */}
-              {teamMembers.map(tm => <option key={tm.id} value={tm.id}>{tm.name}</option>)}
-            </select>
-             {errors.memberId && <p className="mt-1 text-xs text-red-600">{errors.memberId}</p>}
+            <label className={labelClass}>Date *</label>
+            <Input id="date" name="date" type="date" value={formData.date} onChange={handleChange} error={errors.date} required />
+          </div>
+          <div>
+            <label className={labelClass}>Hours *</label>
+            <Input id="hours" name="hours" type="number" placeholder="e.g., 2.5" value={formData.hours} onChange={handleChange} error={errors.hours} min="0.1" step="0.1" required />
+          </div>
+          <div>
+            <label className={labelClass}>Team Member *</label>
+            <Select
+              value={formData.memberId}
+              onChange={(v) => { setFormData(prev => ({ ...prev, memberId: v })); clearError('memberId'); }}
+              placeholder="Select member"
+              searchable
+              options={teamMembers.map(tm => ({ value: tm.id, label: tm.name }))}
+            />
+            {errors.memberId && <p className="mt-1 text-xs text-red-600">{errors.memberId}</p>}
           </div>
         </div>
-        
-        <TextArea label="Notes (Optional)" id="notes" name="notes" value={formData.notes || ''} onChange={handleChange} rows={3} placeholder="Describe the work done..." />
+
+        <div>
+          <label className={labelClass}>Notes (Optional)</label>
+          <TextArea id="notes" name="notes" value={formData.notes || ''} onChange={handleChange} rows={3} placeholder="Describe the work done..." />
+        </div>
       </form>
     </Modal>
   );
