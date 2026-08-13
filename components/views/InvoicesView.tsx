@@ -7,6 +7,7 @@ import { Card } from '../common/Card';
 import { InvoiceTable } from '@/components/finance/InvoiceTable';
 import { Input } from '../common/Input';
 import { DateRangePicker, DateRange } from '../common/DateRangePicker';
+import { Select } from '../common/Select';
 import { isDateInRange } from '@/utils';
 import { Checkbox } from '../common/Checkbox';
 import { Search, SlidersHorizontal, ChevronDown, RefreshCw } from 'lucide-react';
@@ -247,7 +248,7 @@ export const InvoicesView: React.FC<InvoicesViewProps> = (props) => {
                         <ChevronDown className={`w-4 h-4 ml-2 transition-transform ${isSortDropdownOpen ? 'rotate-180' : ''}`} />
                     </button>
                     {isSortDropdownOpen && (
-                        <div className="absolute top-full right-0 mt-2 w-48 bg-white dark:bg-zinc-900 rounded-xl shadow-2xl border border-gray-100 dark:border-zinc-800 z-20 p-1.5 ring-1 ring-black/5">
+                        <div className="absolute top-full right-0 mt-2 w-48 bg-white dark:bg-zinc-900 rounded-xl shadow-2xl border border-gray-100 dark:border-zinc-800 z-[9999] p-1.5 ring-1 ring-black/5">
                             <ul className="p-1">
                                 {Object.entries(sortOptions).map(([value, label]) => (
                                     <li key={value}>
@@ -264,14 +265,14 @@ export const InvoicesView: React.FC<InvoicesViewProps> = (props) => {
                     )}
                 </div>
                 {props.onCurrencyChange && (
-                  <select
-                    value={props.viewCurrency || 'All'}
-                    onChange={(e) => props.onCurrencyChange!(e.target.value)}
-                    className="px-3 py-2 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-premium-accent/40"
-                    title="Filter by currency"
-                  >
-                    {(props.currencyOptions || []).map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  </select>
+                  <div className="w-40">
+                    <Select
+                      value={props.viewCurrency || 'All'}
+                      onChange={(v) => props.onCurrencyChange!(v)}
+                      options={props.currencyOptions || []}
+                      placeholder="Currency"
+                    />
+                  </div>
                 )}
                 <DateRangePicker onApply={setDateRange} initialRange={dateRange || undefined} />
                 <div className="relative">

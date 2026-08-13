@@ -150,7 +150,7 @@ export const FinanceView: React.FC<FinanceViewProps> = (props) => {
           <nav className="-mb-px flex space-x-5" aria-label="Tabs">
             <button
               onClick={() => setActiveTab('invoices')}
-              className={`whitespace-nowrap py-3 px-1 border-b-2 text-sm font-medium flex items-center transition-colors
+              className={`whitespace-nowrap py-3 px-1 border-b-2 text-sm font-medium flex items-center
                 ${activeTab === 'invoices'
                   ? 'border-premium-accent text-premium-accent dark:border-premium-accent-dark dark:text-premium-accent-dark'
                   : 'border-transparent text-text-muted hover:text-text-base hover:border-slate-300 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:border-slate-600'
@@ -160,7 +160,7 @@ export const FinanceView: React.FC<FinanceViewProps> = (props) => {
             </button>
             <button
               onClick={() => setActiveTab('expenses')}
-              className={`whitespace-nowrap py-3 px-1 border-b-2 text-sm font-medium flex items-center transition-colors
+              className={`whitespace-nowrap py-3 px-1 border-b-2 text-sm font-medium flex items-center
                 ${activeTab === 'expenses'
                   ? 'border-premium-accent text-premium-accent dark:border-premium-accent-dark dark:text-premium-accent-dark'
                   : 'border-transparent text-text-muted hover:text-text-base hover:border-slate-300 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:border-slate-600'
