@@ -20,6 +20,9 @@ interface ExpensesViewProps {
   onEditExpense: (expense: Expense) => void;
   onDeleteExpense: (expenseId: string) => void;
   appSettings: AppSettings;
+  viewCurrency?: string;
+  onCurrencyChange?: (v: string) => void;
+  currencyOptions?: { value: string; label: string }[];
   hasPermission: (featureKey: FeatureKey, action: PermissionAction) => boolean;
   baseZIndex?: number;
 }
@@ -356,6 +359,16 @@ export const ExpensesView: React.FC<ExpensesViewProps> = (props) => {
                     </div>
                   )}
                 </div>
+                {props.onCurrencyChange && (
+                  <select
+                    value={props.viewCurrency || 'All'}
+                    onChange={(e) => props.onCurrencyChange!(e.target.value)}
+                    className="px-3 py-2 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-premium-accent/40"
+                    title="Filter by currency"
+                  >
+                    {(props.currencyOptions || []).map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                )}
                 <DateRangePicker onApply={setDateRange} initialRange={dateRange || undefined} />
                 <div className="relative">
                   <Button ref={filterButtonRef} variant="outline" onClick={() => setIsFilterOpen(p => !p)} leftIcon={<SlidersHorizontal className="w-4 h-4"/>}>Filter</Button>

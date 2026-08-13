@@ -106,8 +106,8 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
   return (
     <div 
       className={isFullScreen 
-        ? `fixed inset-0 bg-bg-base dark:bg-bg-muted ${zIndexClass} flex flex-col transition-opacity duration-300 ease-in-out print:hidden animate-[fade-in_0.2s_ease-out]`
-        : `fixed inset-0 bg-black/40 dark:bg-black/60 backdrop-blur ${zIndexClass} flex items-center justify-center p-4 transition-opacity duration-300 ease-in-out print:hidden animate-[fade-in_0.2s_ease-out]`
+        ? `fixed inset-0 bg-bg-base dark:bg-bg-muted ${zIndexClass} flex flex-col transition-opacity duration-300 ease-in-out print:hidden`
+        : `fixed inset-0 bg-black/40 dark:bg-black/60 backdrop-blur ${zIndexClass} flex items-center justify-center p-4 transition-opacity duration-300 ease-in-out print:hidden`
       }
       onClick={onClose}
       role="dialog"
@@ -130,8 +130,8 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
         ref={modalRef}
         tabIndex={-1}
         className={isFullScreen
-          ? `bg-bg-base text-text-base dark:bg-bg-muted dark:text-text-base w-full h-full flex flex-col overflow-hidden animate-[scale-in_0.2s_ease-out]`
-          : `bg-bg-base text-text-base dark:bg-bg-muted dark:text-text-base rounded-xl shadow-xl w-full ${sizeClasses[size]} max-h-[90vh] flex flex-col overflow-hidden border border-border-muted dark:border-border-muted animate-[scale-in_0.2s_ease-out]`
+          ? `bg-bg-base text-text-base dark:bg-bg-muted dark:text-text-base w-full h-full flex flex-col overflow-hidden`
+          : `bg-bg-base text-text-base dark:bg-bg-muted dark:text-text-base rounded-xl shadow-xl w-full ${sizeClasses[size]} max-h-[90vh] flex flex-col overflow-hidden border border-border-muted dark:border-border-muted`
         }
         onClick={(e) => e.stopPropagation()} 
       >

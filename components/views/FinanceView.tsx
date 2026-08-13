@@ -95,6 +95,9 @@ export const FinanceView: React.FC<FinanceViewProps> = (props) => {
                     hasPermission={props.hasPermission}
                     onOpenInvoiceBillModal={props.onOpenInvoiceBillModal}
                     onOpenInvoiceDetailPanel={props.onOpenInvoiceDetailPanel}
+                    viewCurrency={viewCurrency}
+                    onCurrencyChange={setViewCurrency}
+                    currencyOptions={currencyOptions}
                 /></>;
       case 'expenses':
         return <ExpensesView 
@@ -105,6 +108,9 @@ export const FinanceView: React.FC<FinanceViewProps> = (props) => {
                     onDeleteExpense={props.onDeleteExpense}
                     appSettings={props.appSettings}
                     hasPermission={props.hasPermission}
+                    viewCurrency={viewCurrency}
+                    onCurrencyChange={setViewCurrency}
+                    currencyOptions={currencyOptions}
                 />;
       default:
         return null;
@@ -133,48 +139,6 @@ export const FinanceView: React.FC<FinanceViewProps> = (props) => {
             <div className="flex flex-col">
                 <h2 className="text-xl font-semibold text-text-heading dark:text-text-heading">Financial Management</h2>
                 <p className="text-sm text-text-muted dark:text-text-muted mt-1">Track and manage invoices and expenses.</p>
-            </div>
-            <div className="flex items-center gap-3">
-                <span className="text-sm text-text-muted dark:text-text-muted font-medium">Currency:</span>
-                
-                {/* Custom Currency Dropdown */}
-                <div className="relative" ref={currencyDropdownRef}>
-                    <button
-                        onClick={() => setIsCurrencyDropdownOpen(!isCurrencyDropdownOpen)}
-                        className="flex items-center gap-2 px-3.5 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-premium-accent/50 dark:focus:ring-premium-accent/40 text-slate-700 dark:text-slate-200"
-                        aria-expanded={isCurrencyDropdownOpen}
-                        aria-haspopup="listbox"
-                    >
-                        <span className="text-sm font-semibold">
-                            {currencyOptions.find(opt => opt.value === viewCurrency)?.label || viewCurrency}
-                        </span>
-                        <ChevronDown className={`w-4 h-4 text-slate-400 ${isCurrencyDropdownOpen ? 'rotate-180' : ''}`} />
-                    </button>
-
-                    {isCurrencyDropdownOpen && (
-                        <div className="absolute right-0 top-full mt-2 w-40 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 p-1.5 z-50 ring-1 ring-black/5">
-                            {currencyOptions.map((option) => (
-                                <button
-                                    key={option.value}
-                                    onClick={() => {
-                                        setViewCurrency(option.value);
-                                        setIsCurrencyDropdownOpen(false);
-                                    }}
-                                    className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg ${
-                                        viewCurrency === option.value 
-                                        ? 'bg-secondary-accent/10 text-secondary-accent font-semibold' 
-                                        : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/60'
-                                    }`}
-                                    role="option"
-                                    aria-selected={viewCurrency === option.value}
-                                >
-                                    {option.label}
-                                    {viewCurrency === option.value && <Check className="w-3.5 h-3.5" />}
-                                </button>
-                            ))}
-                        </div>
-                    )}
-                </div>
             </div>
           </div>
         }
