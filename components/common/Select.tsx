@@ -43,6 +43,7 @@ export const Select: React.FC<SelectProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const [coords, setCoords] = useState({ top: 0, bottom: 0, left: 0, width: 0 });
+  const [maxMenuHeight, setMaxMenuHeight] = useState(240);
 
   const selectedOption = options.find((opt) => opt.value === value);
 
@@ -109,10 +110,13 @@ export const Select: React.FC<SelectProps> = ({
   const toggleDropdown = () => {
     if (!disabled) {
       if (!isOpen && containerRef.current) {
+        const r = containerRef.current.getBoundingClientRect();
         if (direction === 'up') {
           setOpenUpward(true);
+          setMaxMenuHeight(Math.max(140, r.top - 16));
         } else if (direction === 'down') {
           setOpenUpward(false);
+          setMaxMenuHeight(Math.max(140, window.innerHeight - r.bottom - 16));
         } else {
           const rect = containerRef.current.getBoundingClientRect();
           const spaceBelow = window.innerHeight - rect.bottom;
@@ -120,8 +124,10 @@ export const Select: React.FC<SelectProps> = ({
           // If there's less than 280px of space below and more space above, open upward
           if (spaceBelow < 280 && spaceAbove > spaceBelow) {
             setOpenUpward(true);
+            setMaxMenuHeight(Math.max(140, spaceAbove - 16));
           } else {
             setOpenUpward(false);
+            setMaxMenuHeight(Math.max(140, spaceBelow - 16));
           }
         }
       }
@@ -215,7 +221,7 @@ export const Select: React.FC<SelectProps> = ({
             </div>
           )}
 
-          <div className="max-h-60 overflow-y-auto py-1">
+          <div className="overflow-y-auto py-1" style={{ maxHeight: `${maxMenuHeight}px` }}>
             {filteredOptions.length === 0 ? (
               <div className="px-4 py-3 text-sm text-slate-500 dark:text-slate-400 text-center">
                 No options found
