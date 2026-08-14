@@ -21,6 +21,7 @@ interface FollowUpFormData {
   nextFollowUpDateTime: string;
   followUpType?: FollowUpType;
   isHighPriority?: boolean;
+  scheduleNext?: boolean;
 }
 
 const initialFormData: FollowUpFormData = {
@@ -28,6 +29,7 @@ const initialFormData: FollowUpFormData = {
   nextFollowUpDateTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().substring(0, 16),
   followUpType: 'Call',
   isHighPriority: false,
+  scheduleNext: true,
 };
 
 export const FollowUpFormModal: React.FC<FollowUpFormModalProps> = ({ isOpen, onClose, onSave, leadName, leadId, onSetDirty, initialNote = '' }) => {
@@ -49,6 +51,7 @@ export const FollowUpFormModal: React.FC<FollowUpFormModalProps> = ({ isOpen, on
         ...initialFormData,
         note: initialNote,
         nextFollowUpDateTime: defaultDateTimeLocal,
+        scheduleNext: true,
       };
       setFormData(newInitialState);
       initialFormStateRef.current = newInitialState;
@@ -96,10 +99,12 @@ export const FollowUpFormModal: React.FC<FollowUpFormModalProps> = ({ isOpen, on
     if (!formData.note.trim()) {
       newErrors.note = "Follow-up notes are required.";
     }
-    if (!formData.nextFollowUpDateTime) {
-      newErrors.nextFollowUpDateTime = "Next follow-up date and time are required.";
-    } else if (new Date(formData.nextFollowUpDateTime) < new Date()) {
-      newErrors.nextFollowUpDateTime = "Next follow-up date cannot be in the past.";
+    if (formData.scheduleNext) {
+      if (!formData.nextFollowUpDateTime) {
+        newErrors.nextFollowUpDateTime = "Next follow-up date and time are required.";
+      } else if (new Date(formData.nextFollowUpDateTime) < new Date()) {
+        newErrors.nextFollowUpDateTime = "Next follow-up date cannot be in the past.";
+      }
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -108,7 +113,10 @@ export const FollowUpFormModal: React.FC<FollowUpFormModalProps> = ({ isOpen, on
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
-    onSave(formData, leadId);
+    // If the user chose not to schedule another follow-up, clear the next date so
+    // the lead drops below the ones still awaiting a follow-up.
+    const dataToSave = { ...formData, nextFollowUpDateTime: formData.scheduleNext ? formData.nextFollowUpDateTime : '' };
+    onSave(dataToSave, leadId);
     onSetDirty(false); // Mark as not dirty after save
     // onClose will be called by App.tsx after successful save if needed
   };
@@ -138,13 +146,26 @@ export const FollowUpFormModal: React.FC<FollowUpFormModalProps> = ({ isOpen, on
           placeholder="What was discussed? Next steps?"
           required
         />
-        <DateTimePicker
-          label="Next Follow-Up Date & Time *"
-          value={formData.nextFollowUpDateTime}
-          onChange={handleDateTimeChange}
-          error={errors.nextFollowUpDateTime}
-          required
-        />
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={formData.scheduleNext !== false}
+            onChange={(e) => { setFormData(prev => ({ ...prev, scheduleNext: e.target.checked })); onSetDirty(true); }}
+            className="h-4 w-4 rounded border-slate-300 text-premium-accent focus:ring-premium-accent"
+          />
+          <span className="text-sm font-medium text-text-base dark:text-slate-200">Schedule another follow-up</span>
+        </label>
+        {formData.scheduleNext !== false ? (
+          <DateTimePicker
+            label="Next Follow-Up Date & Time *"
+            value={formData.nextFollowUpDateTime}
+            onChange={handleDateTimeChange}
+            error={errors.nextFollowUpDateTime}
+            required
+          />
+        ) : (
+          <p className="text-xs text-text-muted">No next follow-up will be scheduled — this lead will move below leads that are still awaiting follow-up.</p>
+        )}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
             <Select
                 label="Follow-Up Type"

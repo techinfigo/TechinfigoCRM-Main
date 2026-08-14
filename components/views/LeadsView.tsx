@@ -511,7 +511,18 @@ export const LeadsView: React.FC<LeadsViewProps> = ({ leads, auditRecords, teamM
 
   const sortedAndFilteredLeads = useMemo(() => {
     const leadsCopy = [...filteredLeads];
+    // Leads with a scheduled follow-up (pending — overdue or upcoming) rise to the
+    // top, ordered by follow-up date (soonest/overdue first). Once a follow-up is
+    // done and no next one is scheduled, the lead drops below, ordered by newest.
+    const hasPendingFollowUp = (l: typeof leadsCopy[number]) => !!l.nextFollowUpDateTime;
     return leadsCopy.sort((a, b) => {
+        const aPending = hasPendingFollowUp(a);
+        const bPending = hasPendingFollowUp(b);
+        if (aPending && bPending) {
+            return new Date(a.nextFollowUpDateTime!).getTime() - new Date(b.nextFollowUpDateTime!).getTime();
+        }
+        if (aPending) return -1;
+        if (bPending) return 1;
         const aTime = a.dateAdded ? new Date(a.dateAdded).getTime() : 0;
         const bTime = b.dateAdded ? new Date(b.dateAdded).getTime() : 0;
         return bTime - aTime;

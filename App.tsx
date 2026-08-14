@@ -574,6 +574,10 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
     const updatedLead = {
       ...lead,
       followUpHistory: updatedHistory,
+      // Reflect the form's next follow-up on the lead itself so the list can sort
+      // pending follow-ups to the top. Empty/undefined means "no next scheduled"
+      // and the lead drops down.
+      nextFollowUpDateTime: formData.nextFollowUpDateTime || undefined,
     };
 
     setLeads(
