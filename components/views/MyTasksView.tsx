@@ -59,6 +59,9 @@ const TaskItem: React.FC<{
         <div className={`p-3 rounded-lg border-l-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 ${getPriorityClasses(task.priority)}`}>
             <div className="flex-1 min-w-0">
                 <p className="font-semibold text-text-heading dark:text-text-heading">{task.title}</p>
+                {task.description && (
+                    <p className="text-sm text-text-muted mt-0.5 line-clamp-2">{task.description}</p>
+                )}
                 <div className="flex items-center gap-2 text-xs text-text-muted mt-1 flex-wrap">
                     {task.clientName && (
                         <span className="flex items-center gap-1 font-medium text-slate-700 dark:text-slate-300">
