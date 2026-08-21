@@ -61,8 +61,15 @@ export const FinancialOverviewChart: React.FC<FinancialOverviewChartProps> = ({ 
         return best.month;
     }, [data]);
     
-    const formatCurrencyAxis = (value: number) => `₹${(value / 100000).toFixed(1)}L`;
-    const formatCurrencyLabel = (value: number) => `₹${(value / 100000).toFixed(1)}L`;
+    const smartCurrency = (value: number) => {
+        const abs = Math.abs(value);
+        const sign = value < 0 ? '-' : '';
+        if (abs >= 100000) return `${sign}₹${(abs / 100000).toFixed(1)}L`;
+        if (abs >= 1000) return `${sign}₹${(abs / 1000).toFixed(0)}K`;
+        return `${sign}₹${Math.round(abs)}`;
+    };
+    const formatCurrencyAxis = (value: number) => smartCurrency(value);
+    const formatCurrencyLabel = (value: number) => smartCurrency(value);
 
     const handleExport = () => {
         if (chartInstance.current) {
@@ -78,7 +85,7 @@ export const FinancialOverviewChart: React.FC<FinancialOverviewChartProps> = ({ 
             chartInstance.current.destroy();
         }
 
-        if (chartRef.current && data.length > 0) {
+        if (chartRef.current && data.length >= 2) {
             const ctx = chartRef.current.getContext('2d');
             if (ctx) {
                 const createGradient = (color: string) => {
@@ -208,10 +215,13 @@ export const FinancialOverviewChart: React.FC<FinancialOverviewChartProps> = ({ 
             </div>
 
             <div className="h-80 w-full mt-4 flex-grow">
-                {data.length > 0 ? (
+                {data.length >= 2 ? (
                     <canvas ref={chartRef}></canvas>
                 ) : (
-                    <div className="flex items-center justify-center h-full text-text-muted">No data to display.</div>
+                    <div className="flex flex-col items-center justify-center h-full text-text-muted text-center px-4">
+                        <p className="font-medium">Not enough data yet</p>
+                        <p className="text-sm mt-1">Once you have paid invoices across at least two months, your revenue trend will appear here.</p>
+                    </div>
                 )}
             </div>
         </Card>
