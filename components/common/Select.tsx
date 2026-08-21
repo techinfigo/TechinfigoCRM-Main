@@ -86,17 +86,24 @@ export const Select: React.FC<SelectProps> = ({
     };
   }, [isOpen]);
 
-  // Close dropdown on scroll or resize to prevent floating drift
+  // Reposition on outside scroll to prevent floating drift; scrolling inside the
+  // menu itself must not close it. Resize still closes (open direction and height
+  // are measured once on open).
   useEffect(() => {
     if (!isOpen) return;
-    const handleScroll = () => {
-      setIsOpen(false);
+    const handleScroll = (e: Event) => {
+      const target = e.target as Node | null;
+      if (target && menuRef.current && menuRef.current.contains(target)) {
+        return;
+      }
+      updateCoords();
     };
+    const handleResize = () => setIsOpen(false);
     window.addEventListener('scroll', handleScroll, true);
-    window.addEventListener('resize', handleScroll);
+    window.addEventListener('resize', handleResize);
     return () => {
       window.removeEventListener('scroll', handleScroll, true);
-      window.removeEventListener('resize', handleScroll);
+      window.removeEventListener('resize', handleResize);
     };
   }, [isOpen]);
 
