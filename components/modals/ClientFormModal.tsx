@@ -310,7 +310,14 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({ isOpen, onClos
                 onChange={(v) => { setFormData(prev => ({ ...prev, industry: v })); }}
                 placeholder="Select industry"
                 searchable
-                options={[{ value: '', label: '— Select industry —' }, ...CLIENT_INDUSTRY_OPTIONS.map(i => ({ value: i, label: i }))]}
+                options={[
+                  { value: '', label: '— Select industry —' },
+                  // Keep a saved custom industry selectable so it isn't silently dropped
+                  ...(formData.industry && !CLIENT_INDUSTRY_OPTIONS.includes(formData.industry)
+                    ? [{ value: formData.industry, label: formData.industry }]
+                    : []),
+                  ...CLIENT_INDUSTRY_OPTIONS.map(i => ({ value: i, label: i })),
+                ]}
               />
             </div>
         </div>
