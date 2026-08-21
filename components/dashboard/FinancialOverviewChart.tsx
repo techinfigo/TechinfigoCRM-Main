@@ -61,6 +61,9 @@ export const FinancialOverviewChart: React.FC<FinancialOverviewChartProps> = ({ 
         return best.month;
     }, [data]);
     
+    /** The trend line and its summary badges only make sense across 2+ months. */
+    const hasChartData = data.length >= 2;
+
     const smartCurrency = (value: number) => {
         const abs = Math.abs(value);
         const sign = value < 0 ? '-' : '';
@@ -85,7 +88,7 @@ export const FinancialOverviewChart: React.FC<FinancialOverviewChartProps> = ({ 
             chartInstance.current.destroy();
         }
 
-        if (chartRef.current && data.length >= 2) {
+        if (chartRef.current && hasChartData) {
             const ctx = chartRef.current.getContext('2d');
             if (ctx) {
                 const createGradient = (color: string) => {
@@ -205,17 +208,21 @@ export const FinancialOverviewChart: React.FC<FinancialOverviewChartProps> = ({ 
                      <Button variant="outline" size="sm" onClick={handleExport} leftIcon={<Download className="w-4 h-4" />}>
                         Export PNG
                     </Button>
-                    <div className="hidden md:flex items-center gap-2 bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300 px-3 py-1.5 rounded-lg text-sm font-semibold">
-                        Best Month: <span className="font-bold">{bestMonth}</span>
-                    </div>
+                    {hasChartData && (
+                        <div className="hidden md:flex items-center gap-2 bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300 px-3 py-1.5 rounded-lg text-sm font-semibold">
+                            Best Month: <span className="font-bold">{bestMonth}</span>
+                        </div>
+                    )}
                 </div>
             </div>
-             <div className="md:hidden flex items-center gap-2 bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300 px-3 py-1.5 rounded-lg text-xs font-semibold self-start">
-                Best Month: <span className="font-bold">{bestMonth}</span>
-            </div>
+            {hasChartData && (
+                <div className="md:hidden flex items-center gap-2 bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300 px-3 py-1.5 rounded-lg text-xs font-semibold self-start">
+                    Best Month: <span className="font-bold">{bestMonth}</span>
+                </div>
+            )}
 
             <div className="h-80 w-full mt-4 flex-grow">
-                {data.length >= 2 ? (
+                {hasChartData ? (
                     <canvas ref={chartRef}></canvas>
                 ) : (
                     <div className="flex flex-col items-center justify-center h-full text-text-muted text-center px-4">
