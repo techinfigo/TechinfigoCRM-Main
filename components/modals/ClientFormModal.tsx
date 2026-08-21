@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Client, CustomField, PaymentMode, ClientDocumentType, paymentModes, clientDocumentTypes, AgreedService, ServiceBillingType, serviceBillingTypes } from '../../types';
+import { Client, CustomField, PaymentMode, ClientDocumentType, paymentModes, AgreedService, ServiceBillingType, serviceBillingTypes } from '../../types';
 import { getTotalAgreedValue, getMonthlyRecurringValue } from '../../selectors/clientBilling';
 import { Modal } from '../common/Modal';
 import { Button } from '../common/Button';
@@ -392,10 +392,15 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({ isOpen, onClos
               ]}
             />
             <Select
-              label="Document Type"
+              label="What bill does this client get?"
               value={formData.documentType}
               onChange={handleDocumentTypeChange}
-              options={clientDocumentTypes.map(dt => ({ value: dt, label: dt }))}
+              options={[
+                { value: 'GST Invoice', label: 'GST Invoice (with tax)' },
+                { value: 'Bill of Supply', label: 'Bill without GST' },
+                { value: 'Receipt Only', label: 'Payment receipt only' },
+                { value: 'No Document', label: 'No bill needed' },
+              ]}
             />
           </div>
 
