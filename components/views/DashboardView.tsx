@@ -138,7 +138,7 @@ export const DashboardView: React.FC<DashboardViewProps> = (props) => {
     }, [allTasks, currentUser]);
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                 <h1 className="text-2xl font-bold text-text-heading dark:text-text-heading">{t('dashboard.title')}</h1>
                 <div className="flex items-center gap-2">
@@ -156,7 +156,7 @@ export const DashboardView: React.FC<DashboardViewProps> = (props) => {
                 </div>
             </div>
             
-            <div className={`transition-opacity duration-300 space-y-6 ${isRefreshing ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
+            <div className={`transition-opacity duration-300 space-y-4 ${isRefreshing ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
                 <QuickActions 
                     onOpenLeadFormModal={props.onOpenLeadFormModal}
                     onOpenClientFormModal={props.onOpenClientFormModal}
@@ -174,15 +174,14 @@ export const DashboardView: React.FC<DashboardViewProps> = (props) => {
 
                 {dashboardSuggestions && dashboardSuggestions.length > 0 && (
                     <div className="mt-6">
-                        <h3 className="text-xl font-semibold text-text-heading dark:text-text-heading mb-3">Suggestions for you</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <h3 className="text-xl font-semibold text-text-heading dark:text-text-heading mb-2">Suggestions for you</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
                             {dashboardSuggestions.map(s => <DashboardSuggestionCard key={s.id} suggestion={s}/>)}
                         </div>
                     </div>
                 )}
 
-
-                <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
                     <div className="lg:col-span-3">
                         <FinancialOverviewChart 
                             invoices={invoices.filter(inv => isDateInRange(inv.issueDate, dateRange))}
@@ -199,8 +198,8 @@ export const DashboardView: React.FC<DashboardViewProps> = (props) => {
                 </div>
 
                 <div className="mt-6">
-                    <h3 className="text-xl font-semibold text-text-heading dark:text-text-heading mb-3">Client Health Overview</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                    <h3 className="text-xl font-semibold text-text-heading dark:text-text-heading mb-2">Client Health Overview</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                         {clients.map(client => (
                             <ClientSummaryCard
                                 key={client.id}

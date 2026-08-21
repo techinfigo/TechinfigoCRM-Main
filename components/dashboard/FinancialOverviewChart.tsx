@@ -28,7 +28,7 @@ export const FinancialOverviewChart: React.FC<FinancialOverviewChartProps> = ({ 
         const monthlyData: Record<string, { revenue: number, expenses: number, profit: number, timestamp: number }> = {};
         
         invoices.forEach(inv => {
-            if (inv.status !== 'Paid' && inv.status !== 'Sent') return; // Only count sent/paid for revenue tracking
+            if (inv.status !== 'Paid') return; // Count only PAID invoices as revenue, matching the dashboard cards
             const date = new Date(inv.issueDate);
             const monthKey = format(date, "MMM ''yy");
             if (!monthlyData[monthKey]) {

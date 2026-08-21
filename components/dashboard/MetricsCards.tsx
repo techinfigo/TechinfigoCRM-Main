@@ -32,17 +32,17 @@ const MetricCard: React.FC<MetricCardProps> = ({ title, value, icon: Icon, chang
     };
     const currentIconStyle = iconStyles[title] || { text: 'text-slate-500' };
     
-    const iconWrapperClasses = 'absolute top-4 right-4';
+    const iconWrapperClasses = 'absolute top-3 right-3';
     const iconClasses = 'w-5 h-5';
 
     return (
-        <div className="relative bg-bg-base dark:bg-bg-base p-4 rounded-xl shadow-lg border border-border-base dark:border-border-muted hover:-translate-y-1 hover:shadow-xl transition-all duration-300 overflow-hidden">
+        <div className="relative bg-bg-base dark:bg-bg-base p-3 rounded-xl shadow-lg border border-border-base dark:border-border-muted hover:-translate-y-1 hover:shadow-xl transition-all duration-300 overflow-hidden">
             <div className={iconWrapperClasses}>
                 <Icon className={`${iconClasses} ${currentIconStyle.text}`} />
             </div>
             
             <p className="text-sm font-medium text-text-muted dark:text-text-muted">{title}</p>
-            <p className="text-2xl lg:text-3xl font-bold text-text-heading dark:text-text-heading mt-2">{value}</p>
+            <p className="text-2xl lg:text-3xl font-bold text-text-heading dark:text-text-heading mt-1">{value}</p>
             
             {change && (
                 <div className="flex items-center text-xs mt-1">
