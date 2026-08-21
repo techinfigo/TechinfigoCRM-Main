@@ -32,12 +32,10 @@ export const documentTypeStyle = (dt: ClientDocumentType): { label: string; icon
     case 'GST Invoice':
       return { label: 'GST Invoice', icon: '🧾', className: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' };
     case 'Bill of Supply':
-      return { label: 'Bill of Supply', icon: '📄', className: 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300' };
-    case 'Receipt Only':
-      return { label: 'Receipt Only', icon: '🧾', className: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300' };
+      return { label: 'GSTIN, no GST bill', icon: '📄', className: 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300' };
     case 'No Document':
     default:
-      return { label: 'No Document', icon: '—', className: 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300' };
+      return { label: 'No GST', icon: '—', className: 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300' };
   }
 };
 

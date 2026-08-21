@@ -396,10 +396,9 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({ isOpen, onClos
               value={formData.documentType}
               onChange={handleDocumentTypeChange}
               options={[
-                { value: 'GST Invoice', label: 'GST Invoice (with tax)' },
-                { value: 'Bill of Supply', label: 'Bill without GST' },
-                { value: 'Receipt Only', label: 'Payment receipt only' },
-                { value: 'No Document', label: 'No bill needed' },
+                { value: 'GST Invoice', label: 'GST Invoice (has GSTIN, gets GST bill)' },
+                { value: 'Bill of Supply', label: 'Has GSTIN but no GST bill (record only)' },
+                { value: 'No Document', label: 'No GSTIN / no GST bill' },
               ]}
             />
           </div>

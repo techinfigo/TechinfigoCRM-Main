@@ -167,8 +167,8 @@ export interface AccessCredential {
 export type PaymentMode = 'Cash' | 'UPI' | 'Bank Transfer' | 'Cheque';
 export const paymentModes: PaymentMode[] = ['Cash', 'UPI', 'Bank Transfer', 'Cheque'];
 
-export type ClientDocumentType = 'GST Invoice' | 'Bill of Supply' | 'Receipt Only' | 'No Document';
-export const clientDocumentTypes: ClientDocumentType[] = ['GST Invoice', 'Bill of Supply', 'Receipt Only', 'No Document'];
+export type ClientDocumentType = 'GST Invoice' | 'Bill of Supply' | 'No Document';
+export const clientDocumentTypes: ClientDocumentType[] = ['GST Invoice', 'Bill of Supply', 'No Document'];
 
 export interface Client {
     id: string;
