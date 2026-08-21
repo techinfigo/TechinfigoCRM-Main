@@ -10,6 +10,30 @@ import { Checkbox } from '../common/Checkbox';
 import { DynamicFormFields } from '@/components/forms/DynamicFormFields';
 import { t } from '@/i18n';
 
+const CLIENT_INDUSTRY_OPTIONS = [
+  'Apparel & Fashion',
+  'Beauty & Cosmetics',
+  'Health & Supplements',
+  'Food & Beverage',
+  'Home & Decor',
+  'Electronics & Gadgets',
+  'Jewellery',
+  'Real Estate',
+  'Clinic / Healthcare',
+  'Education & Coaching',
+  'SaaS / Software',
+  'Fitness & Gym',
+  'Travel & Hospitality',
+  'Automobile',
+  'Finance & Insurance',
+  'E-commerce',
+  'Marketing & Advertising',
+  'Manufacturing',
+  'Retail',
+  'Consulting',
+  'Other',
+];
+
 interface ClientFormModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -279,7 +303,16 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({ isOpen, onClos
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input label={t('clients.form.website')} id="website" name="website" type="url" placeholder="https://example.com" value={formData.website || ''} onChange={handleChange} error={errors.website}/>
-            <Input label={t('clients.form.industry')} id="industry" name="industry" placeholder="e.g., E-commerce, Healthcare" value={formData.industry || ''} onChange={handleChange} />
+            <div>
+              <label className="block text-sm font-medium text-text-base dark:text-slate-300 mb-1">{t('clients.form.industry')}</label>
+              <Select
+                value={formData.industry || ''}
+                onChange={(v) => { setFormData(prev => ({ ...prev, industry: v })); }}
+                placeholder="Select industry"
+                searchable
+                options={[{ value: '', label: '— Select industry —' }, ...CLIENT_INDUSTRY_OPTIONS.map(i => ({ value: i, label: i }))]}
+              />
+            </div>
         </div>
          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input label={t('clients.form.contactName')} id="primaryContactName" name="primaryContactName" value={formData.primaryContactName || ''} onChange={handleChange} />
