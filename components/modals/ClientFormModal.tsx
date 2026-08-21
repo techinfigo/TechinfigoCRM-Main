@@ -34,6 +34,25 @@ const CLIENT_INDUSTRY_OPTIONS = [
   'Other',
 ];
 
+const CLIENT_TAG_OPTIONS = [
+  'Key Account',
+  'VIP',
+  'New',
+  'Recurring',
+  'One-Time',
+  'Local',
+  'International',
+  'B2B',
+  'B2C',
+  'High Value',
+  'Priority',
+  'Referral',
+  'Follow-Up',
+  'On Hold',
+  'Prepaid',
+  'Postpaid',
+];
+
 interface ClientFormModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -326,7 +345,35 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({ isOpen, onClos
             <Input label={t('clients.form.contactEmail')} id="primaryContactEmail" name="primaryContactEmail" type="email" value={formData.primaryContactEmail || ''} onChange={handleChange} error={errors.primaryContactEmail}/>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input label={t('clients.form.tags')} id="tags" name="tags" placeholder="e.g., key_account, local, b2c" value={formData.tags || ''} onChange={handleChange} />
+            <div>
+              <label className="block text-sm font-medium text-text-base dark:text-slate-300 mb-1.5">{t('clients.form.tags')}</label>
+              {(() => {
+                const selectedTags = (formData.tags || '').split(',').map(x => x.trim()).filter(Boolean);
+                const toggleTag = (tag: string) => {
+                  const set = new Set(selectedTags);
+                  if (set.has(tag)) { set.delete(tag); } else { set.add(tag); }
+                  setFormData(prev => ({ ...prev, tags: Array.from(set).join(', ') }));
+                };
+                return (
+                  <div className="flex flex-wrap gap-2">
+                    {CLIENT_TAG_OPTIONS.map(tag => {
+                      const active = selectedTags.includes(tag);
+                      return (
+                        <button
+                          key={tag}
+                          type="button"
+                          onClick={() => toggleTag(tag)}
+                          className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${active ? 'bg-premium-accent text-white border-premium-accent' : 'bg-white dark:bg-slate-800 text-text-muted border-slate-300 dark:border-slate-600 hover:border-premium-accent hover:text-premium-accent'}`}
+                        >
+                          {active ? '✓ ' : ''}{tag}
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+              {formData.tags && <p className="text-xs text-text-muted mt-2">Selected: {formData.tags}</p>}
+            </div>
             <TextArea label={t('clients.form.address')} id="address" name="address" value={formData.address || ''} onChange={handleChange} rows={2} />
         </div>
         <TextArea label={t('clients.form.notes')} id="clientNotes" name="clientNotes" value={formData.clientNotes || ''} onChange={handleChange} rows={2} placeholder="General notes: preferences, history, how you met, etc."/>
