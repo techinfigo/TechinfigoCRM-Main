@@ -609,7 +609,7 @@ export const LeadsView: React.FC<LeadsViewProps> = ({ leads, auditRecords, teamM
         </div>
       </div>
 
-    <div className={`flex-grow overflow-hidden ${viewMode === 'List' ? 'p-4' : 'p-0'}`}>
+    <div className={`flex-grow overflow-y-auto ${viewMode === 'List' ? 'p-4' : 'p-0'}`}>
         {viewMode === 'List' ? (
             <div className="overflow-x-auto rounded-lg border border-border-base dark:border-slate-700">
                 <table className="min-w-full divide-y divide-border-base dark:divide-slate-700">
