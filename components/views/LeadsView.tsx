@@ -571,7 +571,7 @@ export const LeadsView: React.FC<LeadsViewProps> = ({ leads, auditRecords, teamM
             </div>
         }
         className="h-full flex flex-col"
-        contentClassName="flex-grow flex flex-col p-0"
+        contentClassName="flex-grow flex flex-col min-h-0 p-0"
     >
       <div className="p-4 border-b border-border-base dark:border-slate-700 bg-slate-50 dark:bg-slate-800/30">
         <div className="flex flex-col md:flex-row gap-3 items-center">
@@ -609,7 +609,7 @@ export const LeadsView: React.FC<LeadsViewProps> = ({ leads, auditRecords, teamM
         </div>
       </div>
 
-    <div className={`flex-grow overflow-y-auto ${viewMode === 'List' ? 'p-4' : 'p-0'}`}>
+    <div className={`flex-grow min-h-0 overflow-y-auto ${viewMode === 'List' ? 'p-4' : 'p-0'}`}>
         {viewMode === 'List' ? (
             <div className="overflow-x-auto rounded-lg border border-border-base dark:border-slate-700">
                 <table className="min-w-full divide-y divide-border-base dark:divide-slate-700">

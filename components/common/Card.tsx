@@ -44,7 +44,7 @@ export const Card: React.FC<CardProps> = ({
           {actions && <div className="ml-3 shrink-0 flex items-center gap-2">{actions}</div>}
         </div>
       )}
-      <div className={`${noPadding ? '' : 'p-5'} ${contentClassName || 'text-zinc-600 dark:text-zinc-300'}`}>
+      <div className={`${noPadding ? '' : 'p-5'} ${contentClassName ? `min-h-0 ${contentClassName}` : 'text-zinc-600 dark:text-zinc-300'}`}>
         {children}
       </div>
     </motion.div>
