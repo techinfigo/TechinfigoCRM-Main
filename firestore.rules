@@ -4,5 +4,16 @@ service cloud.firestore {
     match /users/{userId}/appData/{document=**} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
+
+    // Enquiries from www.techinfigo.com. Only the website's server creates
+    // them (it uses an admin key, which bypasses these rules), so browsers
+    // can never add or fake one. Only the owner's CRM account can read and
+    // update them. Add a team member's email to the list to give them access.
+    match /websiteEnquiries/{enquiryId} {
+      allow read, update: if request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email in ['thetechinfigo@gmail.com'];
+      allow create, delete: if false;
+    }
   }
 }

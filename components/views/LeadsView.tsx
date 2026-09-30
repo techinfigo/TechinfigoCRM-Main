@@ -9,6 +9,7 @@ import { DateRangePicker, DateRange } from '../common/DateRangePicker';
 import { Checkbox } from '../common/Checkbox';
 import { ChevronDown, SlidersHorizontal, Columns, Search, Undo2, GripVertical, Mail, Phone, Calendar, Download, Upload, Instagram, Globe, Webhook, StickyNote, Eye, Trash2, FileText } from 'lucide-react';
 import { ConfirmationModal } from '../modals/ConfirmationModal';
+import { WebsiteEnquiriesPanel } from '../leads/WebsiteEnquiriesPanel';
 import { usePagination } from '../../hooks/usePagination';
 import { Pagination } from '../common/Pagination';
 import { safeFormatDate, safeFormatRelativeTime, isDateInRange } from '@/utils';
@@ -548,6 +549,7 @@ export const LeadsView: React.FC<LeadsViewProps> = ({ leads, auditRecords, teamM
   return (
     <>
     <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".csv" />
+    <WebsiteEnquiriesPanel onAddToLeads={(lead) => onImportLeads([lead])} />
     <Card
         title="Leads"
         actions={
