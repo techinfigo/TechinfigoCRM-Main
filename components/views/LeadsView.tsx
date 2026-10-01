@@ -593,7 +593,7 @@ export const LeadsView: React.FC<LeadsViewProps> = ({ leads, auditRecords, teamM
                     <button onClick={() => { setViewMode('List'); setShowEnquiries(false); }} className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${viewMode === 'List' && !showEnquiries ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}>List</button>
                     <button onClick={() => { setViewMode('Kanban'); setShowEnquiries(false); }} className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${viewMode === 'Kanban' && !showEnquiries ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}>Pipeline</button>
                     <button onClick={() => setShowEnquiries(true)} className={`px-3 py-1 text-xs font-medium rounded-md transition-colors inline-flex items-center gap-1.5 ${showEnquiries ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}>
-                        Website Enquiries
+                        Enquiries
                         {enquiries.counts.new > 0 && (
                             <span className="min-w-[1.25rem] px-1.5 py-0.5 rounded-full bg-secondary-accent text-secondary-accent-text text-[10px] font-bold leading-none">{enquiries.counts.new}</span>
                         )}

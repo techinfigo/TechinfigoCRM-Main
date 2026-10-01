@@ -87,6 +87,19 @@ function cameFrom(e: Enquiry): string {
   return 'Direct / Google';
 }
 
+/** Where the enquiry was submitted: the website or an ad platform's lead form. */
+function sourceLabel(e: Enquiry): 'Website' | 'Meta Ads' | 'Google Ads' {
+  if (e.sourceForm === 'meta-lead-ads') return 'Meta Ads';
+  if (e.sourceForm === 'google-ads-lead-form') return 'Google Ads';
+  return 'Website';
+}
+
+const SOURCE_BADGE: Record<ReturnType<typeof sourceLabel>, string> = {
+  Website: 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200',
+  'Meta Ads': 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+  'Google Ads': 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
+};
+
 function timeAgo(date: Date | null): string {
   if (!date) return '';
   const mins = Math.round((Date.now() - date.getTime()) / 60000);
@@ -112,7 +125,7 @@ function toLead(e: Enquiry): Lead {
     phone: e.phone ?? undefined,
     companyName: e.businessName ?? undefined,
     website: e.website ?? undefined,
-    source: 'Website',
+    source: sourceLabel(e),
     status: 'New Lead',
     dateAdded: (e.createdAt ?? new Date()).toISOString(),
     notes,
@@ -179,7 +192,7 @@ export function useWebsiteEnquiries(): EnquiriesState {
   return { enquiries, counts, error, busy, setStatus };
 }
 
-/** Inbox body, shown inside the Leads card when "Website Enquiries" is selected. */
+/** Inbox body, shown inside the Leads card when "Enquiries" is selected. */
 export const WebsiteEnquiriesInbox: React.FC<{ state: EnquiriesState; onAddToLeads: (lead: Lead) => void }> = ({
   state,
   onAddToLeads,
@@ -221,7 +234,7 @@ export const WebsiteEnquiriesInbox: React.FC<{ state: EnquiriesState; onAddToLea
 
           {shown.length === 0 && !error && (
             <p className="text-sm text-slate-500 dark:text-slate-400 py-4 text-center">
-              {tab === 'new' ? 'No new enquiries. New ones from the website appear here instantly.' : 'No spam. Suspicious enquiries are kept here for review.'}
+              {tab === 'new' ? 'No new enquiries. New ones from the website and ads appear here instantly.' : 'No spam. Suspicious enquiries are kept here for review.'}
             </p>
           )}
 
@@ -238,13 +251,16 @@ export const WebsiteEnquiriesInbox: React.FC<{ state: EnquiriesState; onAddToLea
                         {e.businessName && <span className="font-normal text-slate-500 dark:text-slate-400"> · {e.businessName}</span>}
                       </p>
                       <p className="text-xs text-slate-500 dark:text-slate-400">
+                        <span className={`inline-block px-1.5 py-0.5 mr-1.5 rounded font-medium ${SOURCE_BADGE[sourceLabel(e)]}`}>
+                          {sourceLabel(e)}
+                        </span>
                         {timeAgo(e.createdAt)} · Came from: {cameFrom(e)}
                       </p>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {wa && (
                         <a
-                          href={`https://wa.me/${wa}?text=${encodeURIComponent(`Hi ${firstName}, this is Sachin from Techinfigo. Thanks for your enquiry on our website!`)}`}
+                          href={`https://wa.me/${wa}?text=${encodeURIComponent(`Hi ${firstName}, this is Sachin from Techinfigo. Thanks for your enquiry${sourceLabel(e) === 'Website' ? ' on our website' : ''}!`)}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#25D366] text-white text-xs font-semibold"
