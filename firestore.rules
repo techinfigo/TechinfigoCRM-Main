@@ -19,7 +19,7 @@ service cloud.firestore {
     // update them. Add a team member's email to the list to give them access.
     match /websiteEnquiries/{enquiryId} {
       allow read, update: if request.auth != null
-        && request.auth.token.email in ['thetechinfigo@gmail.com'];
+        && request.auth.token.email in ['sachin.kumar.zone@gmail.com'];
       allow create, delete: if false;
     }
   }
