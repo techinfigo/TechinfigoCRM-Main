@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { collection, doc, limit, onSnapshot, query, serverTimestamp, updateDoc, where, type Timestamp } from 'firebase/firestore';
-import { Globe, Inbox, MessageCircle, Phone, ShieldAlert, ChevronDown, Check, X, RotateCcw } from 'lucide-react';
+import { Globe, Mail, Inbox, MessageCircle, Phone, ShieldAlert, ChevronDown, Check, X, RotateCcw } from 'lucide-react';
 import { db, isFirebaseConfigured } from '../../firebase';
 import { Button } from '../common/Button';
 import type { Lead } from '../../types';
@@ -41,6 +41,7 @@ const SPAM_REASON_LABELS: Record<string, string> = {
   'gibberish-name': 'Random letters in the name',
   'spam-words': 'Spam words',
   'bot-check-missing': 'Skipped the bot check',
+  'marked-by-you': 'You marked it as spam',
 };
 
 function toEnquiry(id: string, d: Record<string, unknown>): Enquiry {
@@ -75,16 +76,54 @@ function whatsappNumber(phone: string | null): string | null {
   return digits.length === 10 ? `91${digits}` : null;
 }
 
+/**
+ * How the person reached us. Ad leads: the campaign. Website: the ad/link tag
+ * if any, else the site that sent them, else a direct visit (typed the address,
+ * a WhatsApp/shared link, or a bookmark: the browser gives no source).
+ */
 function cameFrom(e: Enquiry): string {
+  if (e.sourceForm === 'meta-lead-ads' || e.sourceForm === 'google-ads-lead-form') {
+    return e.utmCampaign ? `Campaign: ${e.utmCampaign}` : 'Ad campaign';
+  }
   if (e.utmSource) return e.utmCampaign ? `${e.utmSource} · ${e.utmCampaign}` : e.utmSource;
   if (e.referrer) {
     try {
-      return new URL(e.referrer).hostname.replace(/^www\./, '');
+      const host = new URL(e.referrer).hostname.replace(/^www\./, '');
+      if (/(^|\.)google\./.test(host)) return 'Google search';
+      if (/(^|\.)bing\.com$/.test(host)) return 'Bing search';
+      if (/facebook\.com$|fb\.com$/.test(host)) return 'Facebook';
+      if (/instagram\.com$/.test(host)) return 'Instagram';
+      if (/linkedin\.com$|lnkd\.in$/.test(host)) return 'LinkedIn';
+      if (/youtube\.com$/.test(host)) return 'YouTube';
+      return host;
     } catch {
       /* not a URL */
     }
   }
-  return 'Direct / Google';
+  return 'Direct visit';
+}
+
+const FORM_LABELS: Record<string, string> = {
+  'health-check': 'Free Health Check form',
+  contact: 'Contact form',
+  'meta-lead-ads': 'Facebook / Instagram lead form',
+  'google-ads-lead-form': 'Google Ads lead form',
+};
+
+/** Which form, and on which page of the website. */
+function formLabel(e: Enquiry): string {
+  const form = (e.sourceForm && FORM_LABELS[e.sourceForm]) || 'Website form';
+  const isAd = e.sourceForm === 'meta-lead-ads' || e.sourceForm === 'google-ads-lead-form';
+  return !isAd && e.landingPage && e.landingPage !== '/' ? `${form} · ${e.landingPage}` : form;
+}
+
+/** The message without the "Needs: ..." line the website adds, since needs show as tags. */
+function messageText(e: Enquiry): string {
+  return (e.message ?? '')
+    .split('\n')
+    .filter((line) => !/^Needs:/i.test(line.trim()))
+    .join('\n')
+    .trim();
 }
 
 /** Where the enquiry was submitted: the website or an ad platform's lead form. */
@@ -113,8 +152,8 @@ function timeAgo(date: Date | null): string {
 function toLead(e: Enquiry): Lead {
   const notes = [
     e.needs.length ? `Needs: ${e.needs.join(', ')}` : '',
-    e.message ?? '',
-    `Came from: ${cameFrom(e)}${e.landingPage ? ` (page ${e.landingPage})` : ''}`,
+    messageText(e),
+    `Came from: ${cameFrom(e)} (${formLabel(e)})`,
   ]
     .filter(Boolean)
     .join('\n\n');
@@ -250,11 +289,11 @@ export const WebsiteEnquiriesInbox: React.FC<{ state: EnquiriesState; onAddToLea
                         {e.name}
                         {e.businessName && <span className="font-normal text-slate-500 dark:text-slate-400"> · {e.businessName}</span>}
                       </p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                         <span className={`inline-block px-1.5 py-0.5 mr-1.5 rounded font-medium ${SOURCE_BADGE[sourceLabel(e)]}`}>
                           {sourceLabel(e)}
                         </span>
-                        {timeAgo(e.createdAt)} · Came from: {cameFrom(e)}
+                        {timeAgo(e.createdAt)}
                       </p>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -289,12 +328,27 @@ export const WebsiteEnquiriesInbox: React.FC<{ state: EnquiriesState; onAddToLea
                     </div>
                   )}
 
-                  {e.website && (
-                    <p className="text-xs text-slate-600 dark:text-slate-300 flex items-center gap-1">
-                      <Globe className="w-3.5 h-3.5" /> {e.website}
-                    </p>
+                  {(e.email || e.website) && (
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600 dark:text-slate-300">
+                      {e.email && (
+                        <a href={`mailto:${e.email}`} className="inline-flex items-center gap-1 hover:underline">
+                          <Mail className="w-3.5 h-3.5" /> {e.email}
+                        </a>
+                      )}
+                      {e.website && (
+                        <span className="inline-flex items-center gap-1">
+                          <Globe className="w-3.5 h-3.5" /> {e.website}
+                        </span>
+                      )}
+                    </div>
                   )}
-                  {e.message && <p className="text-sm text-slate-600 dark:text-slate-300 whitespace-pre-line line-clamp-4">{e.message}</p>}
+                  {messageText(e) && <p className="text-sm text-slate-600 dark:text-slate-300 whitespace-pre-line line-clamp-4">{messageText(e)}</p>}
+
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    <span className="font-medium text-slate-600 dark:text-slate-300">Form:</span> {formLabel(e)}
+                    <span className="mx-1.5">·</span>
+                    <span className="font-medium text-slate-600 dark:text-slate-300">Came from:</span> {cameFrom(e)}
+                  </p>
 
                   {e.status === 'spam' && e.spamReasons.length > 0 && (
                     <p className="text-xs text-amber-700 dark:text-amber-400 flex items-center gap-1">
