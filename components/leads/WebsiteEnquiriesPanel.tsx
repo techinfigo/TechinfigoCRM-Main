@@ -120,10 +120,17 @@ function toLead(e: Enquiry): Lead {
   } as Lead;
 }
 
-export const WebsiteEnquiriesPanel: React.FC<{ onAddToLeads: (lead: Lead) => void }> = ({ onAddToLeads }) => {
+export type EnquiriesState = {
+  enquiries: Enquiry[];
+  counts: { new: number; spam: number };
+  error: string | null;
+  busy: string | null;
+  setStatus: (e: Enquiry, status: EnquiryStatus, extra?: Record<string, unknown>) => Promise<void>;
+};
+
+/** Live list of website enquiries; used by the Leads page header badge and the inbox. */
+export function useWebsiteEnquiries(): EnquiriesState {
   const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
-  const [tab, setTab] = useState<'new' | 'spam'>('new');
-  const [open, setOpen] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -156,7 +163,6 @@ export const WebsiteEnquiriesPanel: React.FC<{ onAddToLeads: (lead: Lead) => voi
     }),
     [enquiries],
   );
-  const shown = enquiries.filter((e) => e.status === tab);
 
   const setStatus = async (e: Enquiry, status: EnquiryStatus, extra: Record<string, unknown> = {}) => {
     setBusy(e.id);
@@ -170,35 +176,30 @@ export const WebsiteEnquiriesPanel: React.FC<{ onAddToLeads: (lead: Lead) => voi
     }
   };
 
+  return { enquiries, counts, error, busy, setStatus };
+}
+
+/** Inbox body, shown inside the Leads card when "Website Enquiries" is selected. */
+export const WebsiteEnquiriesInbox: React.FC<{ state: EnquiriesState; onAddToLeads: (lead: Lead) => void }> = ({
+  state,
+  onAddToLeads,
+}) => {
+  const { enquiries, counts, error, busy, setStatus } = state;
+  const [tab, setTab] = useState<'new' | 'spam'>('new');
+  const shown = enquiries.filter((e) => e.status === tab);
+
   const addToLeads = async (e: Enquiry) => {
     const lead = toLead(e);
     onAddToLeads(lead);
     await setStatus(e, 'imported', { importedLeadId: lead.id });
   };
 
-  if (!isFirebaseConfigured) return null;
+  if (!isFirebaseConfigured) {
+    return <p className="text-sm text-slate-500 p-4">Website enquiries need the cloud connection.</p>;
+  }
 
   return (
-    <section className="shrink-0 mb-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 shadow-sm">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center justify-between gap-3 px-4 py-3"
-      >
-        <span className="flex items-center gap-2 font-semibold text-slate-900 dark:text-white">
-          <Inbox className="w-4 h-4 text-secondary-accent" />
-          Website Enquiries
-          {counts.new > 0 && (
-            <span className="ml-1 px-2 py-0.5 rounded-full bg-secondary-accent text-secondary-accent-text text-xs font-bold">
-              {counts.new} new
-            </span>
-          )}
-        </span>
-        <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
-      </button>
-
-      {open && (
-        <div className="px-4 pb-4 space-y-3">
+        <div className="p-4 space-y-3">
           <div className="flex gap-2">
             {(['new', 'spam'] as const).map((t) => (
               <button
@@ -224,8 +225,7 @@ export const WebsiteEnquiriesPanel: React.FC<{ onAddToLeads: (lead: Lead) => voi
             </p>
           )}
 
-          {/* Own scroll, so many enquiries never push the leads list off screen. */}
-          <ul className="space-y-2 max-h-[40vh] overflow-y-auto pr-1">
+          <ul className="space-y-2">
             {shown.map((e) => {
               const wa = whatsappNumber(e.phone);
               const firstName = e.name.split(' ')[0];
@@ -309,7 +309,5 @@ export const WebsiteEnquiriesPanel: React.FC<{ onAddToLeads: (lead: Lead) => voi
             })}
           </ul>
         </div>
-      )}
-    </section>
   );
 };

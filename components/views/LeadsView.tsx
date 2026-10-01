@@ -9,7 +9,7 @@ import { DateRangePicker, DateRange } from '../common/DateRangePicker';
 import { Checkbox } from '../common/Checkbox';
 import { ChevronDown, SlidersHorizontal, Columns, Search, Undo2, GripVertical, Mail, Phone, Calendar, Download, Upload, Instagram, Globe, Webhook, StickyNote, Eye, Trash2, FileText } from 'lucide-react';
 import { ConfirmationModal } from '../modals/ConfirmationModal';
-import { WebsiteEnquiriesPanel } from '../leads/WebsiteEnquiriesPanel';
+import { WebsiteEnquiriesInbox, useWebsiteEnquiries } from '../leads/WebsiteEnquiriesPanel';
 import { usePagination } from '../../hooks/usePagination';
 import { Pagination } from '../common/Pagination';
 import { safeFormatDate, safeFormatRelativeTime, isDateInRange } from '@/utils';
@@ -152,6 +152,9 @@ const LeadCardComponent: React.FC<{
 
 export const LeadsView: React.FC<LeadsViewProps> = ({ leads, auditRecords, teamMembers, onAddLead, onEditLead, onDeleteLead, onUpdateStatus, onCreateProposal, hasPermission, onImportLeads, onSelectLeadForDetail, onOpenAuditFormModal, onOpenAuditReportModal, onOpenFollowUpModal, onOpenEmailComposeModal, onNavigateToAuditCreate, onNavigateToIntegrations }) => {
   const [viewMode, setViewMode] = useState<LeadViewMode>('List');
+  // Website enquiries open in the same card, as a third view next to List and Pipeline.
+  const [showEnquiries, setShowEnquiries] = useState(false);
+  const enquiries = useWebsiteEnquiries();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [leadToDelete, setLeadToDelete] = useState<Lead | null>(null);
   const [dateRange, setDateRange] = useState<DateRange | null>(null);
@@ -549,17 +552,19 @@ export const LeadsView: React.FC<LeadsViewProps> = ({ leads, auditRecords, teamM
   return (
     <>
     <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".csv" />
-    {/* The page fills one screen: the enquiries box takes what it needs
-        (with its own scroll), and the leads card fills and scrolls the rest. */}
-    <div className="h-full min-h-0 flex flex-col">
-    <WebsiteEnquiriesPanel onAddToLeads={(lead) => onImportLeads([lead])} />
     <Card
         title="Leads"
         actions={
             <div className="flex flex-wrap items-center gap-2">
                 <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-lg flex items-center mr-1">
-                    <button onClick={() => setViewMode('List')} className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${viewMode === 'List' ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}>List</button>
-                    <button onClick={() => setViewMode('Kanban')} className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${viewMode === 'Kanban' ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}>Pipeline</button>
+                    <button onClick={() => { setViewMode('List'); setShowEnquiries(false); }} className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${viewMode === 'List' && !showEnquiries ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}>List</button>
+                    <button onClick={() => { setViewMode('Kanban'); setShowEnquiries(false); }} className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${viewMode === 'Kanban' && !showEnquiries ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}>Pipeline</button>
+                    <button onClick={() => setShowEnquiries(true)} className={`px-3 py-1 text-xs font-medium rounded-md transition-colors inline-flex items-center gap-1.5 ${showEnquiries ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}>
+                        Website Enquiries
+                        {enquiries.counts.new > 0 && (
+                            <span className="min-w-[1.25rem] px-1.5 py-0.5 rounded-full bg-secondary-accent text-secondary-accent-text text-[10px] font-bold leading-none">{enquiries.counts.new}</span>
+                        )}
+                    </button>
                 </div>
                 <Button onClick={handleImportClick} variant="outline" size="sm" leftIcon={<Upload className="w-3.5 h-3.5 mr-1" />}>
                     Import CSV
@@ -575,9 +580,10 @@ export const LeadsView: React.FC<LeadsViewProps> = ({ leads, auditRecords, teamM
                 <Button onClick={onAddLead} variant="primary" size="sm">Add New Lead</Button>
             </div>
         }
-        className="flex-1 min-h-0 flex flex-col"
+        className="h-full flex flex-col"
         contentClassName="flex-grow flex flex-col min-h-0 p-0"
     >
+      {!showEnquiries && (
       <div className="p-4 border-b border-border-base dark:border-slate-700 bg-slate-50 dark:bg-slate-800/30">
         <div className="flex flex-col md:flex-row gap-3 items-center">
             <div className="w-full md:flex-1 md:max-w-md relative">
@@ -613,9 +619,12 @@ export const LeadsView: React.FC<LeadsViewProps> = ({ leads, auditRecords, teamM
             </div>
         </div>
       </div>
+      )}
 
-    <div className={`flex-grow min-h-0 overflow-y-auto ${viewMode === 'List' ? 'p-4' : 'p-0'}`}>
-        {viewMode === 'List' ? (
+    <div className={`flex-grow min-h-0 overflow-y-auto ${viewMode === 'List' && !showEnquiries ? 'p-4' : 'p-0'}`}>
+        {showEnquiries ? (
+            <WebsiteEnquiriesInbox state={enquiries} onAddToLeads={(lead) => onImportLeads([lead])} />
+        ) : viewMode === 'List' ? (
             <div className="overflow-x-auto rounded-lg border border-border-base dark:border-slate-700">
                 <table className="min-w-full divide-y divide-border-base dark:divide-slate-700">
                     <thead className="bg-slate-50 dark:bg-slate-700/50">
@@ -826,7 +835,6 @@ export const LeadsView: React.FC<LeadsViewProps> = ({ leads, auditRecords, teamM
         )}
     </div>
     </Card>
-    </div>
     {leadToDelete && (
         <ConfirmationModal
             isOpen={true}
