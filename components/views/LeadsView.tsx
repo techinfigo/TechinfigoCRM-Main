@@ -556,48 +556,19 @@ export const LeadsView: React.FC<LeadsViewProps> = ({ leads, auditRecords, teamM
         title="Leads"
         actions={
             <div className="flex flex-wrap items-center gap-2">
-                <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-lg flex items-center mr-1">
-                    <button onClick={() => { setViewMode('List'); setShowEnquiries(false); }} className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${viewMode === 'List' && !showEnquiries ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}>List</button>
-                    <button onClick={() => { setViewMode('Kanban'); setShowEnquiries(false); }} className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${viewMode === 'Kanban' && !showEnquiries ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}>Pipeline</button>
-                    <button onClick={() => setShowEnquiries(true)} className={`px-3 py-1 text-xs font-medium rounded-md transition-colors inline-flex items-center gap-1.5 ${showEnquiries ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}>
-                        Website Enquiries
-                        {enquiries.counts.new > 0 && (
-                            <span className="min-w-[1.25rem] px-1.5 py-0.5 rounded-full bg-secondary-accent text-secondary-accent-text text-[10px] font-bold leading-none">{enquiries.counts.new}</span>
-                        )}
-                    </button>
-                </div>
-                <Button onClick={handleImportClick} variant="outline" size="sm" leftIcon={<Upload className="w-3.5 h-3.5 mr-1" />}>
-                    Import CSV
-                </Button>
-                <Button onClick={handleExportClick} variant="outline" size="sm" leftIcon={<Download className="w-3.5 h-3.5 mr-1" />}>
-                    Export CSV
-                </Button>
-                {onNavigateToIntegrations && (
-                    <Button onClick={onNavigateToIntegrations} variant="outline" size="sm" className="text-secondary-accent hover:text-secondary-accent border-secondary-accent/20 hover:border-secondary-accent bg-secondary-accent/5 dark:bg-secondary-accent/5" leftIcon={<Webhook className="w-3.5 h-3.5 mr-1" />}>
-                        Auto-Capture Webhooks
-                    </Button>
-                )}
-                <Button onClick={onAddLead} variant="primary" size="sm">Add New Lead</Button>
-            </div>
-        }
-        className="h-full flex flex-col"
-        contentClassName="flex-grow flex flex-col min-h-0 p-0"
-    >
-      {!showEnquiries && (
-      <div className="p-4 border-b border-border-base dark:border-slate-700 bg-slate-50 dark:bg-slate-800/30">
-        <div className="flex flex-col md:flex-row gap-3 items-center">
-            <div className="w-full md:flex-1 md:max-w-md relative">
+                {!showEnquiries && (
+                <>
+            <div className="relative w-full sm:w-56 lg:w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input 
                     type="text" 
                     placeholder="Search name, brand, email..." 
-                    className="w-full pl-9 pr-4 py-2 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm focus:ring-2 focus:ring-premium-accent outline-none"
+                    className="w-full pl-9 pr-4 py-1.5 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm focus:ring-2 focus:ring-premium-accent outline-none"
                     value={searchTerm} 
                     onChange={(e) => setSearchTerm(e.target.value)} 
                 />
             </div>
             
-            <div className="flex items-center gap-2 justify-end w-full md:w-auto flex-shrink-0">
                  <DateRangePicker onApply={setDateRange} initialRange={dateRange || undefined} />
                  {/* Quick Filters */}
                  <div className="relative">
@@ -616,10 +587,35 @@ export const LeadsView: React.FC<LeadsViewProps> = ({ leads, auditRecords, teamM
                         </div>, document.body 
                     )}
                  </div>
+                </>
+                )}
+                <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-lg flex items-center mr-1">
+                    <button onClick={() => { setViewMode('List'); setShowEnquiries(false); }} className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${viewMode === 'List' && !showEnquiries ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}>List</button>
+                    <button onClick={() => { setViewMode('Kanban'); setShowEnquiries(false); }} className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${viewMode === 'Kanban' && !showEnquiries ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}>Pipeline</button>
+                    <button onClick={() => setShowEnquiries(true)} className={`px-3 py-1 text-xs font-medium rounded-md transition-colors inline-flex items-center gap-1.5 ${showEnquiries ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}>
+                        Website Enquiries
+                        {enquiries.counts.new > 0 && (
+                            <span className="min-w-[1.25rem] px-1.5 py-0.5 rounded-full bg-secondary-accent text-secondary-accent-text text-[10px] font-bold leading-none">{enquiries.counts.new}</span>
+                        )}
+                    </button>
+                </div>
+                <Button onClick={handleImportClick} variant="outline" size="sm" title="Import CSV" aria-label="Import CSV" leftIcon={<Upload className="w-3.5 h-3.5" />}>
+                    <span className="hidden 2xl:inline ml-1">Import</span>
+                </Button>
+                <Button onClick={handleExportClick} variant="outline" size="sm" title="Export CSV" aria-label="Export CSV" leftIcon={<Download className="w-3.5 h-3.5" />}>
+                    <span className="hidden 2xl:inline ml-1">Export</span>
+                </Button>
+                {onNavigateToIntegrations && (
+                    <Button onClick={onNavigateToIntegrations} variant="outline" size="sm" className="text-secondary-accent hover:text-secondary-accent border-secondary-accent/20 hover:border-secondary-accent bg-secondary-accent/5 dark:bg-secondary-accent/5" leftIcon={<Webhook className="w-3.5 h-3.5 mr-1" />}>
+                        Auto-Capture Webhooks
+                    </Button>
+                )}
+                <Button onClick={onAddLead} variant="primary" size="sm">Add New Lead</Button>
             </div>
-        </div>
-      </div>
-      )}
+        }
+        className="h-full flex flex-col"
+        contentClassName="flex-grow flex flex-col min-h-0 p-0"
+    >
 
     <div className={`flex-grow min-h-0 overflow-y-auto ${viewMode === 'List' && !showEnquiries ? 'p-4' : 'p-0'}`}>
         {showEnquiries ? (
