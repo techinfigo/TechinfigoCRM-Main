@@ -66,6 +66,11 @@ const NavItem: React.FC<NavItemProps> = ({ viewName, currentView, setView, icon,
           className: `h-5 w-5 shrink-0 transition-transform ${isCollapsed ? '' : 'mr-3'}`,
           strokeWidth: isActive ? 2.5 : 2
         })}
+        {isCollapsed && showBadge && (
+          <span className="absolute top-1 right-1 inline-flex min-w-[18px] h-[18px] items-center justify-center rounded-full bg-secondary-accent text-secondary-accent-text text-[10px] px-1 font-bold">
+            {badgeLabel}
+          </span>
+        )}
         {!isCollapsed && <span className="flex-1 whitespace-nowrap">{label}</span>}
         {!isCollapsed && showBadge && (
           <span 

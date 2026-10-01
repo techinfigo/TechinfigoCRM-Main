@@ -140,6 +140,7 @@ import { useDiagnostics } from "./hooks/useDiagnostics";
 import { UrlErrorBanner } from "./components/common/UrlErrorBanner";
 import { auth, isFirebaseConfigured } from "./firebase";
 import { subscribeToTasks, saveTaskToCloud, deleteTaskFromCloud } from "./taskSync";
+import { useWebsiteEnquiries } from "./components/leads/WebsiteEnquiriesPanel";
 
 interface AppProps {
     onSignOut?: () => void;
@@ -151,6 +152,8 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
     load(KEYS.currentUser, null),
   );
   const [currentView, setCurrentView] = useState<View>("DASHBOARD");
+  // New enquiries (website + ads) waiting in Leads -> Enquiries; shown as the Leads sidebar number.
+  const newEnquiries = useWebsiteEnquiries().counts.new;
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">(
@@ -2412,6 +2415,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
         isSidebarOpen={isMobileSidebarOpen}
         setIsSidebarOpen={setIsMobileSidebarOpen}
         isCollapsed={isSidebarCollapsed}
+        badges={{ leadsUnread: newEnquiries }}
       />
       <div className="flex-1 flex flex-col overflow-hidden relative">
         <TopNavbar
