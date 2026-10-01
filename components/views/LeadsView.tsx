@@ -549,6 +549,9 @@ export const LeadsView: React.FC<LeadsViewProps> = ({ leads, auditRecords, teamM
   return (
     <>
     <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".csv" />
+    {/* The page fills one screen: the enquiries box takes what it needs
+        (with its own scroll), and the leads card fills and scrolls the rest. */}
+    <div className="h-full min-h-0 flex flex-col">
     <WebsiteEnquiriesPanel onAddToLeads={(lead) => onImportLeads([lead])} />
     <Card
         title="Leads"
@@ -572,7 +575,7 @@ export const LeadsView: React.FC<LeadsViewProps> = ({ leads, auditRecords, teamM
                 <Button onClick={onAddLead} variant="primary" size="sm">Add New Lead</Button>
             </div>
         }
-        className="h-full flex flex-col"
+        className="flex-1 min-h-0 flex flex-col"
         contentClassName="flex-grow flex flex-col min-h-0 p-0"
     >
       <div className="p-4 border-b border-border-base dark:border-slate-700 bg-slate-50 dark:bg-slate-800/30">
@@ -823,6 +826,7 @@ export const LeadsView: React.FC<LeadsViewProps> = ({ leads, auditRecords, teamM
         )}
     </div>
     </Card>
+    </div>
     {leadToDelete && (
         <ConfirmationModal
             isOpen={true}

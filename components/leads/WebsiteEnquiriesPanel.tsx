@@ -179,7 +179,7 @@ export const WebsiteEnquiriesPanel: React.FC<{ onAddToLeads: (lead: Lead) => voi
   if (!isFirebaseConfigured) return null;
 
   return (
-    <section className="mb-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 shadow-sm">
+    <section className="shrink-0 mb-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 shadow-sm">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -224,7 +224,8 @@ export const WebsiteEnquiriesPanel: React.FC<{ onAddToLeads: (lead: Lead) => voi
             </p>
           )}
 
-          <ul className="space-y-2">
+          {/* Own scroll, so many enquiries never push the leads list off screen. */}
+          <ul className="space-y-2 max-h-[40vh] overflow-y-auto pr-1">
             {shown.map((e) => {
               const wa = whatsappNumber(e.phone);
               const firstName = e.name.split(' ')[0];
