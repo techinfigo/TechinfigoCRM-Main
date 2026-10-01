@@ -22,5 +22,19 @@ service cloud.firestore {
         && request.auth.token.email in ['sachin.kumar.zone@gmail.com'];
       allow create, delete: if false;
     }
+
+    // Lead connections (Integrations & Webhooks page). Each holds the secret
+    // token a tool uses to send leads. Only the owner can see or change them.
+    match /integrations/{connectionId} {
+      allow read, write: if request.auth != null
+        && request.auth.token.email in ['sachin.kumar.zone@gmail.com'];
+    }
+
+    // "Last lead 5 min ago" counters. Only the website's server writes them.
+    match /integrationStats/{sourceId} {
+      allow read: if request.auth != null
+        && request.auth.token.email in ['sachin.kumar.zone@gmail.com'];
+      allow write: if false;
+    }
   }
 }

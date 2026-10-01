@@ -26,6 +26,8 @@ type Enquiry = {
   message: string | null;
   needs: string[];
   sourceForm: string | null;
+  /** Connection name for leads from a webhook connection (e.g. "IndiaMART"). */
+  sourceName: string | null;
   landingPage: string | null;
   utmSource: string | null;
   utmCampaign: string | null;
@@ -57,6 +59,7 @@ function toEnquiry(id: string, d: Record<string, unknown>): Enquiry {
     message: s(d.message),
     needs: Array.isArray(d.needs) ? (d.needs as unknown[]).filter((n): n is string => typeof n === 'string') : [],
     sourceForm: s(d.sourceForm),
+    sourceName: s(d.sourceName),
     landingPage: s(d.landingPage),
     utmSource: s(d.utmSource),
     utmCampaign: s(d.utmCampaign),
@@ -83,7 +86,7 @@ function whatsappNumber(phone: string | null): string | null {
  */
 function cameFrom(e: Enquiry): string {
   if (e.sourceForm === 'meta-lead-ads' || e.sourceForm === 'google-ads-lead-form') {
-    return e.utmCampaign ? `Campaign: ${e.utmCampaign}` : 'Ad campaign';
+    return e.utmCampaign ? `campaign "${e.utmCampaign}"` : 'Ad campaign';
   }
   if (e.utmSource) return e.utmCampaign ? `${e.utmSource} · ${e.utmCampaign}` : e.utmSource;
   if (e.referrer) {
@@ -127,17 +130,20 @@ function messageText(e: Enquiry): string {
 }
 
 /** Where the enquiry was submitted: the website or an ad platform's lead form. */
-function sourceLabel(e: Enquiry): 'Website' | 'Meta Ads' | 'Google Ads' {
+function sourceLabel(e: Enquiry): string {
   if (e.sourceForm === 'meta-lead-ads') return 'Meta Ads';
   if (e.sourceForm === 'google-ads-lead-form') return 'Google Ads';
+  if (e.sourceForm === 'webhook') return e.sourceName ?? 'Connection';
   return 'Website';
 }
 
-const SOURCE_BADGE: Record<ReturnType<typeof sourceLabel>, string> = {
+const SOURCE_BADGE: Record<string, string> = {
   Website: 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200',
   'Meta Ads': 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
   'Google Ads': 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
 };
+/** Leads from your own connections (IndiaMART, Zapier, ...). */
+const CONNECTION_BADGE = 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300';
 
 function timeAgo(date: Date | null): string {
   if (!date) return '';
@@ -153,7 +159,7 @@ function toLead(e: Enquiry): Lead {
   const notes = [
     e.needs.length ? `Needs: ${e.needs.join(', ')}` : '',
     messageText(e),
-    `Came from: ${cameFrom(e)} (${formLabel(e)})`,
+    e.sourceForm === 'webhook' ? `Came from: ${sourceLabel(e)} (connection)` : `Came from: ${cameFrom(e)} (${formLabel(e)})`,
   ]
     .filter(Boolean)
     .join('\n\n');
@@ -290,7 +296,7 @@ export const WebsiteEnquiriesInbox: React.FC<{ state: EnquiriesState; onAddToLea
                         {e.businessName && <span className="font-normal text-slate-500 dark:text-slate-400"> · {e.businessName}</span>}
                       </p>
                       <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                        <span className={`inline-block px-1.5 py-0.5 mr-1.5 rounded font-medium ${SOURCE_BADGE[sourceLabel(e)]}`}>
+                        <span className={`inline-block px-1.5 py-0.5 mr-1.5 rounded font-medium ${SOURCE_BADGE[sourceLabel(e)] ?? CONNECTION_BADGE}`}>
                           {sourceLabel(e)}
                         </span>
                         {timeAgo(e.createdAt)}
@@ -344,11 +350,13 @@ export const WebsiteEnquiriesInbox: React.FC<{ state: EnquiriesState; onAddToLea
                   )}
                   {messageText(e) && <p className="text-sm text-slate-600 dark:text-slate-300 whitespace-pre-line line-clamp-4">{messageText(e)}</p>}
 
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    <span className="font-medium text-slate-600 dark:text-slate-300">Form:</span> {formLabel(e)}
-                    <span className="mx-1.5">·</span>
-                    <span className="font-medium text-slate-600 dark:text-slate-300">Came from:</span> {cameFrom(e)}
-                  </p>
+                  {e.sourceForm !== 'webhook' && (
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      <span className="font-medium text-slate-600 dark:text-slate-300">Form:</span> {formLabel(e)}
+                      <span className="mx-1.5">·</span>
+                      <span className="font-medium text-slate-600 dark:text-slate-300">Came from:</span> {cameFrom(e)}
+                    </p>
+                  )}
 
                   {e.status === 'spam' && e.spamReasons.length > 0 && (
                     <p className="text-xs text-amber-700 dark:text-amber-400 flex items-center gap-1">

@@ -141,6 +141,7 @@ import { UrlErrorBanner } from "./components/common/UrlErrorBanner";
 import { auth, isFirebaseConfigured } from "./firebase";
 import { subscribeToTasks, saveTaskToCloud, deleteTaskFromCloud } from "./taskSync";
 import { useWebsiteEnquiries } from "./components/leads/WebsiteEnquiriesPanel";
+import { IntegrationsHub } from "./components/views/IntegrationsHub";
 
 interface AppProps {
     onSignOut?: () => void;
@@ -2340,6 +2341,8 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
             onDeleteSOP={handleDeleteSOP}
           />
         );
+      case "INTEGRATIONS":
+        return <IntegrationsHub />;
       case "TOOLS":
         return <ToolsView />;
       case "USER_PROFILE":
