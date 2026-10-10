@@ -7,7 +7,7 @@ import { Card } from '../common/Card';
 import { Input } from '../common/Input';
 import { DateRangePicker, DateRange } from '../common/DateRangePicker';
 import { Checkbox } from '../common/Checkbox';
-import { ChevronDown, SlidersHorizontal, Columns, Search, Undo2, GripVertical, Mail, Phone, Calendar, Download, Upload, Instagram, Globe, Webhook, StickyNote, Eye, Trash2, FileText } from 'lucide-react';
+import { ChevronDown, SlidersHorizontal, Columns, Search, Undo2, GripVertical, Mail, Phone, Calendar, Download, Upload, Instagram, Globe, Webhook, StickyNote, Eye, Trash2, FileText, MessageCircle, ChevronRight } from 'lucide-react';
 import { ConfirmationModal } from '../modals/ConfirmationModal';
 import { WebsiteEnquiriesInbox, useWebsiteEnquiries } from '../leads/WebsiteEnquiriesPanel';
 import { usePagination } from '../../hooks/usePagination';
@@ -621,7 +621,49 @@ export const LeadsView: React.FC<LeadsViewProps> = ({ leads, auditRecords, teamM
         {showEnquiries ? (
             <WebsiteEnquiriesInbox state={enquiries} onAddToLeads={(lead) => onImportLeads([lead])} />
         ) : viewMode === 'List' ? (
-            <div className="overflow-x-auto rounded-lg border border-border-base dark:border-slate-700">
+            <>
+            {/* Phones: one card per lead, with Call and WhatsApp buttons. */}
+            <ul className="md:hidden space-y-2">
+                {paginatedData.map((lead) => {
+                    const digits = (lead.phone || '').replace(/\D/g, '');
+                    const wa = digits.length === 10 ? `91${digits}` : digits.length >= 11 ? digits : '';
+                    const isNextToday = lead.nextFollowUpDateTime ? isSameDay(lead.nextFollowUpDateTime) : false;
+                    const isOverdue = lead.nextFollowUpDateTime
+                        ? (new Date(lead.nextFollowUpDateTime).getTime() < Date.now() && !isSameDay(lead.nextFollowUpDateTime))
+                        : false;
+                    return (
+                        <li key={lead.id} className={`rounded-xl border bg-white dark:bg-slate-800 p-3 ${isNextToday ? 'border-rose-300 dark:border-rose-800' : isOverdue ? 'border-amber-300 dark:border-amber-800' : 'border-border-base dark:border-slate-700'}`}>
+                            <button type="button" onClick={() => onSelectLeadForDetail(lead)} className="w-full text-left flex items-start gap-2">
+                                <span className="min-w-0 flex-1">
+                                    <span className="block font-semibold text-sm text-slate-900 dark:text-white truncate">{lead.name}</span>
+                                    {lead.companyName && <span className="block text-xs text-slate-500 dark:text-slate-400 truncate">{lead.companyName}</span>}
+                                    <span className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                                        <span className={getStatusClassNames(lead.status)}>{lead.status}</span>
+                                        {isNextToday && <span className="px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 dark:bg-rose-900/60 dark:text-rose-100 text-[10px] font-bold">Follow up today</span>}
+                                        {isOverdue && <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-100 text-[10px] font-bold">Overdue</span>}
+                                        <span className="text-[10px] text-slate-400">{safeFormatDate(lead.dateAdded, 'MMM d')}</span>
+                                    </span>
+                                </span>
+                                <ChevronRight className="w-4 h-4 text-slate-400 mt-1 shrink-0" />
+                            </button>
+                            {digits && (
+                                <div className="mt-2.5 grid grid-cols-2 gap-2">
+                                    <a href={`tel:${lead.phone}`} className="flex items-center justify-center gap-1.5 rounded-lg bg-slate-900 dark:bg-slate-700 text-white text-xs font-semibold py-2">
+                                        <Phone className="w-3.5 h-3.5" /> Call
+                                    </a>
+                                    {wa ? (
+                                        <a href={`https://wa.me/${wa}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1.5 rounded-lg bg-[#25D366] text-white text-xs font-semibold py-2">
+                                            <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
+                                        </a>
+                                    ) : <span />}
+                                </div>
+                            )}
+                        </li>
+                    );
+                })}
+                {paginatedData.length === 0 && <li className="text-sm text-slate-500 text-center py-6">No leads to show.</li>}
+            </ul>
+            <div className="hidden md:block overflow-x-auto rounded-lg border border-border-base dark:border-slate-700">
                 <table className="min-w-full divide-y divide-border-base dark:divide-slate-700">
                     <thead className="bg-slate-50 dark:bg-slate-700/50">
                     <tr>
@@ -804,6 +846,10 @@ export const LeadsView: React.FC<LeadsViewProps> = ({ leads, auditRecords, teamM
                     <Pagination {...paginationProps} />
                 </div>
             </div>
+            <div className="md:hidden mt-3">
+                <Pagination {...paginationProps} />
+            </div>
+            </>
         ) : ( 
           <div className="flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar h-full px-4 pb-4">
             <div className="inline-flex h-full min-w-full space-x-4">

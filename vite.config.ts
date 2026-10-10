@@ -20,6 +20,10 @@ export default defineConfig(({ mode }) => {
         'process.env.FIREBASE_MESSAGING_SENDER_ID': JSON.stringify(env.FIREBASE_MESSAGING_SENDER_ID),
         'process.env.FIREBASE_APP_ID': JSON.stringify(env.FIREBASE_APP_ID),
         'process.env.GOOGLE_OAUTH_CLIENT_ID': JSON.stringify(env.GOOGLE_OAUTH_CLIENT_ID),
+        // Phone alerts: Firebase Console → Project settings → Cloud Messaging →
+        // Web Push certificates → key pair. Public, not a secret.
+        'process.env.FIREBASE_VAPID_KEY': JSON.stringify(env.FIREBASE_VAPID_KEY),
+        'process.env.WEBSITE_URL': JSON.stringify(env.WEBSITE_URL),
       },
       resolve: {
         alias: {

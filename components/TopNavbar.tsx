@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { TeamMember, AppNotification, View, EmailMessage, ChatContact, ChatMessage } from '../types';
 import { Button } from './common/Button';
+import { Menu as MenuIcon } from 'lucide-react';
 import { safeFormatRelativeTime } from '@/utils';
 import { differenceInMinutes, isToday } from 'date-fns';
 import parseISO from 'date-fns/parseISO';
@@ -237,7 +238,9 @@ export const TopNavbar: React.FC<TopNavbarProps> = (props) => {
     return (
         <header className="sticky top-0 bg-bg-base/80 dark:bg-bg-muted/70 backdrop-blur-lg border-b border-border-base dark:border-border-muted z-30 h-16 flex items-center px-4 sm:px-6 justify-between">
             <div className="flex items-center gap-2 md:gap-4">
-                <Button variant="ghost" size="sm" onClick={onToggleCollapse} className={`p-2 transition-transform duration-300 ${isCollapsed ? 'rotate-180' : 'rotate-0'}`} title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}><ChevronsLeft /></Button>
+                {/* Phones/tablets: open the menu drawer. Desktop: collapse the sidebar. */}
+                <Button variant="ghost" size="sm" onClick={onToggleSidebar} className="p-2 lg:hidden" title="Open menu" aria-label="Open menu"><MenuIcon /></Button>
+                <Button variant="ghost" size="sm" onClick={onToggleCollapse} className={`p-2 hidden lg:inline-flex transition-transform duration-300 ${isCollapsed ? 'rotate-180' : 'rotate-0'}`} title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}><ChevronsLeft /></Button>
                 <div className="flex items-center gap-2 cursor-pointer" onClick={() => setCurrentView('DASHBOARD')}>
                     <div className="w-8 h-8 bg-premium-accent text-secondary-accent rounded-full flex items-center justify-center font-bold">T</div>
                     <span className="font-bold text-xl text-text-heading dark:text-text-heading tracking-tight hidden sm:block">TECHINFIGO</span>

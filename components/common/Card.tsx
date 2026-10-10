@@ -33,7 +33,7 @@ export const Card: React.FC<CardProps> = ({
       {...rest}
     >
       {(title || icon || actions) && ( 
-        <div className={`px-5 py-4 border-b border-zinc-100 dark:border-zinc-800 flex justify-between items-center bg-white dark:bg-zinc-900/50 ${headerClassName || ''}`}>
+        <div className={`px-5 py-4 border-b border-zinc-100 dark:border-zinc-800 flex flex-wrap md:flex-nowrap gap-y-3 justify-between items-center bg-white dark:bg-zinc-900/50 ${headerClassName || ''}`}>
           <div className="flex items-center min-w-0">
             {icon && <span className="mr-3 h-5 w-5 text-zinc-400 dark:text-zinc-500 shrink-0">{icon}</span>}
             {title && (typeof title === 'string' 
@@ -41,7 +41,8 @@ export const Card: React.FC<CardProps> = ({
                 : title
             )}
           </div>
-          {actions && <div className="ml-3 shrink-0 flex items-center gap-2">{actions}</div>}
+          {/* On phones the actions drop below the title and may wrap; on larger screens they sit beside it. */}
+          {actions && <div className="w-full md:w-auto md:ml-3 md:shrink-0 flex items-center gap-2 min-w-0">{actions}</div>}
         </div>
       )}
       <div className={`${noPadding ? '' : 'p-5'} ${contentClassName ? `min-h-0 ${contentClassName}` : 'text-zinc-600 dark:text-zinc-300'}`}>

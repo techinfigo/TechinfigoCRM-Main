@@ -4,6 +4,7 @@ import { Globe, Mail, Inbox, MessageCircle, Phone, ShieldAlert, ChevronDown, Che
 import { db, isFirebaseConfigured } from '../../firebase';
 import { Button } from '../common/Button';
 import type { Lead } from '../../types';
+import { PhoneAlertsBar } from './PhoneAlertsBar';
 
 /**
  * Inbox for enquiries sent by www.techinfigo.com.
@@ -258,6 +259,7 @@ export const WebsiteEnquiriesInbox: React.FC<{ state: EnquiriesState; onAddToLea
 
   return (
         <div className="p-4 space-y-3">
+          <PhoneAlertsBar />
           <div className="flex gap-2">
             {(['new', 'spam'] as const).map((t) => (
               <button

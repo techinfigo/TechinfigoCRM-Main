@@ -5,6 +5,17 @@ import { AuthGate } from './components/AuthGate.tsx';
 import { initI18n } from './i18n.ts';
 import { ErrorBoundary } from './components/common/ErrorBoundary.tsx';
 import { DateRangeProvider } from './contexts/DateRangeContext.tsx';
+import { registerServiceWorker } from './services/phoneAlerts.ts';
+
+// Makes the CRM installable as a phone app and lets it receive enquiry alerts.
+registerServiceWorker();
+
+// Android/Chrome: keep the "install app" offer so we can show our own button.
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  (window as unknown as { __installPrompt?: Event }).__installPrompt = e;
+  window.dispatchEvent(new Event('crm-install-available'));
+});
 
 async function main() {
   // Wait for translations to load before rendering the app

@@ -59,6 +59,7 @@ import {
 import LoginPage from "./components/LoginPage";
 import { Sidebar } from "./components/Sidebar";
 import { TopNavbar } from "./components/TopNavbar";
+import { MobileBottomNav } from "./components/MobileBottomNav";
 import { DashboardView } from "./components/views/DashboardView";
 import { LeadsView } from "./components/views/LeadsView";
 import { ClientsView } from "./components/views/ClientsView";
@@ -153,6 +154,13 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
     load(KEYS.currentUser, null),
   );
   const [currentView, setCurrentView] = useState<View>("DASHBOARD");
+  // Opened from a phone alert ("?view=LEADS"): jump straight to that screen.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const v = params.get("view");
+    if (v === "LEADS") setCurrentView("LEADS");
+    if (v || params.get("source")) window.history.replaceState(null, "", window.location.pathname);
+  }, []);
   // New enquiries (website + ads) waiting in Leads -> Enquiries; shown as the Leads sidebar number.
   const newEnquiries = useWebsiteEnquiries().counts.new;
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -2420,7 +2428,13 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
         isCollapsed={isSidebarCollapsed}
         badges={{ leadsUnread: newEnquiries }}
       />
-      <div className="flex-1 flex flex-col overflow-hidden relative">
+      <MobileBottomNav
+        currentView={currentView}
+        setCurrentView={(v) => { setIsMobileSidebarOpen(false); setCurrentView(v); }}
+        onOpenMenu={() => setIsMobileSidebarOpen(true)}
+        leadsBadge={newEnquiries}
+      />
+      <div className="flex-1 flex flex-col overflow-hidden relative pb-16 lg:pb-0">
         <TopNavbar
           currentUser={currentUser}
           onLogout={handleLogout}
