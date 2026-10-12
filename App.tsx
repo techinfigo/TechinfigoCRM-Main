@@ -60,6 +60,7 @@ import LoginPage from "./components/LoginPage";
 import { Sidebar } from "./components/Sidebar";
 import { TopNavbar } from "./components/TopNavbar";
 import { MobileBottomNav } from "./components/MobileBottomNav";
+import { QuickAddLead } from "./components/leads/QuickAddLead";
 import { DashboardView } from "./components/views/DashboardView";
 import { LeadsView } from "./components/views/LeadsView";
 import { ClientsView } from "./components/views/ClientsView";
@@ -154,6 +155,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
     load(KEYS.currentUser, null),
   );
   const [currentView, setCurrentView] = useState<View>("DASHBOARD");
+  const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   // Opened from a phone alert ("?view=LEADS"): jump straight to that screen.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -2432,7 +2434,19 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
         currentView={currentView}
         setCurrentView={(v) => { setIsMobileSidebarOpen(false); setCurrentView(v); }}
         onOpenMenu={() => setIsMobileSidebarOpen(true)}
+        onQuickAdd={() => setIsQuickAddOpen(true)}
         leadsBadge={newEnquiries}
+      />
+      <QuickAddLead
+        open={isQuickAddOpen}
+        onClose={() => setIsQuickAddOpen(false)}
+        onSave={(lead) =>
+          setLeads([lead, ...leads], {
+            type: "batch",
+            payload: {},
+            description: `Added lead ${lead.name}`,
+          })
+        }
       />
       <div className="flex-1 flex flex-col overflow-hidden relative pb-16 lg:pb-0">
         <TopNavbar

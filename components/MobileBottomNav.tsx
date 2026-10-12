@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Users, ClipboardCheck, Briefcase, Menu } from 'lucide-react';
+import { LayoutDashboard, Users, ClipboardCheck, Plus, Menu } from 'lucide-react';
 import type { View } from '../types';
 
 /**
@@ -10,13 +10,13 @@ export const MobileBottomNav: React.FC<{
   currentView: View;
   setCurrentView: (v: View) => void;
   onOpenMenu: () => void;
+  onQuickAdd: () => void;
   leadsBadge?: number;
-}> = ({ currentView, setCurrentView, onOpenMenu, leadsBadge }) => {
+}> = ({ currentView, setCurrentView, onOpenMenu, onQuickAdd, leadsBadge }) => {
   const items: { view: View; label: string; Icon: React.ElementType; badge?: number }[] = [
     { view: 'DASHBOARD', label: 'Home', Icon: LayoutDashboard },
     { view: 'LEADS', label: 'Leads', Icon: Users, badge: leadsBadge },
     { view: 'MY_TASKS', label: 'Tasks', Icon: ClipboardCheck },
-    { view: 'CLIENTS', label: 'Clients', Icon: Briefcase },
   ];
   return (
     <nav
@@ -25,10 +25,20 @@ export const MobileBottomNav: React.FC<{
       aria-label="Main"
     >
       <ul className="grid grid-cols-5">
-        {items.map(({ view, label, Icon, badge }) => {
+        {items.map(({ view, label, Icon, badge }, idx) => {
           const active = currentView === view || (view === 'LEADS' && currentView === 'LEAD_DETAIL') || (view === 'CLIENTS' && currentView === 'CLIENT_DETAIL');
           return (
-            <li key={view}>
+            <React.Fragment key={view}>
+            {idx === 2 && (
+              <li>
+                <button type="button" onClick={onQuickAdd} aria-label="Quick add lead" className="w-full h-16 flex items-center justify-center">
+                  <span className="w-12 h-12 -mt-5 rounded-full bg-secondary-accent text-secondary-accent-text flex items-center justify-center shadow-lg ring-4 ring-premium-accent">
+                    <Plus className="w-6 h-6" />
+                  </span>
+                </button>
+              </li>
+            )}
+            <li>
               <button
                 type="button"
                 onClick={() => setCurrentView(view)}
@@ -44,6 +54,7 @@ export const MobileBottomNav: React.FC<{
                 ) : null}
               </button>
             </li>
+            </React.Fragment>
           );
         })}
         <li>
