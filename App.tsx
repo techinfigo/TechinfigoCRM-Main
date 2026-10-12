@@ -61,6 +61,8 @@ import { Sidebar } from "./components/Sidebar";
 import { TopNavbar } from "./components/TopNavbar";
 import { MobileBottomNav } from "./components/MobileBottomNav";
 import { QuickAddLead } from "./components/leads/QuickAddLead";
+import { AddMenu, type AddMenuItem } from "./components/AddMenu";
+import { UserPlus, Briefcase, ClipboardCheck, FolderKanban, FileText, Wallet, Receipt, ListPlus } from "lucide-react";
 import { DashboardView } from "./components/views/DashboardView";
 import { LeadsView } from "./components/views/LeadsView";
 import { ClientsView } from "./components/views/ClientsView";
@@ -156,6 +158,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
   );
   const [currentView, setCurrentView] = useState<View>("DASHBOARD");
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
+  const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
   // Opened from a phone alert ("?view=LEADS"): jump straight to that screen.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -2434,8 +2437,22 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
         currentView={currentView}
         setCurrentView={(v) => { setIsMobileSidebarOpen(false); setCurrentView(v); }}
         onOpenMenu={() => setIsMobileSidebarOpen(true)}
-        onQuickAdd={() => setIsQuickAddOpen(true)}
+        onQuickAdd={() => setIsAddMenuOpen(true)}
         leadsBadge={newEnquiries}
+      />
+      <AddMenu
+        open={isAddMenuOpen}
+        onClose={() => setIsAddMenuOpen(false)}
+        items={([
+          { label: "Lead", hint: "quick", Icon: UserPlus, onClick: () => setIsQuickAddOpen(true), show: hasPermission("leads", "canCreate") },
+          { label: "Lead", hint: "full form", Icon: ListPlus, onClick: () => openModal("LEAD_FORM"), show: hasPermission("leads", "canCreate") },
+          { label: "Client", Icon: Briefcase, onClick: () => openModal("CLIENT_FORM"), show: hasPermission("clients", "canCreate") },
+          { label: "Task", Icon: ClipboardCheck, onClick: () => openModal("TASK_FORM"), show: hasPermission("tasks", "canCreate") },
+          { label: "Project", Icon: FolderKanban, onClick: () => openModal("PROJECT_FORM"), show: hasPermission("projects", "canCreate") },
+          { label: "Invoice", Icon: FileText, onClick: () => openModal("INVOICE_FORM"), show: hasPermission("invoices", "canCreate") },
+          { label: "Payment", hint: "received", Icon: Wallet, onClick: () => openModal("PAYMENT_FORM"), show: hasPermission("invoices", "canEdit") },
+          { label: "Expense", Icon: Receipt, onClick: () => openModal("EXPENSE_FORM"), show: hasPermission("expenses", "canCreate") },
+        ] as (AddMenuItem & { show: boolean })[]).filter((i) => i.show)}
       />
       <QuickAddLead
         open={isQuickAddOpen}

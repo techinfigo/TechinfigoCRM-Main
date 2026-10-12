@@ -31,7 +31,7 @@ export const MobileBottomNav: React.FC<{
             <React.Fragment key={view}>
             {idx === 2 && (
               <li>
-                <button type="button" onClick={onQuickAdd} aria-label="Quick add lead" className="w-full h-16 flex items-center justify-center">
+                <button type="button" onClick={onQuickAdd} aria-label="Add new" className="w-full h-16 flex items-center justify-center">
                   <span className="w-12 h-12 -mt-5 rounded-full bg-secondary-accent text-secondary-accent-text flex items-center justify-center shadow-lg ring-4 ring-premium-accent">
                     <Plus className="w-6 h-6" />
                   </span>
