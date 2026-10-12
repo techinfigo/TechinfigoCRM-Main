@@ -300,11 +300,35 @@
       .invoice-items-table thead { background-color: #e0e0e0 !important; }
       @page { size: A4; margin: 0; }
     }
+
+    /* Techinfigo brand loader (used before the app starts and while data loads). */
+    .tf-loader { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; }
+    .tf-loader--full { position:fixed; inset:0; z-index:2000; background:#001d21; }
+    .tf-loader__mark { width:84px; height:84px; }
+    .tf-loader--sm .tf-loader__mark { width:56px; height:56px; }
+    .tf-loader__ring { transform-origin:50px 55px; animation: tf-spin 1.4s cubic-bezier(.6,.1,.4,.9) infinite; }
+    .tf-loader__track { opacity:.15; }
+    .tf-loader__bar { animation: tf-bar 1.4s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 100%; }
+    .tf-loader__glow { animation: tf-glow 1.4s ease-in-out infinite; transform-origin:50px 55px; }
+    .tf-loader__word { font: 800 15px/1 Poppins, system-ui, sans-serif; letter-spacing:.32em; color:#fff; padding-left:.32em; }
+    .tf-loader__word b { color:#fcb632; font-weight:800; }
+    .tf-loader__msg { font: 500 12px/1.4 Poppins, system-ui, sans-serif; color:rgba(255,255,255,.55); }
+    .tf-loader__dots::after { content:''; animation: tf-dots 1.2s steps(4) infinite; }
+    .tf-loader--inline .tf-loader__word { color:var(--color-text-heading, #0f172a); }
+    .tf-loader--inline .tf-loader__msg { color:var(--color-text-muted, #64748b); }
+    .tf-loader--inline .tf-loader__ringc { stroke: var(--color-text-heading, #0f172a); }
+    .dark .tf-loader--inline .tf-loader__word { color:#fff; }
+    .dark .tf-loader--inline .tf-loader__ringc { stroke:#fff; }
+    @keyframes tf-spin { to { transform: rotate(360deg); } }
+    @keyframes tf-bar { 0%,100% { transform: translateY(0) scaleY(1); } 45% { transform: translateY(-5px) scaleY(1.08); } }
+    @keyframes tf-glow { 0% { opacity:.7; transform:scale(.72); } 100% { opacity:0; transform:scale(1.18); } }
+    @keyframes tf-dots { 0% { content:''; } 25% { content:'.'; } 50% { content:'..'; } 75% { content:'...'; } }
+    @media (prefers-reduced-motion: reduce) { .tf-loader__ring, .tf-loader__bar, .tf-loader__glow, .tf-loader__dots::after { animation:none; } }
   </style>
 <link rel="stylesheet" href="/index.css">
 </head>
 <body>
-  <div id="root"></div>
+  <div id="root"><div class="tf-loader tf-loader--full" role="status" aria-label="Loading"><svg class="tf-loader__mark" viewBox="0 0 100 100" aria-hidden="true"><circle class="tf-loader__glow" cx="50" cy="55" r="38" fill="none" stroke="#fcb632" stroke-width="2.5"/><circle class="tf-loader__track tf-loader__ringc" cx="50" cy="55" r="27" fill="none" stroke="#fff" stroke-width="9"/><g class="tf-loader__ring"><circle class="tf-loader__ringc" cx="50" cy="55" r="27" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-dasharray="120 50" transform="rotate(-62 50 55)"/></g><rect class="tf-loader__bar" x="44.5" y="14" width="11" height="38" rx="5.5" fill="#fcb632" stroke="#001d21" stroke-width="3"/></svg><div class="tf-loader__word">TECH<b>IN</b>FIGO</div><div class="tf-loader__msg">Opening your CRM<span class="tf-loader__dots"></span></div></div></div>
   <script type="module" src="./index.tsx"></script>
 <script type="module" src="/index.tsx"></script>
 </body>

@@ -14,6 +14,7 @@ import { auth, isFirebaseConfigured } from '../firebase';
 import { bootstrapCloudData, setCloudUid, ensureLocalUserRecord, clearLocalUserRecord } from '../cloudSync';
 import LoginPage from '../LoginPage';
 import { App } from '../App';
+import { BrandLoader } from './BrandLoader';
 import { isInstalledApp } from '../services/phoneAlerts';
 
 type GateState = 'checking' | 'signedOut' | 'bootstrapping' | 'ready';
@@ -121,14 +122,7 @@ export const AuthGate: React.FC = () => {
   };
 
   if (gateState === 'checking' || gateState === 'bootstrapping') {
-    return (
-      <div className="min-h-screen w-full flex items-center justify-center" style={{ background: '#001d21' }}>
-        <div className="flex flex-col items-center space-y-4">
-          <div className="w-10 h-10 border-3 border-[#fcb632]/30 border-t-[#fcb632] rounded-full animate-spin" />
-          <p className="text-white/60 text-sm">{gateState === 'bootstrapping' ? 'Loading your data…' : 'Loading…'}</p>
-        </div>
-      </div>
-    );
+    return <BrandLoader full message={gateState === 'bootstrapping' ? 'Loading your data' : 'Opening your CRM'} />;
   }
 
   if (gateState === 'signedOut') {

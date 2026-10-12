@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { BrandLoader } from './BrandLoader';
 
 // Define own props for the LoadingSpinner
 interface LoadingSpinnerOwnProps {
@@ -26,6 +27,11 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
 
   // Construct the final className for the root div, incorporating the passed className
   const combinedClassName = `flex flex-col items-center justify-center gap-2 p-4 ${className || ''}`.trim();
+
+  // Page-level loading (with a message, or large): show the Techinfigo logo loader.
+  if (message || size === 'lg') {
+    return <BrandLoader small message={message || 'Loading'} className={className} />;
+  }
 
   return (
     <div className={combinedClassName} {...rest}> {/* Spread rest for other HTML attributes */}
