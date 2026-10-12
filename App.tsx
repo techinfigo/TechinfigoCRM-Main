@@ -1802,7 +1802,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
 
   // Helper to determine main content wrapper classes based on view
   // Removed 'PROJECTS' from here as requested in previous turn to fix margin issues
-  const isFullHeightView = ["CALENDAR", "LEADS"].includes(currentView);
+  const isFullHeightView = ["CALENDAR", "LEADS", "CLIENTS"].includes(currentView);
 
   if (!currentUser) {
     return <LoginPage onLogin={handleLogin} />;

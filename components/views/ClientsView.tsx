@@ -262,21 +262,11 @@ export const ClientsView: React.FC<ClientsViewProps> = ({ clients, invoices, pay
   return (
     <Card 
       title="Manage Clients"
+      noPadding
       actions={
-        <div className="flex items-center gap-2">
-          <Button onClick={handleRefresh} variant="outline" size="md" isLoading={isRefreshing} leftIcon={<RefreshCw className="w-4 h-4" />}>Refresh</Button>
-          {canCreateClients && (
-            <Button onClick={onAddClient} variant="primary" size="md" leftIcon={<PlusIcon />}>
-              Add New Client
-            </Button>
-          )}
-        </div>
-      }
-    >
-      <div className={`transition-opacity duration-300 ${isRefreshing ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
-        <div className="p-3 border-y border-border-base dark:border-slate-700 bg-slate-50 dark:bg-slate-800/20 mb-4">
-            <div className="flex flex-col md:flex-row gap-3 items-center">
-                <div className="w-full md:flex-1 md:max-w-md">
+        <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+                <div className="w-full md:w-64">
                     <Input
                     type="search"
                     placeholder="Search by name, company, email..."
@@ -286,12 +276,12 @@ export const ClientsView: React.FC<ClientsViewProps> = ({ clients, invoices, pay
                     containerClassName="w-full"
                     />
                 </div>
-                <div className="flex items-center gap-2 justify-end w-full md:w-auto flex-shrink-0">
+                <div className="flex items-center gap-2 flex-wrap">
                     <div className="relative" ref={sortDropdownRef}>
                         <button
                             type="button"
                             onClick={() => setIsSortDropdownOpen(prev => !prev)}
-                            className="flex items-center justify-between w-full md:w-auto px-4 py-2 h-10 bg-bg-muted dark:bg-bg-muted border border-border-base dark:border-border-muted rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary-accent text-sm shadow-sm text-text-base dark:text-text-base"
+                            className="flex items-center justify-between w-full md:w-auto px-4 py-2 h-9 bg-bg-muted dark:bg-bg-muted border border-border-base dark:border-border-muted rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary-accent text-sm shadow-sm text-text-base dark:text-text-base"
                         >
                             <span>{sortOptions[sortBy]}</span>
                             <ChevronDown className={`w-4 h-4 ml-2 transition-transform ${isSortDropdownOpen ? 'rotate-180' : ''}`} />
@@ -320,7 +310,18 @@ export const ClientsView: React.FC<ClientsViewProps> = ({ clients, invoices, pay
                     </div>
                 </div>
             </div>
+          <Button onClick={handleRefresh} variant="outline" size="sm" isLoading={isRefreshing} leftIcon={<RefreshCw className="w-4 h-4" />}>Refresh</Button>
+          {canCreateClients && (
+            <Button onClick={onAddClient} variant="primary" size="sm" leftIcon={<PlusIcon />}>
+              Add New Client
+            </Button>
+          )}
         </div>
+      }
+      className="h-full flex flex-col"
+      contentClassName="flex-grow flex flex-col min-h-0 p-0"
+    >
+      <div className={`flex-grow min-h-0 overflow-y-auto p-4 transition-opacity duration-300 ${isRefreshing ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
         {filteredAndSortedClients.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
             <UserCircleIcon />
