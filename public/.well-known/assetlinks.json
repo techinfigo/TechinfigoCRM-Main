@@ -1,0 +1,10 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.techinfigo.crm",
+      "sha256_cert_fingerprints": ["75:23:61:A5:38:A4:04:55:08:1C:90:DF:16:02:4C:E5:60:51:12:DA:72:49:F7:56:1E:3F:79:58:B4:3C:73:23"]
+    }
+  }
+]
