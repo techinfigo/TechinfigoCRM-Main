@@ -14,6 +14,7 @@ import { auth, isFirebaseConfigured } from '../firebase';
 import { bootstrapCloudData, setCloudUid, ensureLocalUserRecord, clearLocalUserRecord } from '../cloudSync';
 import LoginPage from '../LoginPage';
 import { App } from '../App';
+import { isInstalledApp } from '../services/phoneAlerts';
 
 type GateState = 'checking' | 'signedOut' | 'bootstrapping' | 'ready';
 
@@ -65,8 +66,10 @@ export const AuthGate: React.FC = () => {
 
   // Auto sign-out after a period of no interaction, for security on shared/office
   // machines. Runs only while signed in. 30 minutes of inactivity ends the session.
+  // Skipped in the installed phone app (opened from the home-screen icon): that
+  // is the owner's own phone, and logging in again every time is a pain.
   useEffect(() => {
-    if (gateState !== 'ready' || !isFirebaseConfigured) return;
+    if (gateState !== 'ready' || !isFirebaseConfigured || isInstalledApp()) return;
     const INACTIVITY_MS = 30 * 60 * 1000; // 30 minutes
     let timer: ReturnType<typeof setTimeout>;
     const reset = () => {
@@ -86,6 +89,8 @@ export const AuthGate: React.FC = () => {
     try {
       // Remember me -> local persistence (stays signed in after closing the tab).
       // Otherwise -> session persistence (signs out when the tab/browser closes).
+      // The installed phone app always remembers the login.
+      if (isInstalledApp()) rememberMe = true;
       await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
       if (rememberMe) {
         localStorage.setItem('crm_remember_me', '1');
