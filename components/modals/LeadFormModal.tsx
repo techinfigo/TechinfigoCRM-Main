@@ -313,10 +313,10 @@ export const LeadFormModal: React.FC<LeadFormModalProps> = ({ isOpen, onClose, o
         </div>
       }
     >
-      <form onSubmit={handleSubmit} className="space-y-6 pb-6">
+      <form onSubmit={handleSubmit} className="space-y-4 pb-2">
 
         {/* Lead Type selector — drives which qualification fields are shown */}
-        <div className="bg-secondary-accent/5 dark:bg-secondary-accent/10 p-4 rounded-lg border border-secondary-accent/20">
+        <div>
           <label className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2 uppercase tracking-wide">Lead Type</label>
           <div className="grid grid-cols-2 gap-3">
             {leadTypes.map(lt => (
@@ -337,7 +337,7 @@ export const LeadFormModal: React.FC<LeadFormModalProps> = ({ isOpen, onClose, o
         </div>
 
         {/* Section 1: The Vitals */}
-        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border border-slate-100 dark:border-slate-700">
+        <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
           <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-3 uppercase tracking-wide">1. The Vitals</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input label="Contact Name *" id="name" name="name" value={formData.name} onChange={handleChange} error={errors.name} required />
@@ -351,7 +351,7 @@ export const LeadFormModal: React.FC<LeadFormModalProps> = ({ isOpen, onClose, o
 
         {/* Section 2A: D2C Qualification — only for D2C leads */}
         {formData.leadType === 'D2C' && (
-        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border border-slate-100 dark:border-slate-700">
+        <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
           <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-3 uppercase tracking-wide">2. D2C Qualification</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
              <Select
@@ -375,7 +375,7 @@ export const LeadFormModal: React.FC<LeadFormModalProps> = ({ isOpen, onClose, o
 
         {/* Section 2B: General Business Qualification — only for General leads */}
         {formData.leadType === 'General' && (
-        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border border-slate-100 dark:border-slate-700">
+        <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
           <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-3 uppercase tracking-wide">2. Business Qualification</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
              <Select
@@ -404,7 +404,7 @@ export const LeadFormModal: React.FC<LeadFormModalProps> = ({ isOpen, onClose, o
         )}
 
         {/* Section 3: The Outreach */}
-        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border border-slate-100 dark:border-slate-700">
+        <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-3 uppercase tracking-wide">3. The Hook</h3>
            <div className="space-y-4">
               <TextArea label="Outreach Angle (The Problem)" id="outreachAngle" name="outreachAngle" value={formData.outreachAngle} onChange={handleChange} rows={2} placeholder="What problem did you spot? e.g., Broken pixel, bad creative..." />
@@ -413,7 +413,7 @@ export const LeadFormModal: React.FC<LeadFormModalProps> = ({ isOpen, onClose, o
         </div>
 
         {/* Section 4: Agency Marketing Intelligence */}
-        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border border-slate-100 dark:border-slate-700">
+        <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-3 uppercase tracking-wide">4. Agency Marketing Intelligence</h3>
            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <ComboInput label="Primary Goal / Core Challenge" id="primaryGoal" value={formData.primaryGoal || ''} options={PRIMARY_GOAL_OPTIONS} onChange={(v) => setFormData(prev => ({ ...prev, primaryGoal: v }))} placeholder="Select or type a goal" />

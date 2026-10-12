@@ -45,7 +45,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({ isOpen, onClose, title, ch
         >
           <div className="flex h-full flex-col overflow-hidden bg-bg-base dark:bg-slate-800 shadow-2xl border-l border-border-base dark:border-slate-700">
             {/* Header */}
-            <div className="bg-slate-50 dark:bg-slate-900/90 px-4 py-4 sm:px-6 sticky top-0 z-10 border-b border-border-base dark:border-slate-700">
+            <div className="bg-slate-50 dark:bg-slate-900/90 px-4 py-3 sm:px-5 sticky top-0 z-10 border-b border-border-base dark:border-slate-700">
               <div className="flex items-start justify-between">
                 {typeof title === 'string' ? (
                     <h2 id="slide-over-title" className="text-lg font-semibold text-text-base dark:text-slate-100 leading-tight">
@@ -70,13 +70,13 @@ export const SidePanel: React.FC<SidePanelProps> = ({ isOpen, onClose, title, ch
             </div>
 
             {/* Content */}
-            <div className="relative flex-1 overflow-y-auto px-4 py-5 sm:px-6 custom-scrollbar">
+            <div className="relative flex-1 overflow-y-auto px-4 py-4 sm:px-5 custom-scrollbar">
               {children}
             </div>
 
             {/* Footer */}
             {footer && (
-              <div className="flex-shrink-0 border-t border-border-base dark:border-slate-700 px-4 py-4 sm:px-6 sticky bottom-0 bg-bg-muted dark:bg-slate-700/50 z-10">
+              <div className="flex-shrink-0 border-t border-border-base dark:border-slate-700 px-4 py-3 sm:px-5 sticky bottom-0 bg-bg-muted dark:bg-slate-700/50 z-10">
                 {footer}
               </div>
             )}

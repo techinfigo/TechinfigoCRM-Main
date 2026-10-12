@@ -107,7 +107,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
     <div 
       className={isFullScreen 
         ? `fixed inset-0 bg-bg-base dark:bg-bg-muted ${zIndexClass} flex flex-col transition-opacity duration-300 ease-in-out print:hidden`
-        : `fixed inset-0 bg-black/40 dark:bg-black/60 backdrop-blur ${zIndexClass} flex items-center justify-center p-4 transition-opacity duration-300 ease-in-out print:hidden`
+        : `fixed inset-0 bg-black/40 dark:bg-black/60 backdrop-blur ${zIndexClass} flex items-center justify-center p-2 sm:p-4 transition-opacity duration-300 ease-in-out print:hidden`
       }
       onClick={onClose}
       role="dialog"
@@ -131,11 +131,11 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
         tabIndex={-1}
         className={isFullScreen
           ? `bg-bg-base text-text-base dark:bg-bg-muted dark:text-text-base w-full h-full flex flex-col overflow-hidden`
-          : `bg-bg-base text-text-base dark:bg-bg-muted dark:text-text-base rounded-xl shadow-xl w-full ${sizeClasses[size]} max-h-[90vh] flex flex-col overflow-hidden border border-border-muted dark:border-border-muted`
+          : `bg-bg-base text-text-base dark:bg-bg-muted dark:text-text-base rounded-xl shadow-xl w-full ${sizeClasses[size]} max-h-[94vh] flex flex-col overflow-hidden border border-border-muted dark:border-border-muted`
         }
         onClick={(e) => e.stopPropagation()} 
       >
-        <div className="flex items-center justify-between p-5 border-b border-border-base dark:border-border-muted sticky top-0 bg-bg-base dark:bg-bg-muted z-10">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-border-base dark:border-border-muted sticky top-0 bg-bg-base dark:bg-bg-muted z-10">
           {typeof title === 'string' ? (
             <h3 id={titleId} className="text-lg md:text-xl font-semibold text-text-heading dark:text-text-heading">{title}</h3>
           ) : (
@@ -151,13 +151,13 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
             </svg>
           </button>
         </div>
-        <div className="p-5 md:p-6 overflow-y-auto space-y-4 md:space-y-5 flex-grow">
+        <div className="p-4 md:p-5 overflow-y-auto space-y-4 flex-grow">
           {children}
         </div>
         {footer && (
           <div 
-            className="p-5 border-t border-border-base dark:border-border-muted bg-slate-50 dark:bg-slate-800/50 sticky bottom-0 flex justify-end space-x-3 z-10"
-            style={{ paddingBottom: 'calc(1.25rem + env(safe-area-inset-bottom, 0px))' }}
+            className="px-5 py-3 border-t border-border-base dark:border-border-muted bg-slate-50 dark:bg-slate-800/50 sticky bottom-0 flex justify-end space-x-3 z-10"
+            style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' }}
           >
             {footer}
           </div>
