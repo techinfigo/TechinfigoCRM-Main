@@ -1,0 +1,5 @@
+<resources>
+    <string name="appName">Techinfigo CRM</string>
+    <string name="shortcutAdd">Add lead</string>
+    <string name="shortcutLeads">Leads</string>
+</resources>

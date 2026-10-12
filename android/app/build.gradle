@@ -1,0 +1,30 @@
+plugins { id 'com.android.application' }
+
+// The CRM web address the app opens. Change here if the CRM moves to its own domain.
+def crmHost = 'techinfigo-crm-main.vercel.app'
+
+android {
+    namespace 'com.techinfigo.crm'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.techinfigo.crm'
+        minSdk 24
+        targetSdk 35
+        versionCode 1
+        versionName '1.0'
+        manifestPlaceholders = [hostName: crmHost, launchUrl: "https://${crmHost}/?source=app"]
+        resValue 'string', 'assetStatements', """[{ "relation": ["delegate_permission/common.handle_all_urls"], "target": {"namespace": "web", "site": "https://${crmHost}"}}]"""
+    }
+    buildTypes {
+        release { minifyEnabled false }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.5.0'
+}

@@ -1,0 +1,9 @@
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut android:shortcutId="leads" android:enabled="true"
+        android:icon="@mipmap/ic_launcher" android:shortcutShortLabel="@string/shortcutLeads">
+        <intent android:action="android.intent.action.VIEW"
+            android:targetPackage="com.techinfigo.crm"
+            android:targetClass="com.google.androidbrowserhelper.trusted.LauncherActivity"
+            android:data="https://techinfigo-crm-main.vercel.app/?view=LEADS" />
+    </shortcut>
+</shortcuts>
