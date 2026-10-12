@@ -132,25 +132,15 @@ export const FinanceView: React.FC<FinanceViewProps> = (props) => {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="h-full flex flex-col">
        <Card
         title={
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center w-full gap-4">
-            <div className="flex flex-col">
-                <h2 className="text-xl font-semibold text-text-heading dark:text-text-heading">Financial Management</h2>
-                <p className="text-sm text-text-muted dark:text-text-muted mt-1">Track and manage invoices and expenses.</p>
-            </div>
-          </div>
-        }
-        className="bg-bg-base dark:bg-bg-muted shadow-xl rounded-2xl"
-        contentClassName="p-0"
-        headerClassName="p-5"
-      >
-        <div className="border-b border-border-base dark:border-border-muted px-5">
-          <nav className="-mb-px flex space-x-5" aria-label="Tabs">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 min-w-0">
+            <h3 className="text-sm md:text-base font-bold text-zinc-800 dark:text-zinc-100 tracking-tight">Financial Management</h3>
+            <nav className="flex space-x-5" aria-label="Tabs">
             <button
               onClick={() => setActiveTab('invoices')}
-              className={`whitespace-nowrap py-3 px-1 border-b-2 text-sm font-medium flex items-center
+              className={`whitespace-nowrap py-1.5 px-1 border-b-2 text-sm font-medium flex items-center
                 ${activeTab === 'invoices'
                   ? 'border-premium-accent text-premium-accent dark:border-premium-accent-dark dark:text-premium-accent-dark'
                   : 'border-transparent text-text-muted hover:text-text-base hover:border-slate-300 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:border-slate-600'
@@ -160,7 +150,7 @@ export const FinanceView: React.FC<FinanceViewProps> = (props) => {
             </button>
             <button
               onClick={() => setActiveTab('expenses')}
-              className={`whitespace-nowrap py-3 px-1 border-b-2 text-sm font-medium flex items-center
+              className={`whitespace-nowrap py-1.5 px-1 border-b-2 text-sm font-medium flex items-center
                 ${activeTab === 'expenses'
                   ? 'border-premium-accent text-premium-accent dark:border-premium-accent-dark dark:text-premium-accent-dark'
                   : 'border-transparent text-text-muted hover:text-text-base hover:border-slate-300 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:border-slate-600'
@@ -169,8 +159,13 @@ export const FinanceView: React.FC<FinanceViewProps> = (props) => {
               <CreditCardIcon/> <span className="ml-2">Expenses ({filteredExpenses.length})</span>
             </button>
           </nav>
-        </div>
-        <div className="p-5">
+          </div>
+        }
+        className="h-full flex flex-col"
+        contentClassName="flex-grow flex flex-col min-h-0 p-0"
+        noPadding
+      >
+        <div className="flex-grow min-h-0 overflow-y-auto">
           {renderTabContent()}
         </div>
       </Card>

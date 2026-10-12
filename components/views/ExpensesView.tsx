@@ -263,68 +263,20 @@ export const ExpensesView: React.FC<ExpensesViewProps> = (props) => {
   return (
     <>
       <Card 
-        title="All Expenses"
-        className="bg-transparent shadow-none border-0 p-0"
-        contentClassName="p-0"
+        actionsFull
+        className="bg-transparent shadow-none border-0 p-0 rounded-none"
+        contentClassName="p-4"
+        noPadding
         actions={
           <div className="flex flex-wrap gap-2">
-            <Button onClick={handleRefresh} variant="outline" size="sm" isLoading={isRefreshing} leftIcon={<RefreshCw className="w-4 h-4" />}>
-              Refresh
-            </Button>
-            <Button 
-              onClick={() => setIsAddCategoryOpen(true)} 
-              size="sm" 
-              className="bg-[#fcb632] text-black hover:bg-[#e5a800]" 
-              leftIcon={<FolderPlus className="w-4 h-4" />}
-            >
-              Add Category
-            </Button>
-            {canCreateExpenses && (
-              <Button onClick={onAddExpense} size="sm" className="bg-[#001d21] text-white hover:bg-[#002e32]" leftIcon={<Plus className="w-4 h-4" />}>
-                Add Expense
-              </Button>
-            )}
-          </div>
-        }
-      >
-        <div className={`transition-opacity duration-300 ${isRefreshing ? 'opacity-50 pointer-events-none' : 'opacity-100'} pt-4`}>
-          
-          {/* Summary Cards aligned beautifully */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div className="bg-slate-50 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-4 flex flex-col justify-center items-center shadow-sm">
-              <span className="text-xs font-semibold text-text-muted dark:text-slate-400 uppercase tracking-wider mb-1">Total Expenses (Filtered)</span>
-              <p className="text-2xl font-bold text-red-600 dark:text-red-400">{formatCurrency(totalFilteredAmount)}</p>
-              <p className="text-[11px] text-text-muted dark:text-slate-500 mt-1">{filteredAndSortedExpenses.length} expense(s)</p>
-            </div>
-            
-            <div className="bg-slate-50 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-4 flex flex-col shadow-sm">
-              <span className="text-xs font-semibold text-text-muted dark:text-slate-400 uppercase tracking-wider mb-2 text-center md:text-left">Top Categories (Filtered)</span>
-              {topCategoriesList.length > 0 ? (
-                <div className="grid grid-cols-2 gap-2 text-xs h-10 overflow-y-auto custom-scrollbar">
-                  {topCategoriesList.slice(0, 4).map(([category, total]) => (
-                    <div key={category} className="flex justify-between items-center px-2 py-1 bg-white dark:bg-slate-800/80 rounded-md border border-slate-100 dark:border-slate-700/40 shadow-xs">
-                      <span className="truncate max-w-[100px] text-text-muted dark:text-slate-400 font-medium" title={category}>{category}</span>
-                      <span className="font-semibold text-text-base dark:text-slate-300 ml-1">{formatCurrency(total)}</span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="flex items-center justify-center h-10">
-                  <p className="text-text-muted dark:text-slate-500 text-xs">No entries match criteria.</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="p-3 border-y border-border-base dark:border-slate-700 bg-slate-50 dark:bg-slate-800/20 mb-4">
-            <div className="flex flex-col md:flex-row gap-3 items-center">
-              <div className="flex-grow w-full">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="w-full md:w-64">
                 <input
                   type="search"
                   placeholder="Search description, vendor, project, category..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full h-10 px-3 pl-10 pr-4 bg-white dark:bg-slate-800 border border-border-base dark:border-slate-600 rounded-lg text-sm text-text-base dark:text-text-base focus:ring-2 focus:ring-secondary-accent/50 focus:border-secondary-accent outline-none placeholder-text-muted font-medium"
+                  className="w-full h-9 px-3 pl-10 pr-4 bg-white dark:bg-slate-800 border border-border-base dark:border-slate-600 rounded-lg text-sm text-text-base dark:text-text-base focus:ring-2 focus:ring-secondary-accent/50 focus:border-secondary-accent outline-none placeholder-text-muted font-medium"
                   style={{
                     backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'/%3E%3C/svg%3E")`,
                     backgroundRepeat: 'no-repeat',
@@ -333,12 +285,12 @@ export const ExpensesView: React.FC<ExpensesViewProps> = (props) => {
                   }}
                 />
               </div>
-              <div className="flex items-center gap-2 flex-shrink-0 w-full md:w-auto justify-end">
+              <div className="flex flex-wrap items-center gap-2">
                 <div className="relative" ref={sortDropdownRef}>
                   <button
                     type="button"
                     onClick={() => setIsSortDropdownOpen(prev => !prev)}
-                    className="flex items-center justify-between w-full md:w-auto px-4 py-2 h-10 bg-white dark:bg-slate-800 border border-border-base dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary-accent text-sm shadow-sm text-text-base dark:text-text-base font-medium"
+                    className="flex items-center justify-between w-full md:w-auto px-4 py-2 h-9 bg-white dark:bg-slate-800 border border-border-base dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary-accent text-sm shadow-sm text-text-base dark:text-text-base font-medium"
                   >
                     <span>{sortOptions[sortBy]}</span>
                     <ChevronDown className={`w-4 h-4 ml-2 transition-transform ${isSortDropdownOpen ? 'rotate-180' : ''}`} />
@@ -419,7 +371,54 @@ export const ExpensesView: React.FC<ExpensesViewProps> = (props) => {
                 </div>
               </div>
             </div>
+            <Button onClick={handleRefresh} variant="outline" size="sm" isLoading={isRefreshing} leftIcon={<RefreshCw className="w-4 h-4" />}>
+              Refresh
+            </Button>
+            <Button 
+              onClick={() => setIsAddCategoryOpen(true)} 
+              size="sm" 
+              className="bg-[#fcb632] text-black hover:bg-[#e5a800]" 
+              leftIcon={<FolderPlus className="w-4 h-4" />}
+            >
+              Add Category
+            </Button>
+            {canCreateExpenses && (
+              <Button onClick={onAddExpense} size="sm" className="bg-[#001d21] text-white hover:bg-[#002e32]" leftIcon={<Plus className="w-4 h-4" />}>
+                Add Expense
+              </Button>
+            )}
           </div>
+        }
+      >
+        <div className={`transition-opacity duration-300 ${isRefreshing ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
+          
+          {/* Summary Cards aligned beautifully */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div className="bg-slate-50 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-4 flex flex-col justify-center items-center shadow-sm">
+              <span className="text-xs font-semibold text-text-muted dark:text-slate-400 uppercase tracking-wider mb-1">Total Expenses (Filtered)</span>
+              <p className="text-2xl font-bold text-red-600 dark:text-red-400">{formatCurrency(totalFilteredAmount)}</p>
+              <p className="text-[11px] text-text-muted dark:text-slate-500 mt-1">{filteredAndSortedExpenses.length} expense(s)</p>
+            </div>
+            
+            <div className="bg-slate-50 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-4 flex flex-col shadow-sm">
+              <span className="text-xs font-semibold text-text-muted dark:text-slate-400 uppercase tracking-wider mb-2 text-center md:text-left">Top Categories (Filtered)</span>
+              {topCategoriesList.length > 0 ? (
+                <div className="grid grid-cols-2 gap-2 text-xs h-10 overflow-y-auto custom-scrollbar">
+                  {topCategoriesList.slice(0, 4).map(([category, total]) => (
+                    <div key={category} className="flex justify-between items-center px-2 py-1 bg-white dark:bg-slate-800/80 rounded-md border border-slate-100 dark:border-slate-700/40 shadow-xs">
+                      <span className="truncate max-w-[100px] text-text-muted dark:text-slate-400 font-medium" title={category}>{category}</span>
+                      <span className="font-semibold text-text-base dark:text-slate-300 ml-1">{formatCurrency(total)}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex items-center justify-center h-10">
+                  <p className="text-text-muted dark:text-slate-500 text-xs">No entries match criteria.</p>
+                </div>
+              )}
+            </div>
+          </div>
+
 
           {filteredAndSortedExpenses.length === 0 ? (
             <p className="text-text-muted dark:text-text-muted text-center py-8">

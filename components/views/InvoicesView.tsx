@@ -204,30 +204,14 @@ export const InvoicesView: React.FC<InvoicesViewProps> = (props) => {
   return (
     <>
     <Card 
-        title="All Invoices"
-        className="bg-transparent shadow-none border-0 p-0"
-        contentClassName="p-0"
+        actionsFull
+        className="bg-transparent shadow-none border-0 p-0 rounded-none"
+        contentClassName="p-4"
+        noPadding
         actions={
           <div className="flex flex-wrap gap-2">
-            <Button onClick={handleRefresh} variant="outline" size="sm" isLoading={isRefreshing} leftIcon={<RefreshCw className="w-4 h-4" />}>
-                Refresh
-            </Button>
-            {canManageRecurring && (
-              <Button onClick={onProcessRecurring} size="sm" className="bg-[#fcb632] text-black hover:bg-[#e5a800]">
-                  Process Recurring
-              </Button>
-            )}
-            {canCreateInvoices && (
-                <Button onClick={onAddInvoice} size="sm" className="bg-[#001d21] text-white hover:bg-[#002e32]" leftIcon={<PlusIcon />} disabled={clients.length === 0}>
-                    {clients.length === 0 ? "Add a Client First" : "Create Invoice"}
-                </Button>
-            )}
-          </div>
-        }
-    >
-      <div className="p-3 border-y border-border-base dark:border-slate-700 bg-slate-50 dark:bg-slate-800/20 mb-4">
-        <div className="flex flex-col md:flex-row gap-3 items-center">
-            <div className="flex-grow">
+            <div className="flex flex-wrap items-center gap-2">
+            <div className="w-full md:w-64">
                 <Input
                   type="search"
                   placeholder="Search by invoice #, client name..."
@@ -237,12 +221,12 @@ export const InvoicesView: React.FC<InvoicesViewProps> = (props) => {
                   containerClassName="w-full"
                 />
             </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="flex flex-wrap items-center gap-2">
                 <div className="relative" ref={sortDropdownRef}>
                     <button
                         type="button"
                         onClick={() => setIsSortDropdownOpen(prev => !prev)}
-                        className="flex items-center justify-between w-full md:w-auto px-4 py-2 h-10 bg-bg-base dark:bg-slate-800 border border-border-base dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary-accent text-sm shadow-sm text-text-base dark:text-text-base"
+                        className="flex items-center justify-between w-full md:w-auto px-4 py-2 h-9 bg-bg-base dark:bg-slate-800 border border-border-base dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary-accent text-sm shadow-sm text-text-base dark:text-text-base"
                     >
                         <span>{sortOptions[sortBy]}</span>
                         <ChevronDown className={`w-4 h-4 ml-2 transition-transform ${isSortDropdownOpen ? 'rotate-180' : ''}`} />
@@ -288,7 +272,22 @@ export const InvoicesView: React.FC<InvoicesViewProps> = (props) => {
                 </div>
             </div>
         </div>
-      </div>
+            <Button onClick={handleRefresh} variant="outline" size="sm" isLoading={isRefreshing} leftIcon={<RefreshCw className="w-4 h-4" />}>
+                Refresh
+            </Button>
+            {canManageRecurring && (
+              <Button onClick={onProcessRecurring} size="sm" className="bg-[#fcb632] text-black hover:bg-[#e5a800]">
+                  Process Recurring
+              </Button>
+            )}
+            {canCreateInvoices && (
+                <Button onClick={onAddInvoice} size="sm" className="bg-[#001d21] text-white hover:bg-[#002e32]" leftIcon={<PlusIcon />} disabled={clients.length === 0}>
+                    {clients.length === 0 ? "Add a Client First" : "Create Invoice"}
+                </Button>
+            )}
+          </div>
+        }
+    >
 
       {filteredAndSortedInvoices.length === 0 ? (
         <p className="text-text-muted dark:text-text-muted text-center py-8">

@@ -188,15 +188,23 @@ export const MyTasksView: React.FC<MyTasksViewProps> = (props) => {
     };
 
     return (
-        <Card title="My Tasks" actions={<Button variant="primary" onClick={props.onOpenTaskModal}>+ Add Task</Button>}>
-            <div className="p-3 border-y border-border-base dark:border-slate-700 bg-slate-50 dark:bg-slate-800/20 mb-4 space-y-3">
-                <div className="flex flex-col md:flex-row gap-3">
-                    <div className="flex-1">
+        <Card
+            title="My Tasks"
+            noPadding
+            className="h-full flex flex-col"
+            contentClassName="flex-grow flex flex-col min-h-0 p-0"
+            actions={
+                <div className="flex flex-wrap items-center gap-2">
+                    <div className="w-full md:w-64">
                         <Input type="search" placeholder="Search tasks, clients, projects..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                     </div>
                     <DateRangePicker onApply={setDateRange} initialRange={dateRange || undefined} />
+                    <Button variant="primary" size="sm" onClick={props.onOpenTaskModal}>+ Add Task</Button>
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            }
+        >
+            <div className="flex-grow min-h-0 overflow-y-auto p-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                     <Select
                         value={filters.status}
                         onChange={(v) => handleFilterChange('status', v)}
@@ -241,7 +249,6 @@ export const MyTasksView: React.FC<MyTasksViewProps> = (props) => {
                         ]}
                     />
                 </div>
-            </div>
             {paginatedData.length > 0 ? (
                 <div className="space-y-3">
                     {paginatedData.map(task => (
@@ -272,6 +279,7 @@ export const MyTasksView: React.FC<MyTasksViewProps> = (props) => {
                     message="You have no tasks that match the current filters. Great job, or time to add some!"
                 />
             )}
+            </div>
         </Card>
     );
 };

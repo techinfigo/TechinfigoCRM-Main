@@ -141,14 +141,37 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({ projects, clients, t
     }
   };
 
+  const controls = (
+    <div className="flex flex-wrap items-center gap-2">
+        <div className="w-full md:w-60">
+            <Input
+              type="search"
+              placeholder="Search by name, client, tags..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              leftIcon={<Search className="w-4 h-4" />}
+              containerClassName="w-full"
+            />
+        </div>
+        <DateRangePicker onApply={setDateRange} initialRange={dateRange || undefined} />
+        <div className="flex items-center gap-1 bg-white dark:bg-slate-800 p-1 rounded-lg border border-border-base dark:border-slate-700">
+          <Button variant={activeTab === 'Board' ? 'secondary' : 'ghost'} size="sm" onClick={() => setActiveTab('Board')} leftIcon={<LayoutGrid size={16} />}>Board</Button>
+          <Button variant={activeTab === 'List' ? 'secondary' : 'ghost'} size="sm" onClick={() => setActiveTab('List')} leftIcon={<List size={16} />}>List</Button>
+          <Button variant={activeTab === 'Reports' ? 'secondary' : 'ghost'} size="sm" onClick={() => setActiveTab('Reports')} leftIcon={<BarChart3 size={16} />}>Reports</Button>
+        </div>
+    </div>
+  );
+
   return (
     <div className="h-full flex flex-col">
       <Card 
         className="flex-grow flex flex-col"
-        contentClassName="flex-grow flex flex-col"
+        contentClassName="flex-grow flex flex-col min-h-0 p-0"
+        noPadding
         title={!isEmbedded ? title : undefined}
         actions={!isEmbedded ? (
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+                {controls}
                 <Button variant="outline" size="sm" isLoading={isRefreshing} onClick={handleRefresh} leftIcon={<RotateCcw size={16}/>}>Refresh</Button>
                 {hasPermission('projects', 'canCreate') && (
                     <Button variant="primary" size="sm" onClick={() => onOpenProjectFormModal()} leftIcon={<Plus size={16}/>}>
@@ -158,28 +181,12 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({ projects, clients, t
             </div>
         ) : undefined}
       >
-        <div className="p-3 border-y border-border-base dark:border-slate-700 bg-slate-50 dark:bg-slate-800/20 flex-shrink-0 mb-4">
-             <div className="flex flex-col md:flex-row gap-3 items-center">
-                <div className="flex-grow">
-                    <Input
-                      type="search"
-                      placeholder="Search by name, client, tags..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      leftIcon={<Search className="w-4 h-4" />}
-                      containerClassName="w-full"
-                    />
-                </div>
-                <DateRangePicker onApply={setDateRange} initialRange={dateRange || undefined} />
-                <div className="flex items-center gap-1 bg-white dark:bg-slate-800 p-1 rounded-lg border border-border-base dark:border-slate-700">
-                  <Button variant={activeTab === 'Board' ? 'secondary' : 'ghost'} size="sm" onClick={() => setActiveTab('Board')} leftIcon={<LayoutGrid size={16} />}>Board</Button>
-                  <Button variant={activeTab === 'List' ? 'secondary' : 'ghost'} size="sm" onClick={() => setActiveTab('List')} leftIcon={<List size={16} />}>List</Button>
-                  <Button variant={activeTab === 'Reports' ? 'secondary' : 'ghost'} size="sm" onClick={() => setActiveTab('Reports')} leftIcon={<BarChart3 size={16} />}>Reports</Button>
-                </div>
-            </div>
-        </div>
+        {/* Inside a client page there is no title row, so the search sits on its own line. */}
+        {isEmbedded && (
+          <div className="p-3 border-b border-border-base dark:border-slate-700 flex-shrink-0">{controls}</div>
+        )}
         
-        <div className={`flex-grow flex flex-col overflow-y-auto ${activeTab === 'Board' ? 'overflow-hidden' : ''}`}>
+        <div className={`flex-grow flex flex-col min-h-0 p-4 overflow-y-auto ${activeTab === 'Board' ? 'overflow-hidden' : ''}`}>
            {renderContent()}
         </div>
       </Card>

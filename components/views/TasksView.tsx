@@ -331,7 +331,7 @@ export const TasksView: React.FC<TasksViewProps> = (props) => {
 
 
     return (
-        <>
+        <div className="h-full flex flex-col">
             {reminderError && (
                 <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md relative mb-4 flex justify-between items-center shadow-lg" role="alert">
                     <div>
@@ -345,8 +345,15 @@ export const TasksView: React.FC<TasksViewProps> = (props) => {
             )}
             <Card 
                 title="Tasks" 
+                noPadding
+                className="flex-grow min-h-0 flex flex-col"
+                contentClassName="flex-grow flex flex-col min-h-0 p-0"
                 actions={
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <div className="w-full md:w-64">
+                            <Input type="search" placeholder="Search tasks by title, client, project..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} leftIcon={<Search size={16} />}/>
+                        </div>
+                        <DateRangePicker onApply={setDateRange} initialRange={dateRange || undefined} />
                         <div ref={viewsDropdownRef} className="relative">
                             <Button variant="outline" onClick={() => setIsViewsDropdownOpen(p => !p)} rightIcon={<ChevronDown size={16}/>}>
                                 {activeViewId ? savedViews.find(v => v.id === activeViewId)?.name : 'Unsaved View'}
@@ -373,17 +380,7 @@ export const TasksView: React.FC<TasksViewProps> = (props) => {
                     </div>
                 }
             >
-                {/* Filters */}
-                <div className="p-3 border-y border-border-base dark:border-slate-700 bg-slate-50 dark:bg-slate-800/20 mb-4 space-y-3">
-                    <div className="flex flex-col md:flex-row gap-3">
-                        <div className="flex-1">
-                            <Input type="search" placeholder="Search tasks by title, client, project..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} leftIcon={<Search size={16} />}/>
-                        </div>
-                        <DateRangePicker onApply={setDateRange} initialRange={dateRange || undefined} />
-                    </div>
-                    {/* Add more filter controls here if needed */}
-                </div>
-                <div className="space-y-6">
+                <div className="flex-grow min-h-0 overflow-y-auto p-4 space-y-6">
                     {tasks.length === 0 && !isFiltered ? (
                         <InlineErrorBanner
                             title="No Tasks Available"
@@ -421,6 +418,6 @@ export const TasksView: React.FC<TasksViewProps> = (props) => {
                     }
                 </Modal>
             )}
-        </>
+        </div>
     );
 };

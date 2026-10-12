@@ -12,6 +12,8 @@ interface CardProps extends Omit<HTMLMotionProps<"div">, 'title'> {
   headerClassName?: string;
   icon?: React.ReactNode; 
   noPadding?: boolean;
+  /** Actions take the whole header width and wrap (for long toolbars). */
+  actionsFull?: boolean;
 }
 
 export const Card: React.FC<CardProps> = ({ 
@@ -24,6 +26,7 @@ export const Card: React.FC<CardProps> = ({
   headerClassName, 
   icon, 
   noPadding = false,
+  actionsFull = false,
   ...rest 
 }) => {
   return (
@@ -42,7 +45,7 @@ export const Card: React.FC<CardProps> = ({
             )}
           </div>
           {/* On phones the actions drop below the title and may wrap; on larger screens they sit beside it. */}
-          {actions && <div className="w-full md:w-auto md:ml-3 md:shrink-0 flex items-center gap-2 min-w-0">{actions}</div>}
+          {actions && <div className={actionsFull ? 'w-full flex items-center gap-2 min-w-0' : 'w-full md:w-auto md:ml-3 md:shrink-0 flex items-center gap-2 min-w-0'}>{actions}</div>}
         </div>
       )}
       <div className={`${noPadding ? '' : 'p-5'} ${contentClassName ? `min-h-0 ${contentClassName}` : 'text-zinc-600 dark:text-zinc-300'}`}>
