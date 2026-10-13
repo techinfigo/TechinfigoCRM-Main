@@ -159,11 +159,11 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
   const [currentView, setCurrentView] = useState<View>("DASHBOARD");
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
-  // Opened from a phone alert ("?view=LEADS"): jump straight to that screen.
+  // Opened from a phone alert ("?view=LEADS" / "?view=MY_TASKS"): jump straight to that screen.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const v = params.get("view");
-    if (v === "LEADS") setCurrentView("LEADS");
+    if (v === "LEADS" || v === "MY_TASKS" || v === "DASHBOARD") setCurrentView(v);
     if (v || params.get("source")) window.history.replaceState(null, "", window.location.pathname);
   }, []);
   // New enquiries (website + ads) waiting in Leads -> Enquiries; shown as the Leads sidebar number.
