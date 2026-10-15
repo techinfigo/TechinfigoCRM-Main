@@ -301,13 +301,13 @@
       @page { size: A4; margin: 0; }
     }
 
-    /* Techinfigo brand loader (before the app starts and while data loads): the real logo, its white ring spinning under the yellow bar. */
+    /* Techinfigo brand loader (before the app starts and while data loads): the real logo, its yellow bar turning like a watch hand. */
     .tf-loader { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; }
     .tf-loader--full { position:fixed; inset:0; z-index:2000; background:#001d21; }
     .tf-loader__mark { position:relative; width:96px; height:96px; }
     .tf-loader--sm .tf-loader__mark { width:60px; height:60px; }
     .tf-loader__mark img { position:absolute; inset:0; width:100%; height:100%; display:block; }
-    .tf-loader__ring { animation: tf-spin 1.1s cubic-bezier(.55,.15,.45,.85) infinite; }
+    .tf-loader__bar { animation: tf-spin 1.6s linear infinite; } /* the yellow bar turns like a watch hand */
     .tf-loader__word { font: 800 15px/1 Poppins, system-ui, sans-serif; letter-spacing:.32em; color:#fff; padding-left:.32em; }
     .tf-loader__word b { color:#fcb632; font-weight:800; }
     .tf-loader__msg { font: 500 12px/1.4 Poppins, system-ui, sans-serif; color:rgba(255,255,255,.55); }
@@ -320,7 +320,7 @@
     .dark .tf-loader--inline .tf-loader__word { color:#fff; }
     @keyframes tf-spin { to { transform: rotate(360deg); } }
     @keyframes tf-dots { 0% { content:''; } 25% { content:'.'; } 50% { content:'..'; } 75% { content:'...'; } }
-    @media (prefers-reduced-motion: reduce) { .tf-loader__ring, .tf-loader__dots::after { animation:none; } }
+    @media (prefers-reduced-motion: reduce) { .tf-loader__bar, .tf-loader__dots::after { animation:none; } }
   </style>
 <link rel="stylesheet" href="/index.css">
 </head>

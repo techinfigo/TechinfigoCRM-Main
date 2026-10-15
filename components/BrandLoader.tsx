@@ -1,8 +1,8 @@
 import React from 'react';
 
 /**
- * Techinfigo loader: the real logo, its white ring spinning under the
- * yellow bar. Styles live in index.html (so the same loader
+ * Techinfigo loader: the real logo, its yellow bar turning round the white
+ * ring like a watch hand. Styles live in index.html (so the same loader
  * also shows before the app has started). `full` covers the screen;
  * otherwise it sits inline.
  */
