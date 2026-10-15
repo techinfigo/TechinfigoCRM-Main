@@ -135,6 +135,24 @@ export const serviceBillingTypes: ServiceBillingType[] = ['One-Time', 'Monthly',
 
 /** A single agreed service line on a client's contract. This is the deal scope
  *  decided at onboarding — what will be delivered, at what price, and how often. */
+/** An existing client is interested in another service (upsell). */
+export type OpportunityStage = 'Interested' | 'Quote sent' | 'Won' | 'Lost';
+export const opportunityStages: OpportunityStage[] = ['Interested', 'Quote sent', 'Won', 'Lost'];
+
+export interface Opportunity {
+    id: string;
+    clientId: string;
+    service: string;
+    amount: number;
+    billingType: ServiceBillingType;
+    stage: OpportunityStage;
+    followUpDate?: string; // ISO date-time
+    notes?: string;
+    createdAt: string; // ISO
+    updatedAt: string; // ISO
+    closedAt?: string; // ISO, when Won or Lost
+}
+
 export interface AgreedService {
     id: string;
     name: string;
@@ -427,6 +445,10 @@ export interface Invoice {
     parentOccurrenceDate?: string; // ISO
     activityLog?: { timestamp: string; action: string; actorName: string }[];
     currency?: string; // 'INR' | 'USD' | etc.
+    /** When it was marked Paid by hand (no payment recorded for the rest). */
+    paidDate?: string; // ISO
+    /** 'payments' = recorded money covers it (set automatically); 'hand' = Mark as Paid. */
+    paidBy?: 'payments' | 'hand';
 }
 
 export const calculateInvoiceGrandTotal = (invoice: Invoice): number => {
@@ -457,11 +479,15 @@ export interface Expense {
     receiptUrl?: string;
 }
 
-export type PaymentMethod = 'Bank Transfer' | 'Credit Card' | 'Cash' | 'Other';
+export type PaymentMethod = 'UPI' | 'Bank Transfer' | 'Cash' | 'Cheque' | 'Credit Card' | 'Other';
 
 export interface Payment {
     id: string;
+    /** Invoice this payment is for. Empty when it was recorded on the client
+     *  account (then it pays the oldest unpaid invoice first). */
     invoiceId: string;
+    /** Set for client-account payments (no invoice picked). */
+    clientId?: string;
     amount: number;
     paymentDate: string; // ISO
     paymentMethod: PaymentMethod;

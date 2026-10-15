@@ -1,6 +1,9 @@
+import { inrShort } from '../../selectors/money';
 
 import React, { useState, ChangeEvent } from 'react';
-import { Client, Project, Campaign, Invoice, AppSettings, FeatureKey, PermissionAction, View, TeamMember, MarketingAuditRequest, ClientDocument, InvoiceStatus, ModalType, Proposal, Audit } from '../../types';
+import { Client, Project, Campaign, Invoice, AppSettings, FeatureKey, PermissionAction, View, TeamMember, MarketingAuditRequest, ClientDocument, InvoiceStatus, ModalType, Proposal, Audit, Payment, PaymentMethod, Opportunity, AgreedService } from '../../types';
+import { ClientPaymentsTab } from '../clients/ClientPaymentsTab';
+import { ClientOpportunitiesTab } from '../clients/ClientOpportunitiesTab';
 import { Card } from '../common/Card';
 import { Button } from '../common/Button';
 import { Modal } from '../common/Modal';
@@ -51,6 +54,14 @@ interface ClientDetailViewProps {
   projects: Project[]; 
   campaigns: Campaign[]; 
   invoices: Invoice[];
+  /** All payments (the khata picks this client's). */
+  payments: Payment[];
+  opportunities: Opportunity[];
+  onAddClientPayment: (clientId: string, data: { amount: number; date: string; method: PaymentMethod; notes?: string }) => void;
+  onDeletePayment: (paymentId: string) => void;
+  onSaveOpportunity: (o: Opportunity) => void;
+  onDeleteOpportunity: (id: string) => void;
+  onStartInvoiceForService: (client: Client, service: AgreedService) => void;
   marketingAudits: MarketingAuditRequest[];
   proposals: Proposal[];
   audits: Audit[];
@@ -96,6 +107,8 @@ const TABS = [
   'Campaigns',
   'Campaign Reports',
   'Invoices',
+  'Payments',
+  'Opportunities',
   'Marketing Audits',
   'Notes/Documents',
   'Credentials',
@@ -109,6 +122,13 @@ const ClientDetailView: React.FC<ClientDetailViewProps> = ({
   projects,
   campaigns,
   invoices,
+  payments,
+  opportunities,
+  onAddClientPayment,
+  onDeletePayment,
+  onSaveOpportunity,
+  onDeleteOpportunity,
+  onStartInvoiceForService,
   marketingAudits,
   proposals,
   audits,
@@ -149,7 +169,7 @@ const ClientDetailView: React.FC<ClientDetailViewProps> = ({
   const balanceRemaining = Math.max(0, finance.totalAgreed - finance.advancePaid - finance.invoicedTotal);
   const inrFmt = (n: number) => '₹' + Math.round(n).toLocaleString('en-IN');
   const isNextActionOverdue = !!nextAction && new Date(nextAction.dueDate) < new Date();
-  const formatCurrency = (amount: number) => new Intl.NumberFormat('en-IN', { notation: 'compact', compactDisplay: 'short' }).format(amount);
+  const formatCurrency = (amount: number) => inrShort(amount).replace('₹', '');
 
   const handleTabChange = (tab: TabType) => {
     handleRequestActionWithDirtyCheck(() => setActiveTab(tab));
@@ -243,8 +263,9 @@ const ClientDetailView: React.FC<ClientDetailViewProps> = ({
       className="h-full flex flex-col"
       contentClassName="flex-grow flex flex-col p-0"
     >
-      <div className="flex flex-col h-full overflow-hidden">
-        <div className="flex justify-between items-center px-4 py-2 bg-slate-50 dark:bg-slate-900 border-b border-border-base dark:border-border-muted sticky top-0 z-10">
+      <div className="flex flex-col h-full overflow-hidden min-w-0">
+        {/* The tab row scrolls sideways on its own (phones), so the page below never shifts. */}
+        <div className="flex justify-between items-center px-4 py-2 bg-slate-50 dark:bg-slate-900 border-b border-border-base dark:border-border-muted sticky top-0 z-10 min-w-0 overflow-x-auto">
           <div className="flex border-b border-transparent -mb-[1px]">
             {TABS.map((tab) => (
               <button
@@ -438,6 +459,28 @@ const ClientDetailView: React.FC<ClientDetailViewProps> = ({
               hasPermission={hasPermission}
               onOpenInvoiceBillModal={handleOpenInvoiceBillModal}
               onOpenInvoiceDetailPanel={onOpenInvoiceDetailPanel}
+            />
+          )}
+
+          {activeTab === 'Payments' && (
+            <ClientPaymentsTab
+              client={client}
+              invoices={invoices}
+              payments={payments}
+              onAddPayment={onAddClientPayment}
+              onDeletePayment={onDeletePayment}
+              onOpenInvoice={onOpenInvoiceDetailPanel}
+            />
+          )}
+
+          {activeTab === 'Opportunities' && (
+            <ClientOpportunitiesTab
+              client={client}
+              opportunities={opportunities}
+              onSave={onSaveOpportunity}
+              onDelete={onDeleteOpportunity}
+              onUpdateClient={onUpdateClient}
+              onStartInvoice={onStartInvoiceForService}
             />
           )}
 

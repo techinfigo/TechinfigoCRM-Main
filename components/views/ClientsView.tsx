@@ -1,4 +1,5 @@
 
+import { clientAccount } from '../../selectors/money';
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Client, FeatureKey, PermissionAction, MarketingAuditRequest, ProjectsDrawerConfig, Invoice, Payment, Project, paymentModes, clientDocumentTypes } from '../../types';
@@ -94,25 +95,15 @@ export const ClientsView: React.FC<ClientsViewProps> = ({ clients, invoices, pay
     'companyName-asc': 'Company A-Z',
   };
 
-  // Outstanding balance per client = total invoiced (incl. tax) - payments recorded
+  // Balance per client from the khata: positive = owes, negative = advance with us
   // against those invoices - any advance on file. Positive = client still owes.
   const balanceForClient = (clientId: string): number => {
-    const clientInvoices = invoices.filter(i => i.clientId === clientId);
-    // Only unpaid/partially-paid invoices count toward the outstanding balance.
-    // An invoice marked "Paid" (via Mark as Paid OR fully covered by payments)
-    // contributes nothing, so the balance clears either way.
-    const outstanding = clientInvoices.reduce((sum, inv) => {
-      if (inv.status === 'Paid') return sum;
-      const sub = (inv.items || []).reduce((sA, it) => sA + it.quantity * it.unitPrice, 0);
-      const tax = sub * ((inv.taxRate ?? 0) / 100);
-      const invTotal = sub + tax;
-      const paidOnThis = payments
-        .filter(p => p.invoiceId === inv.id)
-        .reduce((s2, p) => s2 + (Number(p.amount) || 0), 0);
-      return sum + Math.max(0, invTotal - paidOnThis);
-    }, 0);
-    const advance = Number(clients.find(c => c.id === clientId)?.advanceAmount) || 0;
-    return Math.max(0, outstanding - advance);
+    const c = clients.find(cl => cl.id === clientId);
+    if (!c) return 0;
+    // Same khata as the client's Payments tab: drafts/cancelled ignored,
+    // discounts and GST included, advances and part payments counted once.
+    const acc = clientAccount(c, invoices, payments);
+    return acc.due > 0.5 ? acc.due : acc.credit > 0.5 ? -acc.credit : 0;
   };
   const inrFmt = (n: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n || 0);
 
@@ -404,7 +395,7 @@ export const ClientsView: React.FC<ClientsViewProps> = ({ clients, invoices, pay
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold">
                         {(() => {
                             const bal = balanceForClient(client.id);
-                            return <span className={bal > 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}>{bal > 0 ? inrFmt(bal) : 'Settled'}</span>;
+                            return <span className={bal > 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}>{bal > 0 ? inrFmt(bal) : bal < 0 ? `${inrFmt(-bal)} advance` : 'Settled'}</span>;
                         })()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">

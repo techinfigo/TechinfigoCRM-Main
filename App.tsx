@@ -62,6 +62,8 @@ import { TopNavbar } from "./components/TopNavbar";
 import { MobileBottomNav } from "./components/MobileBottomNav";
 import { QuickAddLead } from "./components/leads/QuickAddLead";
 import { AddMenu, type AddMenuItem } from "./components/AddMenu";
+import { invoicesNowPaid, clientAccount } from "./selectors/money";
+import type { Opportunity, PaymentMethod } from "./types";
 import { UserPlus, Briefcase, ClipboardCheck, FolderKanban, FileText, Wallet, Receipt, ListPlus } from "lucide-react";
 import { DashboardView } from "./components/views/DashboardView";
 import { LeadsView } from "./components/views/LeadsView";
@@ -163,7 +165,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const v = params.get("view");
-    if (v === "LEADS" || v === "MY_TASKS" || v === "DASHBOARD") setCurrentView(v);
+    if (v === "LEADS" || v === "MY_TASKS" || v === "DASHBOARD" || v === "CLIENTS") setCurrentView(v);
     if (v || params.get("source")) window.history.replaceState(null, "", window.location.pathname);
   }, []);
   // New enquiries (website + ads) waiting in Leads -> Enquiries; shown as the Leads sidebar number.
@@ -236,6 +238,9 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
   );
   const [payments, setPayments] = useState<Payment[]>(() =>
     load(KEYS.payments, []),
+  );
+  const [opportunities, setOpportunities] = useState<Opportunity[]>(() =>
+    load(KEYS.opportunities, []),
   );
   const [expenses, setExpenses] = useState<Expense[]>(() =>
     load(KEYS.expenses, []),
@@ -408,6 +413,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
   // Save effects (Standard)
   useEffect(() => save(KEYS.invoices, invoices), [invoices]);
   useEffect(() => save(KEYS.payments, payments), [payments]);
+  useEffect(() => save(KEYS.opportunities, opportunities), [opportunities]);
   useEffect(() => save(KEYS.expenses, expenses), [expenses]);
   useEffect(() => save(KEYS.emails, emails), [emails]);
   useEffect(() => save(KEYS.chatContacts, chatContacts), [chatContacts]);
@@ -790,6 +796,73 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
     setInvoices((prev) => prev.filter((i) => i.id !== invoiceId));
   };
 
+  /**
+   * Keeps invoice status in line with the money: invoices fully covered by
+   * recorded payments/advances become Paid; ones that were auto-marked Paid
+   * but are no longer covered (a payment was deleted) go back to Sent.
+   */
+  const syncPaidStatuses = (list: Invoice[], pays: Payment[]): Invoice[] => {
+    const nowPaid = new Set(invoicesNowPaid(clients, list, pays));
+    const stillCovered = new Set<string>();
+    clients.forEach((c) =>
+      clientAccount(c, list, pays).invoices.forEach((b) => {
+        if (b.isPaid) stillCovered.add(b.invoice.id);
+      }),
+    );
+    return list.map((i) => {
+      if (nowPaid.has(i.id)) return { ...i, status: "Paid" as InvoiceStatus, paidBy: "payments" as const };
+      if (i.status === "Paid" && i.paidBy === "payments" && !stillCovered.has(i.id))
+        return { ...i, status: "Sent" as InvoiceStatus, paidBy: undefined };
+      return i;
+    });
+  };
+
+  // Once after the data loads: invoices that recorded money already covers become Paid
+  // (fixes bills paid with advance + part payments before this was automatic).
+  const paidSyncDone = useRef(false);
+  useEffect(() => {
+    if (paidSyncDone.current || clients.length === 0 || invoices.length === 0) return;
+    paidSyncDone.current = true;
+    const synced = syncPaidStatuses(invoices, payments);
+    if (synced.some((inv, idx) => inv !== invoices[idx])) setInvoices(synced);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clients.length, invoices.length]);
+
+  /** The onboarding advance is written on a client's first invoice only, so it is never counted twice. */
+  const advanceAlreadyBilled = (clientId: string, editingInvoiceId?: string) =>
+    invoices.some((i) => i.clientId === clientId && i.id !== editingInvoiceId && (Number(i.advanceAmount) || 0) > 0);
+
+  /** Money received on the client account, without picking an invoice. */
+  const handleAddClientPayment = (
+    clientId: string,
+    data: { amount: number; date: string; method: PaymentMethod; notes?: string },
+  ) => {
+    const newPayment: Payment = {
+      id: `payment-${Date.now()}`,
+      invoiceId: "",
+      clientId,
+      amount: data.amount,
+      paymentDate: new Date(data.date).toISOString(),
+      paymentMethod: data.method,
+      notes: data.notes,
+    };
+    const updated = [...payments, newPayment];
+    setPayments(updated);
+    setInvoices((prev) => syncPaidStatuses(prev, updated));
+    addToast({ title: "Payment added", description: `₹${data.amount.toLocaleString("en-IN")} added to the client account.` });
+  };
+
+  const handleDeletePayment = (paymentId: string) => {
+    const updated = payments.filter((p) => p.id !== paymentId);
+    setPayments(updated);
+    setInvoices((prev) => syncPaidStatuses(prev, updated));
+  };
+
+  const handleSaveOpportunity = (opp: Opportunity) => {
+    setOpportunities((prev) => (prev.some((o) => o.id === opp.id) ? prev.map((o) => (o.id === opp.id ? opp : o)) : [opp, ...prev]));
+  };
+  const handleDeleteOpportunity = (id: string) => setOpportunities((prev) => prev.filter((o) => o.id !== id));
+
   const handleRecordPayment = (paymentData: PaymentFormData) => {
     const invoice = invoices.find((i) => i.id === paymentData.invoiceId);
     const newPayment: Payment = {
@@ -803,20 +876,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
 
     const updatedPayments = [...payments, newPayment];
     setPayments(updatedPayments);
-
-    if (invoice) {
-      const totalPaid = updatedPayments
-        .filter((p) => p.invoiceId === invoice.id)
-        .reduce((sum, p) => sum + p.amount, 0);
-      const grandTotal = calculateInvoiceGrandTotal(invoice);
-      if (totalPaid >= grandTotal && invoice.status !== "Paid") {
-        setInvoices((prev) =>
-          prev.map((i) =>
-            i.id === invoice.id ? { ...i, status: "Paid" as InvoiceStatus } : i,
-          ),
-        );
-      }
-    }
+    setInvoices((prev) => syncPaidStatuses(prev, updatedPayments));
 
     closeModal();
     addToast({
@@ -1818,6 +1878,8 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
           <DashboardView
             clients={clients}
             invoices={invoices}
+            payments={payments}
+            opportunities={opportunities}
             leads={leads}
             projects={projects}
             teamMembers={teamMembers}
@@ -2011,6 +2073,15 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
               (c) => c.clientId === selectedClient.id,
             )}
             invoices={invoices.filter((i) => i.clientId === selectedClient.id)}
+            payments={payments}
+            opportunities={opportunities.filter((o) => o.clientId === selectedClient.id)}
+            onAddClientPayment={handleAddClientPayment}
+            onDeletePayment={handleDeletePayment}
+            onSaveOpportunity={handleSaveOpportunity}
+            onDeleteOpportunity={handleDeleteOpportunity}
+            onStartInvoiceForService={(client, service) =>
+              openModal("INVOICE_FORM", { invoice: null, client: { ...client, agreedServices: [service] } })
+            }
             marketingAudits={marketingAudits.filter(
               (a) => a.clientId === selectedClient.id,
             )}
@@ -2107,7 +2178,13 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
             }}
             onUpdateInvoiceStatus={(id, status) =>
               setInvoices(
-                invoices.map((i) => (i.id === id ? { ...i, status } : i)),
+                invoices.map((i) =>
+                  i.id === id
+                    ? status === "Paid"
+                      ? { ...i, status, paidBy: "hand" as const, paidDate: i.paidDate || new Date().toISOString() }
+                      : { ...i, status, paidBy: undefined, paidDate: undefined }
+                    : i,
+                ),
               )
             }
             onDeleteInvoice={handleDeleteInvoice}
@@ -2289,7 +2366,13 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
             onDeleteInvoice={handleDeleteInvoice}
             onUpdateStatus={(id, status) =>
               setInvoices(
-                invoices.map((i) => (i.id === id ? { ...i, status } : i)),
+                invoices.map((i) =>
+                  i.id === id
+                    ? status === "Paid"
+                      ? { ...i, status, paidBy: "hand" as const, paidDate: i.paidDate || new Date().toISOString() }
+                      : { ...i, status, paidBy: undefined, paidDate: undefined }
+                    : i,
+                ),
               )
             }
             onProcessRecurringInvoices={handleProcessRecurringInvoices}
@@ -2725,6 +2808,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
               client={clients.find((c) => c.id === liveInvoice.clientId)}
               appSettings={appSettings}
               payments={payments}
+              allInvoices={invoices}
               onOpenSendModal={(inv) =>
                 openModal("INVOICE_BILL_VIEW", { invoice: inv })
               }
@@ -2733,7 +2817,13 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
               }
               onUpdateStatus={(id, status) =>
                 setInvoices(
-                  invoices.map((i) => (i.id === id ? { ...i, status } : i)),
+                  invoices.map((i) =>
+                    i.id === id
+                      ? status === "Paid"
+                        ? { ...i, status, paidBy: "hand" as const, paidDate: i.paidDate || new Date().toISOString() }
+                        : { ...i, status, paidBy: undefined, paidDate: undefined }
+                      : i,
+                  ),
                 )
               }
               onEditInvoice={(inv) =>
@@ -2843,10 +2933,16 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
           onClose={closeModal}
           onSave={handleSaveInvoice}
           invoice={activeModal.props?.invoice || null}
-          clients={
-            activeModal.props?.client ? [activeModal.props.client] : clients
+          clients={(activeModal.props?.client ? [activeModal.props.client] : clients).map((c: Client) =>
+            advanceAlreadyBilled(c.id, activeModal.props?.invoice?.id) ? { ...c, advanceAmount: 0 } : c,
+          )}
+          prefillFromClient={
+            activeModal.props?.client
+              ? advanceAlreadyBilled(activeModal.props.client.id, activeModal.props?.invoice?.id)
+                ? { ...activeModal.props.client, advanceAmount: 0 }
+                : activeModal.props.client
+              : null
           }
-          prefillFromClient={activeModal.props?.client || null}
           getNextInvoiceNumber={() => {
             // Must match the scheme in handleSaveInvoice: "YYYY-YY/NNN", reset each FY.
             const now = new Date();

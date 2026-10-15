@@ -1,3 +1,4 @@
+import { inrShort } from '../../selectors/money';
 import React from 'react';
 import { AppSettings } from '../../types';
 import { t } from '@/i18n';
@@ -66,6 +67,7 @@ const MetricCard: React.FC<MetricCardProps> = ({ title, value, icon: Icon, chang
 interface MetricsCardsProps {
   summary: {
     totalRevenue: number;
+    gstCollected?: number;
     netProfit: number;
     totalExpenses: number;
     outstandingRevenue: number;
@@ -78,14 +80,14 @@ interface MetricsCardsProps {
 
 export const MetricsCards: React.FC<MetricsCardsProps> = ({ summary, appSettings }) => {
     const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', notation: 'compact', maximumFractionDigits: 1 }).format(amount);
+        return inrShort(amount);
     };
 
     const metrics: MetricCardProps[] = [
-        { title: t('dashboard.totalRevenue'), value: formatCurrency(summary.totalRevenue), icon: LucideTrendingUpIcon },
+        { title: t('dashboard.totalRevenue'), value: formatCurrency(summary.totalRevenue), icon: LucideTrendingUpIcon, description: summary.gstCollected ? `Received, excl. GST (GST ${formatCurrency(summary.gstCollected)})` : 'Money received, excl. GST' },
         { title: t('dashboard.netProfit'), value: formatCurrency(summary.netProfit), icon: LucideCircleDollarSignIcon, description: "(Revenue - Expenses)" },
         { title: t('dashboard.totalExpenses'), value: formatCurrency(summary.totalExpenses), icon: CreditCardIcon },
-        { title: t('dashboard.outstandingRevenue'), value: formatCurrency(summary.outstandingRevenue), icon: WalletIcon },
+        { title: t('dashboard.outstandingRevenue'), value: formatCurrency(summary.outstandingRevenue), icon: WalletIcon, description: 'Still to collect from clients' },
         { title: t('dashboard.leadsThisMonth'), value: summary.leadsThisMonth.toString(), icon: UsersIcon },
         { title: t('dashboard.leadConversionRate'), value: `${summary.leadConversionRate.toFixed(1)}%`, icon: LineChartIcon },
     ];

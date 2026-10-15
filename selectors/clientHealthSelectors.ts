@@ -55,11 +55,8 @@ export function computeClientHealth(client: Client, invoices: Invoice[], project
     const hasOverdueInvoice = invoices.some(i => i.clientId === client.id && isInvoiceOverdue(i, now));
     const hasOffTrackProject = projects.some(p => p.clientId === client.id && p.health === 'Off Track');
 
-    const lastActivity = getLastActivityTimestamp(client, invoices, projects);
-    const daysSinceActivity = (now.getTime() - lastActivity) / MS_PER_DAY;
-    const isStale = daysSinceActivity >= STALE_ACTIVITY_DAYS;
-
-    return (hasOverdueInvoice || hasOffTrackProject || isStale) ? 'At Risk' : 'Healthy';
+    // A settled client who is simply quiet is not "at risk": only real problems count.
+    return (hasOverdueInvoice || hasOffTrackProject) ? 'At Risk' : 'Healthy';
 }
 
 export function computeClientRoi(client: Client, campaigns: Campaign[]): ClientRoi {

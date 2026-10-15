@@ -24,7 +24,7 @@ interface PaymentFormModalProps {
   payment?: Payment | null; // Added for editing
 }
 
-const paymentMethods: PaymentMethod[] = ['Bank Transfer', 'Credit Card', 'Cash', 'Other'];
+const paymentMethods: PaymentMethod[] = ['UPI', 'Cash', 'Bank Transfer', 'Cheque', 'Credit Card', 'Other'];
 
 const initialFormData: PaymentFormData = {
   invoiceId: '',
@@ -155,6 +155,7 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
             ))}
           </select>
           {errors.invoiceId && <p className="mt-1 text-xs text-red-600">{errors.invoiceId}</p>}
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">No invoice yet, or one payment for several bills? Open the client → <strong>Payments</strong> → Add payment.</p>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

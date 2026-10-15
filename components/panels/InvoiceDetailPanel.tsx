@@ -1,3 +1,4 @@
+import { invoiceBalance } from '../../selectors/money';
 
 import React from 'react';
 import { Invoice, Client, AppSettings, InvoiceStatus, Payment, calculateInvoiceGrandTotal } from '../../types';
@@ -19,11 +20,14 @@ interface InvoiceDetailPanelProps {
   onOpenBillModal: (invoice: Invoice) => void;
   onRecordPayment?: (invoice: Invoice) => void;
   payments: Payment[];
+  /** All invoices (so client-level payments and advances are shared out correctly). */
+  allInvoices?: Invoice[];
 }
 
 const formatCurrency = (amount: number, currencyCode: string) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: currencyCode }).format(amount);
 
 export const InvoiceDetailPanel: React.FC<InvoiceDetailPanelProps> = ({
+  allInvoices,
   isOpen, onClose, invoice, client, appSettings, onOpenSendModal, onUpdateStatus, onEditInvoice, onOpenBillModal, onRecordPayment, payments = []
 }) => {
   const currency = invoice.currency || appSettings.defaultCurrency || 'INR';
@@ -114,17 +118,21 @@ export const InvoiceDetailPanel: React.FC<InvoiceDetailPanelProps> = ({
                       <div className="mt-8">
                         <h3 className="text-sm font-bold uppercase tracking-wider text-zinc-500 mb-4 px-1">Payment History</h3>
                         {(() => {
+                          // Money that paid this bill: its advance, its own payments, and its share of
+                          // money paid on the client account (oldest bill first).
+                          const bal = invoiceBalance(invoice, client || undefined, allInvoices || [invoice], payments || []);
                           const invoicePayments = (payments || [])
                             .filter(p => p.invoiceId === invoice.id)
                             .sort((a, b) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime());
-                          const grandTotal = calculateInvoiceGrandTotal(invoice);
-                          const totalPaid = invoicePayments.reduce((sum, p) => sum + p.amount, 0);
-                          const balanceDue = Math.max(0, grandTotal - totalPaid);
+                          const totalPaid = bal.paid;
+                          const balanceDue = bal.due;
+                          const advance = Number(invoice.advanceAmount) || 0;
+                          const fromAccount = Math.max(0, totalPaid - advance - invoicePayments.reduce((s, p) => s + p.amount, 0));
 
-                          if (invoicePayments.length === 0) {
+                          if (invoicePayments.length === 0 && totalPaid <= 0.5) {
                             return (
                               <p className="text-sm text-zinc-500 px-1 py-3 border border-dashed border-zinc-200 dark:border-zinc-700 rounded-lg text-center">
-                                No payments recorded yet.
+                                No payments recorded yet. Balance due {formatCurrency(balanceDue, currency)}.
                               </p>
                             );
                           }
@@ -143,6 +151,18 @@ export const InvoiceDetailPanel: React.FC<InvoiceDetailPanelProps> = ({
                                 </div>
                               ))}
 
+                              {advance > 0 && (
+                                <div className="flex justify-between text-sm px-1">
+                                  <span className="text-zinc-500">Advance (on this invoice)</span>
+                                  <span className="font-semibold">{formatCurrency(Math.min(advance, bal.total), currency)}</span>
+                                </div>
+                              )}
+                              {fromAccount > 0.5 && (
+                                <div className="flex justify-between text-sm px-1">
+                                  <span className="text-zinc-500">{invoice.status === 'Paid' && invoice.paidBy !== 'payments' ? 'Marked as paid' : 'From client account payments'}</span>
+                                  <span className="font-semibold">{formatCurrency(fromAccount, currency)}</span>
+                                </div>
+                              )}
                               <div className="pt-3 mt-1 border-t border-zinc-200 dark:border-zinc-700 space-y-1">
                                 <div className="flex justify-between text-sm">
                                   <span className="text-zinc-500">Total Paid</span>

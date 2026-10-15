@@ -13,13 +13,15 @@ import { convertToINR } from '../../utils';
 Chart.register(ChartDataLabels);
 
 interface FinancialOverviewChartProps {
+    /** Money received per month (yyyy-mm → ₹, excl. GST). When given, this is the revenue line. */
+    revenueByMonth?: Record<string, number>;
     invoices: Invoice[];
     expenses: Expense[];
 }
 
 type ActiveTab = 'Revenue' | 'Profit' | 'Expenses' | 'Compare';
 
-export const FinancialOverviewChart: React.FC<FinancialOverviewChartProps> = ({ invoices, expenses }) => {
+export const FinancialOverviewChart: React.FC<FinancialOverviewChartProps> = ({ invoices, expenses, revenueByMonth }) => {
     const chartRef = useRef<HTMLCanvasElement>(null);
     const chartInstance = useRef<Chart | null>(null);
     const [activeTab, setActiveTab] = useState<ActiveTab>('Revenue');
@@ -27,7 +29,16 @@ export const FinancialOverviewChart: React.FC<FinancialOverviewChartProps> = ({ 
     const data = useMemo(() => {
         const monthlyData: Record<string, { revenue: number, expenses: number, profit: number, timestamp: number }> = {};
         
-        invoices.forEach(inv => {
+        if (revenueByMonth) {
+            Object.entries(revenueByMonth).forEach(([ym, amount]) => {
+                const date = new Date(`${ym}-01T00:00:00`);
+                if (Number.isNaN(date.getTime())) return;
+                const monthKey = format(date, "MMM ''yy");
+                if (!monthlyData[monthKey]) monthlyData[monthKey] = { revenue: 0, expenses: 0, profit: 0, timestamp: date.getTime() };
+                monthlyData[monthKey].revenue += amount;
+            });
+        }
+        if (!revenueByMonth) invoices.forEach(inv => {
             if (inv.status !== 'Paid') return; // Count only PAID invoices as revenue, matching the dashboard cards
             const date = new Date(inv.issueDate);
             const monthKey = format(date, "MMM ''yy");
@@ -53,7 +64,7 @@ export const FinancialOverviewChart: React.FC<FinancialOverviewChartProps> = ({ 
                 profit: values.revenue - values.expenses
             }))
             .sort((a, b) => a.timestamp - b.timestamp);
-    }, [invoices, expenses]);
+    }, [invoices, expenses, revenueByMonth]);
 
     const bestMonth = useMemo(() => {
         if (!data || data.length === 0) return 'N/A';

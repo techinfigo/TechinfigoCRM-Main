@@ -1,3 +1,4 @@
+import { inrShort } from '../../selectors/money';
 
 import React, { useRef, useEffect, useMemo } from 'react';
 import { Card } from '../common/Card';
@@ -8,6 +9,7 @@ interface LeadsSalesFunnelProps {
     summary: {
         pipelineValue: number;
         dealsWonThisMonth: number;
+        avgDealDays?: number | null;
     };
     leads: Lead[];
     appSettings: AppSettings;
@@ -55,7 +57,7 @@ export const LeadsSalesFunnel: React.FC<LeadsSalesFunnelProps> = ({ summary, lea
     }, [leads]);
 
     const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', notation: 'compact' }).format(amount);
+        return inrShort(amount);
     };
 
     useEffect(() => {
@@ -125,7 +127,7 @@ export const LeadsSalesFunnel: React.FC<LeadsSalesFunnelProps> = ({ summary, lea
     const stats = [
         { label: "Pipeline Value", value: formatCurrency(summary.pipelineValue), icon: BriefcaseIcon, color: "text-blue-500" },
         { label: "Deals Won (Month)", value: summary.dealsWonThisMonth, icon: TrophyIcon, color: "text-green-500" },
-        { label: "Avg. Deal Closing", value: "12 Days", icon: TimerIcon, color: "text-purple-500" }
+        { label: "Avg. Deal Closing", value: summary.avgDealDays == null ? "—" : `${summary.avgDealDays} Days`, icon: TimerIcon, color: "text-purple-500" }
     ];
 
     return (

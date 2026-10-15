@@ -1,8 +1,10 @@
 import React, { useMemo, useState } from 'react';
+import type { Payment, Opportunity } from '../../types';
 import { Client, Invoice, Lead, Project, TeamMember, Expense, TimeLog, AppSettings, FeatureKey, PermissionAction, View, Campaign, DashboardSuggestion, ActivityLogItem, calculateInvoiceGrandTotal, Task, LeaveRequest, DailyAttendanceRecord, EmailMessage, Proposal, Audit } from '../../types';
 import { RefreshCw } from 'lucide-react';
 import { MetricsCards } from '@/components/dashboard/MetricsCards';
 import { FinancialOverviewChart } from '@/components/dashboard/FinancialOverviewChart';
+import { moneySummary } from '../../selectors/money';
 import { LeadsSalesFunnel } from '@/components/dashboard/LeadsSalesFunnel';
 import { TeamPerformanceSnapshot } from '@/components/dashboard/TeamPerformanceSnapshot';
 import { MyTasks } from '@/components/dashboard/MyTasks';
@@ -20,6 +22,8 @@ import { t } from '@/i18n';
 interface DashboardViewProps {
   clients: Client[];
   invoices: Invoice[];
+  payments?: Payment[];
+  opportunities?: Opportunity[];
   leads: Lead[];
   projects: Project[];
   teamMembers: TeamMember[];
@@ -73,23 +77,21 @@ export const DashboardView: React.FC<DashboardViewProps> = (props) => {
 
     // --- Financial Metrics Calculations ---
     const financialSummary = useMemo(() => {
-        const filteredInvoices = invoices.filter(inv => isDateInRange(inv.issueDate, dateRange));
         const filteredExpenses = expenses.filter(exp => isDateInRange(exp.date, dateRange));
-
-        const paidInvoices = filteredInvoices.filter(inv => inv.status === 'Paid');
-        const totalRevenue = paidInvoices.reduce((sum, inv) => sum + convertToINR(calculateInvoiceGrandTotal(inv), inv.currency), 0);
+        // Revenue = money actually received in the dates (advances + payments), without GST.
+        const money = moneySummary(clients, invoices, props.payments || [], (iso) => isDateInRange(iso, dateRange));
         const totalExpenses = filteredExpenses.reduce((sum, exp) => sum + convertToINR(exp.amount, exp.currency), 0);
-        const outstandingRevenue = filteredInvoices.filter(inv => inv.status === 'Sent' || inv.status === 'Overdue').reduce((sum, inv) => sum + convertToINR(calculateInvoiceGrandTotal(inv), inv.currency), 0);
-        
         return {
-            totalRevenue,
+            totalRevenue: money.revenue,
+            gstCollected: money.gstCollected,
             totalExpenses,
-            netProfit: totalRevenue - totalExpenses,
-            outstandingRevenue,
-            avgRevenuePerClient: clients.length > 0 ? totalRevenue / clients.length : 0,
-            pendingInvoicesAmount: outstandingRevenue,
+            netProfit: money.revenue - totalExpenses,
+            outstandingRevenue: money.outstanding, // owed now, after advances and part payments
+            avgRevenuePerClient: clients.length > 0 ? money.revenue / clients.length : 0,
+            pendingInvoicesAmount: money.outstanding,
+            revenueByMonth: money.monthly,
         };
-    }, [invoices, expenses, clients, dateRange]);
+    }, [invoices, expenses, clients, dateRange, props.payments]);
 
     // --- Lead Metrics Calculations ---
     const leadSummary = useMemo(() => {
@@ -97,22 +99,41 @@ export const DashboardView: React.FC<DashboardViewProps> = (props) => {
 
         const convertedInRange = leadsInRange.filter(l => l.status === 'Converted' || l.status === 'Closed Won');
         
-        const pipelineValue = leadsInRange
-            .filter(l => l.status === 'New Lead' || l.status === 'Negotiation')
+        // Open leads (anything not yet won or lost).
+        const leadPipeline = leadsInRange
+            .filter(l => l.status !== 'Closed Won' && l.status !== 'Closed Lost' && (l.status as string) !== 'Converted')
             .reduce((sum, l) => {
                 const budgetStr = (l.estimatedBudget || '').replace(/[^0-9.-]+/g,"");
                 const budgetParts = budgetStr.split('-').map(p => parseFloat(p)).filter(p => !isNaN(p));
                 const avgBudget = budgetParts.length > 0 ? budgetParts.reduce((a,b)=>a+b, 0) / budgetParts.length : 0;
                 return sum + avgBudget;
             }, 0);
+        // Plus extra services existing clients are interested in.
+        const upsellPipeline = (props.opportunities || [])
+            .filter(o => o.stage === 'Interested' || o.stage === 'Quote sent')
+            .reduce((sum, o) => sum + (Number(o.amount) || 0), 0);
+        const pipelineValue = leadPipeline + upsellPipeline;
+
+        // Average days from lead added to client (for clients converted from a lead).
+        const closeDays = clients
+            .map(c => {
+                const lead = c.convertedFromLeadId ? leads.find(l => l.id === c.convertedFromLeadId) : undefined;
+                if (!lead) return null;
+                const days = (new Date(c.dateAdded).getTime() - new Date(lead.dateAdded).getTime()) / 86400000;
+                return Number.isFinite(days) && days >= 0 ? days : null;
+            })
+            .filter((d): d is number => d !== null);
+        const avgDealDays = closeDays.length ? Math.round(closeDays.reduce((a, b) => a + b, 0) / closeDays.length) : null;
 
         return {
             leadsThisMonth: leadsInRange.length,
             leadConversionRate: leadsInRange.length > 0 ? (convertedInRange.length / leadsInRange.length) * 100 : 0,
             pipelineValue,
+            upsellPipeline,
+            avgDealDays,
             dealsWonThisMonth: convertedInRange.length,
         };
-    }, [leads, dateRange]);
+    }, [leads, dateRange, clients, props.opportunities]);
     
      // Team summary
     const teamSummary = useMemo(() => {
@@ -184,6 +205,7 @@ export const DashboardView: React.FC<DashboardViewProps> = (props) => {
                 <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
                     <div className="lg:col-span-3">
                         <FinancialOverviewChart 
+                            revenueByMonth={financialSummary.revenueByMonth}
                             invoices={invoices.filter(inv => isDateInRange(inv.issueDate, dateRange))}
                             expenses={expenses.filter(exp => isDateInRange(exp.date, dateRange))}
                         />

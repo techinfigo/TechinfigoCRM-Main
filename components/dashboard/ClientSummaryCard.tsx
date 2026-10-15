@@ -1,3 +1,4 @@
+import { inrShort } from '../../selectors/money';
 import React from 'react';
 import { Client, Invoice, Project, Campaign, Proposal, Audit } from '../../types';
 import { Button } from '../common/Button';
@@ -88,7 +89,7 @@ export const ClientSummaryCard: React.FC<ClientSummaryCardProps> = ({ client, in
     const isNextActionOverdue = !!nextAction && new Date(nextAction.dueDate) < new Date();
     const healthClasses = getHealthStatusClasses(healthStatus);
     
-    const formatCurrency = (amount: number) => new Intl.NumberFormat('en-IN', { notation: 'compact', compactDisplay: 'short' }).format(amount);
+    const formatCurrency = (amount: number) => inrShort(amount).replace('₹', '');
 
     return (
         <div className="bg-bg-base dark:bg-bg-base rounded-2xl shadow-lg border border-border-base dark:border-border-muted flex flex-col p-4 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1.5">
