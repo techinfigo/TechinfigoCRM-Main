@@ -63,7 +63,7 @@ import { MobileBottomNav } from "./components/MobileBottomNav";
 import { QuickAddLead } from "./components/leads/QuickAddLead";
 import { AddMenu, type AddMenuItem } from "./components/AddMenu";
 import { invoicesNowPaid, clientAccount } from "./selectors/money";
-import type { Opportunity, PaymentMethod } from "./types";
+import type { Opportunity, PaymentMethod, ClientPlanItem } from "./types";
 import { UserPlus, Briefcase, ClipboardCheck, FolderKanban, FileText, Wallet, Receipt, ListPlus } from "lucide-react";
 import { DashboardView } from "./components/views/DashboardView";
 import { LeadsView } from "./components/views/LeadsView";
@@ -242,6 +242,9 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
   const [opportunities, setOpportunities] = useState<Opportunity[]>(() =>
     load(KEYS.opportunities, []),
   );
+  const [clientPlans, setClientPlans] = useState<ClientPlanItem[]>(() =>
+    load(KEYS.clientPlans, []),
+  );
   const [expenses, setExpenses] = useState<Expense[]>(() =>
     load(KEYS.expenses, []),
   );
@@ -414,6 +417,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
   useEffect(() => save(KEYS.invoices, invoices), [invoices]);
   useEffect(() => save(KEYS.payments, payments), [payments]);
   useEffect(() => save(KEYS.opportunities, opportunities), [opportunities]);
+  useEffect(() => save(KEYS.clientPlans, clientPlans), [clientPlans]);
   useEffect(() => save(KEYS.expenses, expenses), [expenses]);
   useEffect(() => save(KEYS.emails, emails), [emails]);
   useEffect(() => save(KEYS.chatContacts, chatContacts), [chatContacts]);
@@ -862,6 +866,9 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
     setOpportunities((prev) => (prev.some((o) => o.id === opp.id) ? prev.map((o) => (o.id === opp.id ? opp : o)) : [opp, ...prev]));
   };
   const handleDeleteOpportunity = (id: string) => setOpportunities((prev) => prev.filter((o) => o.id !== id));
+  const handleSavePlan = (item: ClientPlanItem) =>
+    setClientPlans((prev) => (prev.some((p) => p.id === item.id) ? prev.map((p) => (p.id === item.id ? item : p)) : [...prev, item]));
+  const handleDeletePlan = (id: string) => setClientPlans((prev) => prev.filter((p) => p.id !== id));
 
   const handleRecordPayment = (paymentData: PaymentFormData) => {
     const invoice = invoices.find((i) => i.id === paymentData.invoiceId);
@@ -2079,6 +2086,9 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
             onDeletePayment={handleDeletePayment}
             onSaveOpportunity={handleSaveOpportunity}
             onDeleteOpportunity={handleDeleteOpportunity}
+            clientPlans={clientPlans.filter((p) => p.clientId === selectedClient.id)}
+            onSavePlan={handleSavePlan}
+            onDeletePlan={handleDeletePlan}
             onStartInvoiceForService={(client, service) =>
               openModal("INVOICE_FORM", { invoice: null, client: { ...client, agreedServices: [service] } })
             }
@@ -2416,6 +2426,8 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
             leads={leads}
             marketingAudits={marketingAudits}
             leaveRequests={leaveRequests}
+            clients={clients}
+            clientPlans={clientPlans}
             customEvents={customCalendarEvents}
             onAddCustomEvent={(title, date, notes) =>
               setCustomCalendarEvents((prev) => [

@@ -39,6 +39,7 @@ export const KEYS = {
     expenses: 'crm_expenses',
     payments: 'crm_payments',
     opportunities: 'crm_opportunities',
+    clientPlans: 'crm_client_plans',
     activityHistory: 'crm_activityHistory',
     auditRecords: 'crm_auditRecords',
     marketingAudits: 'crm_marketingAudits',

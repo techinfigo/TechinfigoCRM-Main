@@ -153,6 +153,25 @@ export interface Opportunity {
     closedAt?: string; // ISO, when Won or Lost
 }
 
+/** Client planning calendar: posts, reels, ads, shoots, meetings for one client. */
+export type PlanKind = 'Post' | 'Reel' | 'Story' | 'Ad' | 'Shoot' | 'Meeting' | 'Other';
+export const planKinds: PlanKind[] = ['Post', 'Reel', 'Story', 'Ad', 'Shoot', 'Meeting', 'Other'];
+/** 'Idea' shows as "Planned" and 'Done' as "Done" for shoots/meetings; content shows Idea → Making → Approved → Posted. */
+export type PlanStatus = 'Idea' | 'Making' | 'Approved' | 'Done';
+export interface ClientPlanItem {
+    id: string;
+    clientId: string;
+    date: string; // YYYY-MM-DD
+    time?: string; // HH:MM, optional
+    kind: PlanKind;
+    title: string;
+    platforms?: string[];
+    status: PlanStatus;
+    notes?: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
 export interface AgreedService {
     id: string;
     name: string;
@@ -1039,7 +1058,7 @@ export interface CalendarEvent {
     id: string;
     date: Date;
     title: string;
-    type: 'project' | 'task' | 'invoice' | 'lead' | 'audit' | 'anomaly' | 'leave' | 'custom';
+    type: 'project' | 'task' | 'invoice' | 'lead' | 'audit' | 'anomaly' | 'leave' | 'custom' | 'client';
     originalItem?: any;
     colorClass?: string;
 }

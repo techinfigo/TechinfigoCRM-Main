@@ -1,9 +1,10 @@
 import { inrShort } from '../../selectors/money';
 
 import React, { useState, ChangeEvent } from 'react';
-import { Client, Project, Campaign, Invoice, AppSettings, FeatureKey, PermissionAction, View, TeamMember, MarketingAuditRequest, ClientDocument, InvoiceStatus, ModalType, Proposal, Audit, Payment, PaymentMethod, Opportunity, AgreedService } from '../../types';
+import { Client, Project, Campaign, Invoice, AppSettings, FeatureKey, PermissionAction, View, TeamMember, MarketingAuditRequest, ClientDocument, InvoiceStatus, ModalType, Proposal, Audit, Payment, PaymentMethod, Opportunity, AgreedService, ClientPlanItem } from '../../types';
 import { ClientPaymentsTab } from '../clients/ClientPaymentsTab';
 import { ClientOpportunitiesTab } from '../clients/ClientOpportunitiesTab';
+import { ClientCalendarTab } from '../clients/ClientCalendarTab';
 import { Card } from '../common/Card';
 import { Button } from '../common/Button';
 import { Modal } from '../common/Modal';
@@ -61,6 +62,10 @@ interface ClientDetailViewProps {
   onDeletePayment: (paymentId: string) => void;
   onSaveOpportunity: (o: Opportunity) => void;
   onDeleteOpportunity: (id: string) => void;
+  /** This client's planning calendar items. */
+  clientPlans: ClientPlanItem[];
+  onSavePlan: (item: ClientPlanItem) => void;
+  onDeletePlan: (id: string) => void;
   onStartInvoiceForService: (client: Client, service: AgreedService) => void;
   marketingAudits: MarketingAuditRequest[];
   proposals: Proposal[];
@@ -103,6 +108,7 @@ interface ClientDetailViewProps {
 
 const TABS = [
   'Overview',
+  'Calendar',
   'Projects',
   'Campaigns',
   'Campaign Reports',
@@ -128,6 +134,9 @@ const ClientDetailView: React.FC<ClientDetailViewProps> = ({
   onDeletePayment,
   onSaveOpportunity,
   onDeleteOpportunity,
+  clientPlans,
+  onSavePlan,
+  onDeletePlan,
   onStartInvoiceForService,
   marketingAudits,
   proposals,
@@ -471,6 +480,10 @@ const ClientDetailView: React.FC<ClientDetailViewProps> = ({
               onDeletePayment={onDeletePayment}
               onOpenInvoice={onOpenInvoiceDetailPanel}
             />
+          )}
+
+          {activeTab === 'Calendar' && (
+            <ClientCalendarTab client={client} items={clientPlans} onSave={onSavePlan} onDelete={onDeletePlan} />
           )}
 
           {activeTab === 'Opportunities' && (

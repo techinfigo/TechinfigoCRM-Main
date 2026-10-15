@@ -1,6 +1,7 @@
 
 import React, { useState, useMemo, useCallback } from 'react';
-import { Project, Invoice, Lead, Task, CalendarEvent, MarketingAuditRequest, CampaignAnomaly, LeaveRequest, CustomCalendarEvent } from '../../types'; // Updated imports
+import { Project, Invoice, Lead, Task, CalendarEvent, MarketingAuditRequest, CampaignAnomaly, LeaveRequest, CustomCalendarEvent, Client, ClientPlanItem } from '../../types';
+import { clientColor, kindEmoji, planDate } from '../clients/planUtils'; // Updated imports
 import { calendarEventColors } from '../../constants';
 import { Button } from '../common/Button';
 import { Card } from '../common/Card';
@@ -15,6 +16,9 @@ interface CalendarViewProps {
   campaignAnomalies?: CampaignAnomaly[]; 
   leaveRequests: LeaveRequest[];
   customEvents?: CustomCalendarEvent[];
+  /** Client planning items (posts, shoots, meetings), shown coloured per client. */
+  clients?: Client[];
+  clientPlans?: ClientPlanItem[];
   onAddCustomEvent?: (title: string, date: Date, notes?: string) => void;
   onDeleteCustomEvent?: (id: string) => void;
 }
@@ -22,7 +26,7 @@ interface CalendarViewProps {
 const ArrowLeftIcon = () => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5"><path fillRule="evenodd" d="M11.78 5.22a.75.75 0 010 1.06L8.06 10l3.72 3.72a.75.75 0 11-1.06 1.06l-4.25-4.25a.75.75 0 010-1.06l4.25-4.25a.75.75 0 011.06 0z" clipRule="evenodd" /></svg>;
 const ArrowRightIcon = () => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5"><path fillRule="evenodd" d="M8.22 5.22a.75.75 0 011.06 0l4.25 4.25a.75.75 0 010 1.06l-4.25 4.25a.75.75 0 01-1.06-1.06L11.94 10 8.22 6.28a.75.75 0 010-1.06z" clipRule="evenodd" /></svg>;
 
-export const CalendarView: React.FC<CalendarViewProps> = ({ projects, invoices, leads, marketingAudits, campaignAnomalies = [], leaveRequests, customEvents = [], onAddCustomEvent, onDeleteCustomEvent }) => {
+export const CalendarView: React.FC<CalendarViewProps> = ({ projects, invoices, leads, marketingAudits, campaignAnomalies = [], leaveRequests, customEvents = [], clients = [], clientPlans = [], onAddCustomEvent, onDeleteCustomEvent }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -56,11 +60,17 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ projects, invoices, 
         }
       }
     });
+    const clientName = new Map(clients.map(c => [c.id, c.companyName || c.name]));
+    clientPlans.forEach(p => {
+      const who = clientName.get(p.clientId);
+      if (!who) return;
+      events.push({ id: `plan-${p.id}`, date: planDate(p), title: `${who} · ${kindEmoji[p.kind]} ${p.title}${p.status === 'Done' ? ' ✓' : ''}`, type: 'client', originalItem: p, colorClass: clientColor(p.clientId) });
+    });
     customEvents.forEach(ce => {
       events.push({ id: ce.id, date: new Date(ce.date), title: ce.title, type: 'custom', originalItem: ce, colorClass: calendarEventColors.custom || 'bg-premium-accent/20 text-premium-accent' });
     });
     return events;
-  }, [projects, invoices, leads, marketingAudits, campaignAnomalies, leaveRequests, customEvents]);
+  }, [projects, invoices, leads, marketingAudits, campaignAnomalies, leaveRequests, customEvents, clients, clientPlans]);
   
   const handleDayClick = (day: Date) => {
     setSelectedDate(day);
