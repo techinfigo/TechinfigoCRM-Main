@@ -149,5 +149,85 @@ export async function sendTestAlert(): Promise<void> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ idToken: await user.getIdToken(), token, origin: window.location.origin, test: true }),
   });
-  if (!res.ok) throw new Error('Test alert failed.');
+  if (!res.ok) {
+    const data = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(`Test alert failed${data.error ? `: ${data.error}` : '.'}`);
+  }
+}
+
+export type CheckStep = { label: string; ok: boolean | null; detail: string };
+
+/**
+ * "Check alerts": runs every step of a phone alert on this device and says
+ * which one fails, so a problem can be fixed from one screenshot.
+ */
+export async function runAlertsCheck(onStep: (steps: CheckStep[]) => void): Promise<CheckStep[]> {
+  const steps: CheckStep[] = [];
+  const add = (label: string, ok: boolean | null, detail: string) => {
+    steps.push({ label, ok, detail });
+    onStep([...steps]);
+  };
+
+  add('Opened as the app', isInstalledApp() ? true : null, isInstalledApp() ? 'Yes' : 'No (browser tab)');
+
+  const perm = 'Notification' in window ? Notification.permission : 'missing';
+  add('Notification permission', perm === 'granted', perm);
+  if (perm !== 'granted') return steps;
+
+  const reg = await registerServiceWorker();
+  await navigator.serviceWorker.ready.catch(() => null);
+  add('Background worker', !!reg?.active, reg?.active ? 'Running' : 'Not running');
+  if (!reg?.active) return steps;
+
+  const sub = await reg.pushManager.getSubscription().catch(() => null);
+  const host = sub ? new URL(sub.endpoint).host : '';
+  add('Push subscription', !!sub, sub ? host : 'None. Tap Turn off, then Turn on alerts again.');
+  if (!sub) return steps;
+
+  const saved = localStorage.getItem(STORED_TOKEN);
+  add('Saved on server', saved === JSON.stringify(sub.toJSON()) ? true : null, saved ? (saved === JSON.stringify(sub.toJSON()) ? 'Yes' : 'Changed. Tap Turn off, then Turn on.') : 'No');
+
+  // Show one notification straight from this phone (no server involved).
+  try {
+    await reg.showNotification('Local test from Techinfigo', {
+      body: 'If you see this, your phone can show CRM notifications.',
+      icon: '/icons/icon-192.png',
+      badge: '/icons/badge-96.png',
+      tag: 'local-test',
+    });
+    await new Promise((r) => setTimeout(r, 800));
+    const shown = await reg.getNotifications({ tag: 'local-test' }).catch(() => []);
+    add('Phone can show a notification', shown.length > 0 ? true : null, shown.length > 0 ? 'Shown (check your notification bar)' : 'Sent to the phone, but it did not appear in the list');
+  } catch (err) {
+    add('Phone can show a notification', false, err instanceof Error ? err.message : String(err));
+  }
+
+  // Full path: website → push service → this phone.
+  const arrived = new Promise<{ shown: boolean; error: string | null } | null>((resolve) => {
+    const onMsg = (e: MessageEvent) => {
+      if (e.data?.type === 'crm-push-received') {
+        navigator.serviceWorker.removeEventListener('message', onMsg);
+        resolve({ shown: !!e.data.shown, error: e.data.error });
+      }
+    };
+    navigator.serviceWorker.addEventListener('message', onMsg);
+    setTimeout(() => {
+      navigator.serviceWorker.removeEventListener('message', onMsg);
+      resolve(null);
+    }, 20000);
+  });
+  try {
+    await sendTestAlert();
+    add('Website sent the alert', true, 'Accepted by the push service');
+  } catch (err) {
+    add('Website sent the alert', false, err instanceof Error ? err.message : String(err));
+    return steps;
+  }
+  const got = await arrived;
+  add(
+    'Alert reached this phone',
+    got ? got.shown : false,
+    got ? (got.shown ? 'Yes, and shown' : `Arrived but could not show: ${got.error}`) : 'Not received within 20 seconds',
+  );
+  return steps;
 }

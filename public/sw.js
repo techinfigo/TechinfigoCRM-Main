@@ -24,15 +24,23 @@ self.addEventListener('push', (event) => {
   }
   const d = payload.data || (payload.notification ? payload.notification : {}) || {};
   const title = d.title || 'New enquiry';
+  // Tell any open CRM window that a push arrived (used by "Check alerts").
+  const report = (shown, error) =>
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((wins) =>
+      wins.forEach((w) => w.postMessage({ type: 'crm-push-received', title, shown, error: error ? String(error) : null })),
+    );
   event.waitUntil(
-    self.registration.showNotification(title, {
-      body: d.body || 'Open the CRM to see it.',
-      icon: '/icons/icon-192.png',
-      badge: '/icons/badge-96.png',
-      tag: d.tag || 'enquiry',
-      renotify: true,
-      data: { link: d.link || '/?view=LEADS' },
-    }),
+    self.registration
+      .showNotification(title, {
+        body: d.body || 'Open the CRM to see it.',
+        icon: '/icons/icon-192.png',
+        badge: '/icons/badge-96.png',
+        tag: d.tag || 'enquiry',
+        renotify: true,
+        data: { link: d.link || '/?view=LEADS' },
+      })
+      .then(() => report(true, null))
+      .catch((err) => report(false, err)),
   );
 });
 
