@@ -59,7 +59,7 @@ export const PhoneAlertsBar: React.FC = () => {
         {state === 'blocked' && 'Notifications are blocked. Allow them for this site in your browser settings.'}
         {state === 'unsupported' && 'This browser cannot show notifications. Try Chrome.'}
         {state === 'needs-install' && 'On iPhone: tap Share → “Add to Home Screen”, open the app from there, then turn on alerts.'}
-        {state === 'not-configured' && 'Phone alerts need a one-time setup (notification key).'}
+        {state === 'not-configured' && 'Phone alerts are not available in this preview.'}
       </span>
 
       {install && !isInstalledApp() && (

@@ -1,25 +1,34 @@
-import { getMessaging, getToken, deleteToken, isSupported } from 'firebase/messaging';
-import { app, auth, isFirebaseConfigured } from '../firebase';
+import { auth, isFirebaseConfigured } from '../firebase';
 
 /**
- * Phone alerts for new enquiries.
+ * Phone alerts for new enquiries and reminders.
  *
  * How it works:
  *  1. The CRM registers /sw.js (also what makes it installable as an app).
- *  2. "Turn on alerts" asks the browser for permission and gets a Firebase
- *     Cloud Messaging token for this phone/computer.
- *  3. The token is sent to the website (www.techinfigo.com/api/crm-push)
- *     together with the signed-in user's Firebase ID token. The website checks
- *     it is the owner, stores the token, and from then on sends a notification
- *     to this device every time a new enquiry arrives.
- *
- * The VAPID key is the public "web push certificate" from Firebase Console →
- * Project settings → Cloud Messaging. It is not a secret.
+ *  2. "Turn on alerts" asks the browser for permission, fetches the website's
+ *     public Web Push key (www.techinfigo.com/api/crm-push, GET) and subscribes
+ *     this phone/computer with it. The website creates and keeps that key
+ *     itself, so there is nothing to set up in Firebase or Vercel.
+ *  3. The subscription is sent to the website together with the signed-in
+ *     user's Firebase ID token. The website checks it is the owner, stores it,
+ *     and sends this device a notification for every new enquiry and reminder.
  */
 
-const VAPID_KEY = process.env.FIREBASE_VAPID_KEY || '';
 const PUSH_ENDPOINT = `${(process.env.WEBSITE_URL || 'https://www.techinfigo.com').replace(/\/$/, '')}/api/crm-push`;
 const STORED_TOKEN = 'crm_push_token';
+
+function fromBase64Url(value: string): Uint8Array {
+  const padded = (value + '='.repeat((4 - (value.length % 4)) % 4)).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(padded);
+  return Uint8Array.from(raw, (c) => c.charCodeAt(0));
+}
+
+function toBase64Url(buf: ArrayBuffer | null | undefined): string {
+  if (!buf) return '';
+  let bin = '';
+  new Uint8Array(buf).forEach((b) => (bin += String.fromCharCode(b)));
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
 
 export type AlertsState = 'unsupported' | 'not-configured' | 'off' | 'on' | 'blocked' | 'needs-install';
 
@@ -53,10 +62,9 @@ export function isInstalledApp(): boolean {
 
 export async function getAlertsState(): Promise<AlertsState> {
   if (!isFirebaseConfigured) return 'not-configured';
-  if (!VAPID_KEY) return 'not-configured';
   // iPhone only allows web notifications for apps added to the Home Screen.
   if (isIOS() && !isInstalledApp()) return 'needs-install';
-  if (!('Notification' in window) || !(await isSupported().catch(() => false))) return 'unsupported';
+  if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) return 'unsupported';
   if (Notification.permission === 'denied') return 'blocked';
   if (Notification.permission === 'granted' && localStorage.getItem(STORED_TOKEN)) return 'on';
   return 'off';
@@ -94,8 +102,20 @@ export async function turnOnAlerts(): Promise<AlertsState> {
   if (!reg) throw new Error('This browser could not start notifications.');
   await navigator.serviceWorker.ready;
 
-  const token = await getToken(getMessaging(app), { vapidKey: VAPID_KEY, serviceWorkerRegistration: reg });
-  if (!token) throw new Error('Could not get a notification token.');
+  const keyRes = await fetch(PUSH_ENDPOINT, { method: 'GET' });
+  const keyData = (await keyRes.json().catch(() => ({}))) as { publicKey?: string };
+  if (!keyRes.ok || !keyData.publicKey) throw new Error('Could not reach the alert server. Try again in a minute.');
+
+  let sub = await reg.pushManager.getSubscription();
+  // A subscription made with an older key must be replaced.
+  if (sub && toBase64Url(sub.options.applicationServerKey) !== keyData.publicKey) {
+    await sub.unsubscribe().catch(() => {});
+    sub = null;
+  }
+  if (!sub) {
+    sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: fromBase64Url(keyData.publicKey) });
+  }
+  const token = JSON.stringify(sub.toJSON());
 
   await callWebsite('POST', token);
   localStorage.setItem(STORED_TOKEN, token);
@@ -107,7 +127,9 @@ export async function turnOffAlerts(): Promise<AlertsState> {
   const token = localStorage.getItem(STORED_TOKEN);
   if (token) {
     await callWebsite('DELETE', token).catch((err) => console.warn('[alerts] unregister failed:', err));
-    await deleteToken(getMessaging(app)).catch(() => {});
+    const reg = await registerServiceWorker();
+    const sub = await reg?.pushManager.getSubscription().catch(() => null);
+    await sub?.unsubscribe().catch(() => {});
   }
   localStorage.removeItem(STORED_TOKEN);
   return 'off';
