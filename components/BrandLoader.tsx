@@ -1,9 +1,10 @@
 import React from 'react';
 
 /**
- * Techinfigo logo loader: the ring turns and the yellow bar bounces.
- * Styles live in index.html (so the same loader also shows before the app
- * has started). `full` covers the screen; otherwise it sits inline.
+ * Techinfigo loader: the real logo on its dark tile, a yellow ring turning
+ * round it and a soft pulse. Styles live in index.html (so the same loader
+ * also shows before the app has started). `full` covers the screen;
+ * otherwise it sits inline.
  */
 export const BrandLoader: React.FC<{ message?: string; full?: boolean; small?: boolean; className?: string }> = ({
   message = 'Loading',
@@ -16,14 +17,16 @@ export const BrandLoader: React.FC<{ message?: string; full?: boolean; small?: b
     role="status"
     aria-label={message}
   >
-    <svg className="tf-loader__mark" viewBox="0 0 100 100" aria-hidden="true">
-      <circle className="tf-loader__glow" cx="50" cy="55" r="38" fill="none" stroke="#fcb632" strokeWidth="2.5" />
-      <circle className="tf-loader__track tf-loader__ringc" cx="50" cy="55" r="27" fill="none" stroke="#fff" strokeWidth="9" />
-      <g className="tf-loader__ring">
-        <circle className="tf-loader__ringc" cx="50" cy="55" r="27" fill="none" stroke="#fff" strokeWidth="9" strokeLinecap="round" strokeDasharray="120 50" transform="rotate(-62 50 55)" />
-      </g>
-      <rect className="tf-loader__bar" x="44.5" y="14" width="11" height="38" rx="5.5" fill="#fcb632" stroke="#001d21" strokeWidth="3" />
-    </svg>
+    <div className="tf-loader__mark" aria-hidden="true">
+      <span className="tf-loader__halo" />
+      <svg className="tf-loader__orbit" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(252,182,50,.18)" strokeWidth="3" />
+        <circle cx="50" cy="50" r="46" fill="none" stroke="#fcb632" strokeWidth="3.5" strokeLinecap="round" strokeDasharray="70 220" />
+      </svg>
+      <span className="tf-loader__tile">
+        <img alt="" src="/icons/logo-mark.png" />
+      </span>
+    </div>
     {!small && (
       <div className="tf-loader__word">
         TECH<b>IN</b>FIGO
