@@ -2924,6 +2924,9 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
           teamMembers={teamMembers}
           onSetDirty={() => {}}
           customFields={customFields}
+          prefillClientId={activeModal.props?.prefillClientId}
+          currentUserId={currentUser?.id}
+          onAddClientPlans={(items) => setClientPlans((prev) => [...prev, ...items])}
         />
       )}
       {activeModal?.type === "CAMPAIGN_FORM" && (
