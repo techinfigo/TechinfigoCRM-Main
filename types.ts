@@ -676,6 +676,11 @@ export interface Proposal {
     estimatedBudget?: string;
     timeline?: string;
     validUntilDate?: string;
+    /** Fixed-design proposal (builder). Old proposals only have `content`/`message`. */
+    design?: import('./services/proposalDesign').ProposalDesign;
+    /** Client link www.techinfigo.com/p/<publicId> once saved online. */
+    publicId?: string;
+    publicUrl?: string;
 }
 
 export interface PlatformCredential {

@@ -42,7 +42,9 @@ export const ClientOpportunitiesTab: React.FC<{
   onStartInvoice: (client: Client, service: AgreedService) => void;
   /** Opens the project popup for the won service. */
   onStartProject?: (client: Client, service: AgreedService) => void;
-}> = ({ client, opportunities, onSave, onDelete, onUpdateClient, onStartInvoice, onStartProject }) => {
+  /** Opens the proposal builder for this client. */
+  onNewProposal?: () => void;
+}> = ({ client, opportunities, onSave, onDelete, onUpdateClient, onStartInvoice, onStartProject, onNewProposal }) => {
   const [draft, setDraft] = useState<Draft | null>(null);
   /** Just won: offer the next steps (bill + project) right here. */
   const [won, setWon] = useState<{ service: AgreedService; client: Client } | null>(null);
@@ -176,6 +178,11 @@ export const ClientOpportunitiesTab: React.FC<{
             {open.length} open · {inrFull(pipeline)}
           </p>
         </div>
+        {onNewProposal && (
+          <button type="button" onClick={onNewProposal} className="px-4 py-2 rounded-lg border border-border-base dark:border-slate-600 text-sm font-semibold text-text-base dark:text-slate-200">
+            Make proposal
+          </button>
+        )}
         <button
           type="button"
           onClick={() => setDraft(blank())}

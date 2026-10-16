@@ -40,6 +40,7 @@ export const KEYS = {
     payments: 'crm_payments',
     opportunities: 'crm_opportunities',
     clientPlans: 'crm_client_plans',
+    proposalDefaults: 'crm_proposal_defaults',
     activityHistory: 'crm_activityHistory',
     auditRecords: 'crm_auditRecords',
     marketingAudits: 'crm_marketingAudits',

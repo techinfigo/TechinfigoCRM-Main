@@ -1,7 +1,8 @@
 import React from 'react';
 import { Proposal, ProposalStatus } from '../../types';
 import { Button } from '../common/Button';
-import { BadgeCheck, FileText, Send, UserCheck, XCircle } from 'lucide-react';
+import { BadgeCheck, ExternalLink, FileText, PencilLine, Send, UserCheck, XCircle } from 'lucide-react';
+import { renderProposalHtml } from '../../services/proposalDesign';
 
 interface ProposalDetailPanelProps {
   isOpen: boolean;
@@ -9,6 +10,8 @@ interface ProposalDetailPanelProps {
   proposal: Proposal | null;
   onOpenSendModal: (proposal: Proposal) => void;
   onUpdateStatus: (proposalId: string, status: ProposalStatus) => void;
+  /** Opens the proposal builder for a fixed-design proposal. */
+  onEditDesign?: (proposal: Proposal) => void;
 }
 
 const XMarkIcon: React.FC = () => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5"><path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" /></svg>;
@@ -24,7 +27,7 @@ const getStatusInfo = (status: ProposalStatus) => {
     }
 };
 
-export const ProposalDetailPanel: React.FC<ProposalDetailPanelProps> = ({ isOpen, onClose, proposal, onOpenSendModal, onUpdateStatus }) => {
+export const ProposalDetailPanel: React.FC<ProposalDetailPanelProps> = ({ isOpen, onClose, proposal, onOpenSendModal, onUpdateStatus, onEditDesign }) => {
   if (!isOpen || !proposal) return null;
   
   const statusInfo = getStatusInfo(proposal.status);
@@ -55,13 +58,29 @@ export const ProposalDetailPanel: React.FC<ProposalDetailPanelProps> = ({ isOpen
               </header>
               <main className="relative flex-1 px-4 py-5 sm:px-6 space-y-4">
                  <div className="flex flex-wrap gap-2 border-b border-border-base dark:border-slate-700 pb-4">
-                    <Button onClick={() => onOpenSendModal(proposal)} variant="primary" size="sm" leftIcon={<Send />}>Send Proposal</Button>
+                    {proposal.design && onEditDesign && (
+                      <Button onClick={() => onEditDesign(proposal)} variant="primary" size="sm" leftIcon={<PencilLine />}>Edit / share</Button>
+                    )}
+                    {proposal.publicUrl && (
+                      <a href={proposal.publicUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border-base dark:border-slate-600 text-sm font-medium">
+                        <ExternalLink className="w-4 h-4" /> Open client link
+                      </a>
+                    )}
+                    {!proposal.design && <Button onClick={() => onOpenSendModal(proposal)} variant="primary" size="sm" leftIcon={<Send />}>Send Proposal</Button>}
                     <Button onClick={() => onUpdateStatus(proposal.id, 'Signed')} variant="secondary" size="sm" leftIcon={<BadgeCheck />}>Mark as Signed</Button>
                     <Button onClick={() => onUpdateStatus(proposal.id, 'Declined')} variant="secondary" size="sm" leftIcon={<XCircle />}>Mark as Declined</Button>
                  </div>
+                {proposal.design ? (
+                  <iframe
+                    title="Proposal"
+                    srcDoc={renderProposalHtml(proposal.design, { logoSrc: `${window.location.origin}/icons/icon-192.png` })}
+                    className="w-full h-[75vh] rounded-lg border border-border-muted dark:border-slate-600 bg-[#f4f1ea]"
+                  />
+                ) : (
                 <div className="prose prose-sm dark:prose-invert max-w-none p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-border-muted dark:border-slate-600">
-                    <pre className="whitespace-pre-wrap font-sans">{proposal.message || ''}</pre>
+                    <pre className="whitespace-pre-wrap font-sans">{proposal.message || proposal.content || ''}</pre>
                 </div>
+                )}
               </main>
             </div>
           </div>

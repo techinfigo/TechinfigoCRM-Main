@@ -509,6 +509,7 @@ const ClientDetailView: React.FC<ClientDetailViewProps> = ({
               onUpdateClient={onUpdateClient}
               onStartInvoice={onStartInvoiceForService}
               onStartProject={onStartProjectForService}
+              onNewProposal={() => openModal('PROPOSAL_FORM', { prefillClientId: client.id })}
             />
           )}
 

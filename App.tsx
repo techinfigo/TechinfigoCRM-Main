@@ -118,6 +118,7 @@ import { PerformanceReviewModal } from "./components/modals/hr_module/Performanc
 import { TeamMemberHRDetailModal } from "./components/modals/hr_module/TeamMemberHRDetailModal";
 import { TeamMemberHRFormModal } from "./components/modals/tmr_module/TeamMemberHRFormModal";
 import { ProposalFormModal } from "./components/modals/ProposalFormModal";
+import { ProposalBuilderModal } from "./components/proposals/ProposalBuilderModal";
 import { CustomFieldFormModal } from "./components/modals/CustomFieldFormModal";
 import { KickoffFormModal } from "./components/modals/KickoffFormModal";
 import { SendProposalModal } from "./components/modals/SendProposalModal";
@@ -424,6 +425,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
   useEffect(() => save(KEYS.payments, payments), [payments]);
   useEffect(() => save(KEYS.opportunities, opportunities), [opportunities]);
   useEffect(() => save(KEYS.clientPlans, clientPlans), [clientPlans]);
+  useEffect(() => save(KEYS.proposals, proposals), [proposals]);
   useEffect(() => save(KEYS.expenses, expenses), [expenses]);
   useEffect(() => save(KEYS.emails, emails), [emails]);
   useEffect(() => save(KEYS.chatContacts, chatContacts), [chatContacts]);
@@ -1680,6 +1682,15 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
     });
     closeModal();
     if (activePanel?.type === "CREATE_PROPOSAL") closePanel();
+  };
+
+  /** Builder proposals (fixed design): insert or update by id, modal stays as the builder decides. */
+  const handleUpsertProposal = (p: Proposal) =>
+    setProposals((prev) => (prev.some((x) => x.id === p.id) ? prev.map((x) => (x.id === p.id ? p : x)) : [...prev, p]));
+  const nextProposalNumber = () => {
+    const year = new Date().getFullYear();
+    const used = proposals.filter((p) => p.proposalNumber?.startsWith(`TIG-P-${year}-`)).length;
+    return `TIG-P-${year}-${String(used + 1).padStart(3, "0")}`;
   };
 
   const handleSaveSOP = (sop: SOP) => {
@@ -2966,6 +2977,10 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
               activePanel.props.proposal
             }
             onOpenSendModal={(p) => openModal("SEND_PROPOSAL", { proposal: p })}
+            onEditDesign={(p) => {
+              closePanel();
+              openModal("PROPOSAL_FORM", { proposal: p });
+            }}
             onUpdateStatus={(id, status) =>
               setProposals(
                 proposals.map((p) => (p.id === id ? { ...p, status } : p)),
@@ -3468,7 +3483,19 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
             dailyAttendanceRecords={dailyAttendanceRecords}
           />
         )}
-      {activeModal?.type === "PROPOSAL_FORM" && (
+      {activeModal?.type === "PROPOSAL_FORM" && (!activeModal.props?.proposal || activeModal.props.proposal.design) && (
+        <ProposalBuilderModal
+          isOpen={true}
+          onClose={closeModal}
+          proposal={activeModal.props?.proposal || null}
+          clients={clients}
+          leads={leads}
+          prefillClientId={activeModal.props?.prefillClientId}
+          nextNumber={nextProposalNumber()}
+          onSave={handleUpsertProposal}
+        />
+      )}
+      {activeModal?.type === "PROPOSAL_FORM" && activeModal.props?.proposal && !activeModal.props.proposal.design && (
         <ProposalFormModal
           isOpen={true}
           onClose={closeModal}
