@@ -67,6 +67,7 @@ interface ClientDetailViewProps {
   onSavePlan: (item: ClientPlanItem) => void;
   onDeletePlan: (id: string) => void;
   onStartInvoiceForService: (client: Client, service: AgreedService) => void;
+  onStartProjectForService?: (client: Client, service: AgreedService) => void;
   marketingAudits: MarketingAuditRequest[];
   proposals: Proposal[];
   audits: Audit[];
@@ -134,6 +135,7 @@ const ClientDetailView: React.FC<ClientDetailViewProps> = ({
   onDeletePayment,
   onSaveOpportunity,
   onDeleteOpportunity,
+  onStartProjectForService,
   clientPlans,
   onSavePlan,
   onDeletePlan,
@@ -506,6 +508,7 @@ const ClientDetailView: React.FC<ClientDetailViewProps> = ({
               onDelete={onDeleteOpportunity}
               onUpdateClient={onUpdateClient}
               onStartInvoice={onStartInvoiceForService}
+              onStartProject={onStartProjectForService}
             />
           )}
 

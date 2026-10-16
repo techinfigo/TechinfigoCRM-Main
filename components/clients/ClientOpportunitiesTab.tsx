@@ -40,8 +40,12 @@ export const ClientOpportunitiesTab: React.FC<{
   onDelete: (id: string) => void;
   onUpdateClient?: (c: Client) => void;
   onStartInvoice: (client: Client, service: AgreedService) => void;
-}> = ({ client, opportunities, onSave, onDelete, onUpdateClient, onStartInvoice }) => {
+  /** Opens the project popup for the won service. */
+  onStartProject?: (client: Client, service: AgreedService) => void;
+}> = ({ client, opportunities, onSave, onDelete, onUpdateClient, onStartInvoice, onStartProject }) => {
   const [draft, setDraft] = useState<Draft | null>(null);
+  /** Just won: offer the next steps (bill + project) right here. */
+  const [won, setWon] = useState<{ service: AgreedService; client: Client } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const open = opportunities.filter((o) => OPEN.includes(o.stage)).sort((a, b) => (a.followUpDate || '').localeCompare(b.followUpDate || ''));
@@ -89,8 +93,9 @@ export const ClientOpportunitiesTab: React.FC<{
     onSave(next);
     if (stage === 'Won') {
       const service: AgreedService = { id: `svc-${Date.now()}`, name: o.service, cost: Number(o.amount) || 0, billingType: o.billingType, notes: o.notes };
-      if (onUpdateClient) onUpdateClient({ ...client, agreedServices: [...(client.agreedServices || []), service] });
-      if (window.confirm(`${o.service} added to ${client.companyName || client.name}'s services.\n\nCreate its invoice now?`)) onStartInvoice(client, service);
+      const updated = { ...client, agreedServices: [...(client.agreedServices || []), service] };
+      if (onUpdateClient) onUpdateClient(updated);
+      setWon({ service, client: updated });
     }
   };
 
@@ -179,6 +184,38 @@ export const ClientOpportunitiesTab: React.FC<{
           <Plus className="w-4 h-4" /> Add opportunity
         </button>
       </div>
+
+      {won && (
+        <div className="rounded-xl border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/25 p-4 space-y-3">
+          <p className="text-sm font-bold text-emerald-800 dark:text-emerald-200">
+            🎉 Won! {won.service.name} added to {client.companyName || client.name}'s services. Next steps:
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {onStartProject && (
+              <button
+                type="button"
+                onClick={() => {
+                  onStartProject(won.client, won.service);
+                  setWon(null);
+                }}
+                className="px-4 py-2 rounded-lg bg-secondary-accent text-secondary-accent-text text-sm font-semibold"
+              >
+                Start the project
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => onStartInvoice(won.client, won.service)}
+              className="px-4 py-2 rounded-lg border border-emerald-400 text-emerald-800 dark:text-emerald-200 text-sm font-semibold"
+            >
+              Create the bill
+            </button>
+            <button type="button" onClick={() => setWon(null)} className="px-3 py-2 rounded-lg text-sm text-text-muted">
+              Later
+            </button>
+          </div>
+        </div>
+      )}
 
       {draft && (
         <form onSubmit={save} className="rounded-xl border border-border-base dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40 p-4 space-y-3">

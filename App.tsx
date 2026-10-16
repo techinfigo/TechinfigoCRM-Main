@@ -86,6 +86,8 @@ import { AuditsView } from "./components/views/AuditsView";
 import { ToolsView } from "./components/views/ToolsView";
 import { ClientFormModal } from "./components/modals/ClientFormModal";
 import { ProjectFormModal } from "./components/modals/ProjectFormModal";
+import { StartProjectPrompt } from "./components/projects/StartProjectPrompt";
+import { buildTemplateWork, buildSocialPlans, templateByKey, monthKey, monthLabel, addDays, type TemplateKey } from "./components/projects/projectTemplates";
 import { LeadFormModal } from "./components/modals/LeadFormModal";
 import { InvoiceFormModal } from "./components/modals/InvoiceFormModal";
 import { ExpenseFormModal } from "./components/modals/ExpenseFormModal";
@@ -245,6 +247,8 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
   const [clientPlans, setClientPlans] = useState<ClientPlanItem[]>(() =>
     load(KEYS.clientPlans, []),
   );
+  /** "Start the project?" after a new client's first money. */
+  const [startPrompt, setStartPrompt] = useState<{ clientId: string; reason: string } | null>(null);
   /** Real (paying) clients: own brand (Techinfigo) is left out of money, counts and billing. */
   const billableClients = useMemo(() => clients.filter((c) => !c.isInternal), [clients]);
   const [expenses, setExpenses] = useState<Expense[]>(() =>
@@ -639,6 +643,15 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
   };
 
   // Data Handlers (Modified to use Undo/Redo setters where applicable)
+  /** Offer to start a project when a paying client has money in but no project yet. */
+  const maybeOfferProject = (clientId: string | undefined, reason: string, clientOverride?: Client) => {
+    if (!clientId) return;
+    const c = clientOverride || clients.find((x) => x.id === clientId);
+    if (!c || c.isInternal) return;
+    if (projects.some((p) => p.clientId === clientId)) return;
+    setStartPrompt({ clientId, reason });
+  };
+
   const handleSaveClient = (client: Client) => {
     // New clients arrive from the form with an empty id — assign one here,
     // otherwise every new client shares id "" and overwrites the previous one.
@@ -669,6 +682,10 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
     if (selectedClient && selectedClient.id === client.id)
       setSelectedClient(client);
     closeModal();
+    // Advance taken at onboarding (new client, or advance just added): time to start the work.
+    if ((Number(client.advanceAmount) || 0) > 0 && !(Number(exists?.advanceAmount) || 0)) {
+      maybeOfferProject(client.id, `Advance of ₹${Number(client.advanceAmount).toLocaleString("en-IN")} received.`, client);
+    }
   };
 
   const handleRevertClientToLead = (leadId: string) => {
@@ -834,6 +851,66 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clients.length, invoices.length]);
 
+  /**
+   * Monthly services: on the first open of a new month, add that month's tasks
+   * (and social post ideas) to every running monthly project. Ids are fixed per
+   * project + month, so two devices opening the app never add them twice.
+   */
+  const monthlyRunDone = useRef(false);
+  const latestRef = useRef({ projects, clients, clientPlans, teamMembers, setProjects });
+  latestRef.current = { projects, clients, clientPlans, teamMembers, setProjects };
+  useEffect(() => {
+    // Wait a moment so saved data has fully loaded into the app first.
+    const timer = window.setTimeout(() => {
+    if (monthlyRunDone.current) return;
+    monthlyRunDone.current = true;
+    const { projects, clients, clientPlans, teamMembers, setProjects } = latestRef.current;
+    const month = monthKey();
+    const stopped = new Set(["Done", "Completed", "Cancelled", "On Hold"]);
+    const newPlans: ClientPlanItem[] = [];
+    let changed = 0;
+    const next = projects.map((p) => {
+      const rec = p.recurring;
+      if (!rec || rec.lastMonth >= month || stopped.has(p.status)) return p;
+      const client = clients.find((c) => c.id === p.clientId);
+      if (!client) return p;
+      const t = templateByKey(rec.template as TemplateKey);
+      if (!t || !t.steps.length) return p;
+      const start = `${month}-01`;
+      const owner = teamMembers.find((m) => m.id === p.managerId);
+      const work = buildTemplateWork(t, {
+        projectId: p.id,
+        projectName: p.name,
+        startDay: start,
+        assigneeId: owner?.id,
+        assigneeName: owner?.name,
+        idPrefix: `rec-${p.id}-${month}`,
+        titlePrefix: `${monthLabel(month)}: `,
+      });
+      const haveTask = new Set((p.tasks || []).map((x) => x.id));
+      const haveMs = new Set((p.milestones || []).map((x) => x.id));
+      if (rec.template === "Social" && !clientPlans.some((cp) => cp.clientId === p.clientId && cp.date.startsWith(month))) {
+        newPlans.push(...buildSocialPlans(p.clientId, start, `rec-${p.id}-${month}`));
+      }
+      changed++;
+      return {
+        ...p,
+        tasks: [...(p.tasks || []), ...work.tasks.filter((x) => !haveTask.has(x.id))],
+        milestones: [...(p.milestones || []), ...work.milestones.filter((x) => !haveMs.has(x.id))],
+        dueDate: addDays(start, t.days),
+        recurring: { ...rec, lastMonth: month },
+        updatedAt: new Date().toISOString(),
+      };
+    });
+    if (!changed) return;
+    setProjects(next, { type: "batch", payload: null, description: `Added ${monthLabel(month)} tasks for monthly projects` });
+    if (newPlans.length) setClientPlans((prev) => [...prev, ...newPlans.filter((np) => !prev.some((x) => x.id === np.id))]);
+    addToast({ title: `${monthLabel(month)} work added`, description: `New month's tasks added to ${changed} monthly project${changed > 1 ? "s" : ""}.` });
+    }, 1500);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   /** The onboarding advance is written on a client's first invoice only, so it is never counted twice. */
   const advanceAlreadyBilled = (clientId: string, editingInvoiceId?: string) =>
     invoices.some((i) => i.clientId === clientId && i.id !== editingInvoiceId && (Number(i.advanceAmount) || 0) > 0);
@@ -856,6 +933,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
     setPayments(updated);
     setInvoices((prev) => syncPaidStatuses(prev, updated));
     addToast({ title: "Payment added", description: `₹${data.amount.toLocaleString("en-IN")} added to the client account.` });
+    maybeOfferProject(clientId, `Payment of ₹${data.amount.toLocaleString("en-IN")} received.`);
   };
 
   const handleDeletePayment = (paymentId: string) => {
@@ -892,6 +970,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
       title: "Payment Recorded",
       description: `Payment of ${newPayment.amount.toLocaleString()} recorded for invoice ${invoice?.invoiceNumber || ""}.`,
     });
+    maybeOfferProject(invoice?.clientId, `Payment of ₹${newPayment.amount.toLocaleString("en-IN")} received.`);
   };
 
   /**
@@ -2118,6 +2197,9 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
             onStartInvoiceForService={(client, service) =>
               openModal("INVOICE_FORM", { invoice: null, client: { ...client, agreedServices: [service] } })
             }
+            onStartProjectForService={(client, service) =>
+              openModal("PROJECT_FORM", { project: null, prefillClientId: client.id, prefillServiceId: service.id })
+            }
             marketingAudits={marketingAudits.filter(
               (a) => a.clientId === selectedClient.id,
             )}
@@ -2940,6 +3022,18 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
           customFields={customFields}
         />
       )}
+      {startPrompt && !activeModal && clients.some((c) => c.id === startPrompt.clientId) && (
+        <StartProjectPrompt
+          client={clients.find((c) => c.id === startPrompt.clientId)!}
+          reason={startPrompt.reason}
+          onClose={() => setStartPrompt(null)}
+          onStart={(service) => {
+            const id = startPrompt.clientId;
+            setStartPrompt(null);
+            openModal("PROJECT_FORM", { project: null, prefillClientId: id, prefillServiceId: service?.id });
+          }}
+        />
+      )}
       {activeModal?.type === "PROJECT_FORM" && (
         <ProjectFormModal
           isOpen={true}
@@ -2951,6 +3045,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
           onSetDirty={() => {}}
           customFields={customFields}
           prefillClientId={activeModal.props?.prefillClientId}
+          prefillServiceId={activeModal.props?.prefillServiceId}
           currentUserId={currentUser?.id}
           onAddClientPlans={(items) => setClientPlans((prev) => [...prev, ...items])}
         />

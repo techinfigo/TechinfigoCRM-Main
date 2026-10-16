@@ -326,6 +326,8 @@ export interface Project {
     tasks: Task[];
     connectors: ProjectConnectors;
     customFieldValues?: { [key: string]: any };
+    /** Monthly service: the template's tasks are added again each new month (lastMonth = YYYY-MM done). */
+    recurring?: { template: string; lastMonth: string };
 }
 
 export type TaskPriority = 'Low' | 'Medium' | 'High' | 'Critical';

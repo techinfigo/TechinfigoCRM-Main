@@ -7,7 +7,9 @@ import { DynamicFormFields } from '@/components/forms/DynamicFormFields';
 import { ChevronDown, ListChecks } from 'lucide-react';
 import {
   PROJECT_TEMPLATES,
+  MONTHLY_TEMPLATES,
   TemplateKey,
+  monthKey,
   addDays,
   billingForService,
   buildSocialPlans,
@@ -27,6 +29,8 @@ interface ProjectFormModalProps {
   customFields: CustomField[];
   /** Opened from a client's page: that client is picked. */
   prefillClientId?: string;
+  /** Start with this agreed service of the client (e.g. just won). */
+  prefillServiceId?: string;
   /** Default project manager / task owner (the signed-in user). */
   currentUserId?: string;
   /** Social media template can drop post/reel placeholders into the client Calendar. */
@@ -89,6 +93,7 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
   onSetDirty,
   customFields,
   prefillClientId,
+  prefillServiceId,
   currentUserId,
   onAddClientPlans,
 }) => {
@@ -100,6 +105,7 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
   const [dueTouched, setDueTouched] = useState(false);
   const [showMore, setShowMore] = useState(false);
   const [addPlans, setAddPlans] = useState(true);
+  const [repeat, setRepeat] = useState(true);
   const initialFormStateRef = useRef<ProjectFormData | null>(null);
   const isNew = !project;
 
@@ -145,7 +151,9 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
         customFieldValues: project.customFieldValues || {},
       };
       setTemplate('Custom');
+      setRepeat(!!project.recurring);
     } else {
+      setRepeat(true);
       const clientId = (prefillClientId && clients.some((c) => c.id === prefillClientId) ? prefillClientId : clients[0]?.id) || '';
       const manager = (currentUserId && teamMembers.some((m) => m.id === currentUserId) ? currentUserId : teamMembers[0]?.id) || '';
       state = {
@@ -164,7 +172,8 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
           }, {} as { [key: string]: any }),
       };
       // From a client page: start with their first agreed service, if any.
-      const svc = clients.find((c) => c.id === clientId)?.agreedServices?.[0];
+      const list = clients.find((c) => c.id === clientId)?.agreedServices || [];
+      const svc = list.find((x) => x.id === prefillServiceId) || list[0];
       const key = templateForService(svc);
       if (prefillClientId && svc) {
         state = applyTemplate(key, state, svc);
@@ -236,6 +245,7 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
 
   const tpl = templateByKey(template);
   const willCreate = isNew && tpl.steps.length > 0;
+  const canRepeat = isNew && MONTHLY_TEMPLATES.includes(template) && formData.billingModel === 'Retainer';
   const preview = useMemo(
     () => (willCreate ? tpl.steps.map((s) => ({ title: s.title, day: addDays(formData.startDate || todayDay(), s.day) })) : []),
     [willCreate, tpl, formData.startDate],
@@ -276,6 +286,11 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
       updatedAt: new Date().toISOString(),
       ...(work ? { tasks: work.tasks, milestones: work.milestones } : {}),
     };
+    if (isNew) {
+      if (canRepeat && repeat) projectToSave.recurring = { template, lastMonth: monthKey(new Date(`${formData.startDate}T00:00`)) };
+    } else if (project?.recurring && !repeat) {
+      delete projectToSave.recurring;
+    }
     if (socialPlans.length && addPlans && onAddClientPlans) onAddClientPlans(socialPlans);
     onSave(projectToSave);
   };
@@ -395,6 +410,12 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
                 </li>
               ))}
             </ul>
+            {canRepeat && (
+              <label className="mt-3 flex items-start gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300">
+                <input type="checkbox" className="mt-0.5" checked={repeat} onChange={(e) => setRepeat(e.target.checked)} />
+                Repeat every month: next month's tasks{template === 'Social' ? ' and post ideas' : ''} are added on the 1st
+              </label>
+            )}
             {socialPlans.length > 0 && onAddClientPlans && (
               <label className="mt-3 flex items-start gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300">
                 <input type="checkbox" className="mt-0.5" checked={addPlans} onChange={(e) => setAddPlans(e.target.checked)} />
@@ -474,6 +495,12 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
               </select>
               <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Hold Ctrl (or Cmd on Mac) to select multiple members.</p>
             </div>
+            {project?.recurring && (
+              <label className="flex items-start gap-2 text-sm font-medium text-slate-700 dark:text-slate-300">
+                <input type="checkbox" className="mt-1" checked={repeat} onChange={(e) => setRepeat(e.target.checked)} />
+                Repeat every month (adds next month's tasks on the 1st). Untick when the client stops.
+              </label>
+            )}
             <Input label="Tags (comma-separated)" name="tags" value={formData.tags || ''} onChange={handleChange} />
             <DynamicFormFields module="Projects" customFields={customFields} values={formData.customFieldValues} onChange={() => {}} />
           </div>

@@ -176,13 +176,14 @@ const dueIso = (isoDay: string) => new Date(`${isoDay}T18:00:00+05:30`).toISOStr
 
 export function buildTemplateWork(
   t: ProjectTemplateDef,
-  ctx: { projectId: string; projectName: string; startDay: string; assigneeId?: string; assigneeName?: string },
+  ctx: { projectId: string; projectName: string; startDay: string; assigneeId?: string; assigneeName?: string; idPrefix?: string; titlePrefix?: string },
 ): { tasks: Task[]; milestones: Milestone[] } {
   const now = new Date().toISOString();
-  const stamp = Date.now().toString(36);
+  const stamp = ctx.idPrefix || Date.now().toString(36);
+  const pre = ctx.titlePrefix || '';
   const tasks: Task[] = t.steps.map((s, i) => ({
     id: `task-${stamp}-${i}`,
-    title: s.title,
+    title: pre + s.title,
     projectId: ctx.projectId,
     projectName: ctx.projectName,
     assignedMemberId: ctx.assigneeId,
@@ -196,7 +197,7 @@ export function buildTemplateWork(
   }));
   const milestones: Milestone[] = t.milestones.map((m, i) => ({
     id: `ms-${stamp}-${i}`,
-    title: m.title,
+    title: pre + m.title,
     dueDate: dueIso(addDays(ctx.startDay, m.day)),
     completed: false,
   }));
@@ -204,9 +205,9 @@ export function buildTemplateWork(
 }
 
 /** Social media month: posts Mon/Wed/Fri and a reel every Saturday for 4 weeks, as "Idea" in the client Calendar. */
-export function buildSocialPlans(clientId: string, startDay: string): ClientPlanItem[] {
+export function buildSocialPlans(clientId: string, startDay: string, idPrefix?: string): ClientPlanItem[] {
   const now = new Date().toISOString();
-  const stamp = Date.now().toString(36);
+  const stamp = idPrefix || Date.now().toString(36);
   const out: ClientPlanItem[] = [];
   let post = 0;
   let reel = 0;
@@ -219,3 +220,9 @@ export function buildSocialPlans(clientId: string, startDay: string): ClientPlan
   }
   return out;
 }
+
+/** Templates that are monthly work (repeat each month on a retainer). */
+export const MONTHLY_TEMPLATES: TemplateKey[] = ['SEO', 'Social', 'Ads'];
+
+export const monthKey = (d: Date = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+export const monthLabel = (key: string) => new Date(`${key}-01T00:00`).toLocaleDateString('en-IN', { month: 'short' });
