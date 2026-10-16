@@ -47,6 +47,8 @@ interface ClientsViewProps {
   marketingAudits: MarketingAuditRequest[];
   onViewAuditDetail: (audit: MarketingAuditRequest) => void;
   onAddClient: () => void;
+  /** Adds Techinfigo as an own-brand client (or marks the existing Techinfigo client). */
+  onSetupOwnBrand?: () => void;
   onEditClient: (client: Client) => void;
   onDeleteClient: (clientId: string) => void;
   hasPermission: (featureKey: FeatureKey, action: PermissionAction) => boolean;
@@ -59,7 +61,7 @@ const getHealthBadgeClasses = (status: 'Healthy' | 'At Risk') =>
     ? 'bg-status-negative/10 text-status-negative'
     : 'bg-status-info/10 text-status-info';
 
-export const ClientsView: React.FC<ClientsViewProps> = ({ clients, invoices, payments = [], projects, marketingAudits, onViewAuditDetail, onAddClient, onEditClient, onDeleteClient, hasPermission, onSelectClientForDetail, onOpenProjectsDrawer }) => {
+export const ClientsView: React.FC<ClientsViewProps> = ({ clients, invoices, payments = [], projects, marketingAudits, onViewAuditDetail, onAddClient, onSetupOwnBrand, onEditClient, onDeleteClient, hasPermission, onSelectClientForDetail, onOpenProjectsDrawer }) => {
   const canCreateClients = hasPermission('clients', 'canCreate');
   const canEditClients = hasPermission('clients', 'canEdit');
   const canDeleteClients = hasPermission('clients', 'canDelete');
@@ -302,6 +304,11 @@ export const ClientsView: React.FC<ClientsViewProps> = ({ clients, invoices, pay
                 </div>
             </div>
           <Button onClick={handleRefresh} variant="outline" size="sm" isLoading={isRefreshing} leftIcon={<RefreshCw className="w-4 h-4" />}>Refresh</Button>
+          {canCreateClients && onSetupOwnBrand && !clients.some(c => c.isInternal) && (
+            <Button onClick={onSetupOwnBrand} variant="outline" size="sm" title="Track Techinfigo's own posts, projects and tasks here. Never billed, not counted in revenue or client numbers.">
+              {clients.some(c => /techinfigo/i.test(`${c.companyName || ''} ${c.name}`)) ? 'Mark Techinfigo as own brand' : 'Add Techinfigo (own brand)'}
+            </Button>
+          )}
           {canCreateClients && (
             <Button onClick={onAddClient} variant="primary" size="sm" leftIcon={<PlusIcon />}>
               Add New Client
@@ -355,12 +362,14 @@ export const ClientsView: React.FC<ClientsViewProps> = ({ clients, invoices, pay
                     <td className="px-6 py-3 align-top text-sm">
                         <div className="font-semibold text-premium-accent dark:text-premium-accent-dark">{client.name}</div>
                         {client.companyName && <div className="text-slate-600 dark:text-slate-300">{client.companyName}</div>}
+                        {client.isInternal && <span className="inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-400/20 dark:text-amber-300">Own brand · not billed</span>}
                         {client.email && <div className="text-xs text-slate-500 dark:text-slate-400">{client.email}</div>}
                         {client.website && <a href={client.website.startsWith('http') ? client.website : `https://${client.website}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-xs text-sky-600 dark:text-sky-400 hover:underline">{client.website.replace(/^https?:\/\//,'').replace(/\/$/,'')}</a>}
                     </td>
                     <td className="px-6 py-3 align-top text-sm text-slate-600 dark:text-slate-300">{client.industry || 'N/A'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                         {(() => {
+                            if (client.isInternal) return <span className="text-slate-400">—</span>;
                             const pmStyle = paymentModeStyle(client.paymentMode);
                             return (
                                 <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${pmStyle.className}`}>
@@ -372,6 +381,7 @@ export const ClientsView: React.FC<ClientsViewProps> = ({ clients, invoices, pay
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                         {(() => {
+                            if (client.isInternal) return <span className="text-slate-400">—</span>;
                             const dtStyle = documentTypeStyle(getDocumentType(client));
                             const noInvoice = !isInvoiceRequired(client);
                             return (
@@ -394,14 +404,17 @@ export const ClientsView: React.FC<ClientsViewProps> = ({ clients, invoices, pay
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold">
                         {(() => {
+                            if (client.isInternal) return <span className="text-slate-400">—</span>;
                             const bal = balanceForClient(client.id);
                             return <span className={bal > 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}>{bal > 0 ? inrFmt(bal) : bal < 0 ? `${inrFmt(-bal)} advance` : 'Settled'}</span>;
                         })()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {client.isInternal ? <span className="text-slate-400">—</span> : (
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${getHealthBadgeClasses(clientHealth)}`}>
                             {clientHealth}
                         </span>
+                        )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                         {clientAudit && canViewAuditDetails ? (

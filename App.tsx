@@ -245,6 +245,8 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
   const [clientPlans, setClientPlans] = useState<ClientPlanItem[]>(() =>
     load(KEYS.clientPlans, []),
   );
+  /** Real (paying) clients: own brand (Techinfigo) is left out of money, counts and billing. */
+  const billableClients = useMemo(() => clients.filter((c) => !c.isInternal), [clients]);
   const [expenses, setExpenses] = useState<Expense[]>(() =>
     load(KEYS.expenses, []),
   );
@@ -1883,7 +1885,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
       case "DASHBOARD":
         return (
           <DashboardView
-            clients={clients}
+            clients={billableClients}
             invoices={invoices}
             payments={payments}
             opportunities={opportunities}
@@ -2052,6 +2054,30 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
             }
             onAddClient={() => openModal("CLIENT_FORM")}
             onEditClient={(c) => openModal("CLIENT_FORM", { client: c })}
+            onSetupOwnBrand={() => {
+              const existing = clients.find((c) => /techinfigo/i.test(`${c.companyName || ''} ${c.name}`));
+              if (existing) {
+                if (!existing.isInternal) handleSaveClient({ ...existing, isInternal: true });
+                return;
+              }
+              handleSaveClient({
+                id: "",
+                name: currentUser?.name || "Sachin Bauddh",
+                companyName: "Techinfigo",
+                email: "contact@techinfigo.com",
+                phone: "9557338487",
+                website: "https://www.techinfigo.com",
+                industry: "Digital Marketing (own brand)",
+                address: "Sanjay Place, Agra",
+                dateAdded: new Date().toISOString(),
+                invoiceRequired: false,
+                isInternal: true,
+                healthStatus: "Healthy",
+                roi: { current: 0, goal: 0 },
+                nextAction: { title: "Plan this month's content", dueDate: new Date().toISOString() },
+                recentActivity: [],
+              });
+            }}
             onDeleteClient={(id) => {
               setClients(
                 clients.filter((c) => c.id !== id),
@@ -2370,7 +2396,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
         return (
           <FinanceView
             invoices={invoices}
-            clients={clients}
+            clients={billableClients}
             onAddInvoice={() => openModal("INVOICE_FORM")}
             onEditInvoice={(i) => openModal("INVOICE_FORM", { invoice: i })}
             onDeleteInvoice={handleDeleteInvoice}
@@ -2948,7 +2974,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
           onClose={closeModal}
           onSave={handleSaveInvoice}
           invoice={activeModal.props?.invoice || null}
-          clients={(activeModal.props?.client ? [activeModal.props.client] : clients).map((c: Client) =>
+          clients={(activeModal.props?.client ? [activeModal.props.client] : billableClients).map((c: Client) =>
             advanceAlreadyBilled(c.id, activeModal.props?.invoice?.id) ? { ...c, advanceAmount: 0 } : c,
           )}
           prefillFromClient={

@@ -240,6 +240,18 @@ const ClientDetailView: React.FC<ClientDetailViewProps> = ({
       }
       actions={
         <div className="flex items-center gap-2">
+          {client.isInternal && (
+            <button
+              type="button"
+              title="Own brand: work is tracked here, but never billed and not counted in revenue or client numbers. Click to turn off."
+              onClick={() => {
+                if (onUpdateClient && window.confirm('Turn off "Own brand"? Techinfigo will then be treated like a normal paying client.')) onUpdateClient({ ...client, isInternal: false });
+              }}
+              className="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-400/20 dark:text-amber-300 whitespace-nowrap"
+            >
+              Own brand · not billed
+            </button>
+          )}
           <Button
               variant="outline"
               size="sm"
@@ -276,7 +288,7 @@ const ClientDetailView: React.FC<ClientDetailViewProps> = ({
         {/* The tab row scrolls sideways on its own (phones), so the page below never shifts. */}
         <div className="flex justify-between items-center px-4 py-2 bg-slate-50 dark:bg-slate-900 border-b border-border-base dark:border-border-muted sticky top-0 z-10 min-w-0 overflow-x-auto">
           <div className="flex border-b border-transparent -mb-[1px]">
-            {TABS.map((tab) => (
+            {(client.isInternal ? TABS.filter((t) => t !== 'Invoices' && t !== 'Payments' && t !== 'Opportunities') : TABS).map((tab) => (
               <button
                 key={tab}
                 className={`px-3 py-3 text-xs sm:text-sm font-medium whitespace-nowrap border-b-2 transition-colors
@@ -295,7 +307,7 @@ const ClientDetailView: React.FC<ClientDetailViewProps> = ({
         <div className="flex-1 overflow-y-auto p-4" style={{ maxHeight: 'calc(100vh - 180px)' }}>
           {activeTab === 'Overview' && (
             <div className="space-y-4">
-              {(client.agreedServices && client.agreedServices.length > 0) || finance.advancePaid > 0 ? (
+              {!client.isInternal && ((client.agreedServices && client.agreedServices.length > 0) || finance.advancePaid > 0) ? (
                 <Card title="Financial Summary">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                     <div>

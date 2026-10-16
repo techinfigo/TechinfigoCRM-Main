@@ -239,6 +239,9 @@ export interface Client {
     /** Access credentials vault for handover (plain text — sensitive). */
     accessCredentials?: AccessCredential[];
     convertedFromLeadId?: string;
+    /** Own brand (Techinfigo itself): projects, calendar and tasks work, but never billed
+     *  and left out of revenue, client counts and health. */
+    isInternal?: boolean;
     customFieldValues?: { [key: string]: any };
     profilePictureUrl?: string;
     healthStatus: 'Active' | 'Healthy' | 'At Risk';
