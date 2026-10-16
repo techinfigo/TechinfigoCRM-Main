@@ -2137,6 +2137,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
             clients={clients}
             invoices={invoices}
             payments={payments}
+            opportunities={opportunities}
             projects={projects}
             marketingAudits={marketingAudits}
             onViewAuditDetail={(a) =>
@@ -2208,6 +2209,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
             onStartInvoiceForService={(client, service) =>
               openModal("INVOICE_FORM", { invoice: null, client: { ...client, agreedServices: [service] } })
             }
+            onOpenProposalPanel={(p) => setActivePanel({ type: "PROPOSAL_DETAIL_PANEL", props: { proposal: p } })}
             onStartProjectForService={(client, service) =>
               openModal("PROJECT_FORM", { project: null, prefillClientId: client.id, prefillServiceId: service.id })
             }

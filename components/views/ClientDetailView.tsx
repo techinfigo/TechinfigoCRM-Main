@@ -68,6 +68,8 @@ interface ClientDetailViewProps {
   onDeletePlan: (id: string) => void;
   onStartInvoiceForService: (client: Client, service: AgreedService) => void;
   onStartProjectForService?: (client: Client, service: AgreedService) => void;
+  /** Opens an old (text) proposal in the side panel. */
+  onOpenProposalPanel?: (p: Proposal) => void;
   marketingAudits: MarketingAuditRequest[];
   proposals: Proposal[];
   audits: Audit[];
@@ -136,6 +138,7 @@ const ClientDetailView: React.FC<ClientDetailViewProps> = ({
   onSaveOpportunity,
   onDeleteOpportunity,
   onStartProjectForService,
+  onOpenProposalPanel,
   clientPlans,
   onSavePlan,
   onDeletePlan,
@@ -510,6 +513,8 @@ const ClientDetailView: React.FC<ClientDetailViewProps> = ({
               onStartInvoice={onStartInvoiceForService}
               onStartProject={onStartProjectForService}
               onNewProposal={() => openModal('PROPOSAL_FORM', { prefillClientId: client.id })}
+              proposals={proposals.filter((p) => p.clientId === client.id)}
+              onOpenProposal={(p) => (p.design ? openModal('PROPOSAL_FORM', { proposal: p }) : onOpenProposalPanel?.(p))}
             />
           )}
 

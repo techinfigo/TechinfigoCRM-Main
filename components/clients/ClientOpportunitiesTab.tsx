@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Plus, Sparkles, Trophy, X as XIcon, CalendarClock, Trash2, Pencil } from 'lucide-react';
-import type { AgreedService, Client, Opportunity, OpportunityStage, ServiceBillingType } from '../../types';
+import type { AgreedService, Client, Opportunity, OpportunityStage, Proposal, ServiceBillingType } from '../../types';
 import { inrFull } from '../../selectors/money';
 
 /**
@@ -44,7 +44,10 @@ export const ClientOpportunitiesTab: React.FC<{
   onStartProject?: (client: Client, service: AgreedService) => void;
   /** Opens the proposal builder for this client. */
   onNewProposal?: () => void;
-}> = ({ client, opportunities, onSave, onDelete, onUpdateClient, onStartInvoice, onStartProject, onNewProposal }) => {
+  /** This client's proposals, listed under the opportunities. */
+  proposals?: Proposal[];
+  onOpenProposal?: (p: Proposal) => void;
+}> = ({ client, opportunities, onSave, onDelete, onUpdateClient, onStartInvoice, onStartProject, onNewProposal, proposals = [], onOpenProposal }) => {
   const [draft, setDraft] = useState<Draft | null>(null);
   /** Just won: offer the next steps (bill + project) right here. */
   const [won, setWon] = useState<{ service: AgreedService; client: Client } | null>(null);
@@ -301,6 +304,49 @@ export const ClientOpportunitiesTab: React.FC<{
             </div>
           )}
         </>
+      )}
+
+      {proposals.length > 0 && (
+        <div className="space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-wider text-text-muted pt-2">Proposals</p>
+          <ul className="space-y-2">
+            {[...proposals]
+              .sort((a, b) => (b.lastUpdatedDate || '').localeCompare(a.lastUpdatedDate || ''))
+              .map((p) => {
+                const st = p.status === 'SentToClient' ? 'Sent' : p.status;
+                const style =
+                  p.status === 'Signed'
+                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
+                    : p.status === 'SentToClient'
+                      ? 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300'
+                      : p.status === 'Declined'
+                        ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300'
+                        : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300';
+                return (
+                  <li key={p.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-border-base dark:border-slate-700 bg-white dark:bg-slate-800/60 p-3">
+                    <button type="button" onClick={() => onOpenProposal?.(p)} className="min-w-0 flex-1 text-left">
+                      <p className="font-semibold text-sm text-text-heading dark:text-white truncate">{p.proposalNumber} · {p.design?.services.map((s) => s.title).join(', ') || p.title || 'Proposal'}</p>
+                      <p className="text-xs text-text-muted">
+                        {p.estimatedBudget || ''}
+                        {p.lastUpdatedDate ? ` · ${new Date(p.lastUpdatedDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}` : ''}
+                      </p>
+                    </button>
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${style}`}>{st}</span>
+                    {p.publicUrl && (
+                      <a href={p.publicUrl} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 rounded-lg border border-border-base dark:border-slate-600 text-xs font-semibold text-text-muted">
+                        Open link
+                      </a>
+                    )}
+                    {onOpenProposal && (
+                      <button type="button" onClick={() => onOpenProposal(p)} className="px-3 py-1.5 rounded-lg border border-border-base dark:border-slate-600 text-xs font-semibold text-text-muted">
+                        {p.design ? 'Edit / share' : 'View'}
+                      </button>
+                    )}
+                  </li>
+                );
+              })}
+          </ul>
+        </div>
       )}
     </div>
   );

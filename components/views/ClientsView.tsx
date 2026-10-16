@@ -2,7 +2,7 @@
 import { clientAccount } from '../../selectors/money';
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Client, FeatureKey, PermissionAction, MarketingAuditRequest, ProjectsDrawerConfig, Invoice, Payment, Project, paymentModes, clientDocumentTypes } from '../../types';
+import { Client, FeatureKey, PermissionAction, MarketingAuditRequest, ProjectsDrawerConfig, Invoice, Payment, Project, paymentModes, clientDocumentTypes, Opportunity } from '../../types';
 import { Button } from '../common/Button';
 import { Card } from '../common/Card';
 import { Input } from '../common/Input';
@@ -43,6 +43,8 @@ interface ClientsViewProps {
   clients: Client[];
   invoices: Invoice[];
   payments?: Payment[];
+  /** Upsell opportunities (shown as a badge on the client). */
+  opportunities?: Opportunity[];
   projects: Project[];
   marketingAudits: MarketingAuditRequest[];
   onViewAuditDetail: (audit: MarketingAuditRequest) => void;
@@ -61,7 +63,7 @@ const getHealthBadgeClasses = (status: 'Healthy' | 'At Risk') =>
     ? 'bg-status-negative/10 text-status-negative'
     : 'bg-status-info/10 text-status-info';
 
-export const ClientsView: React.FC<ClientsViewProps> = ({ clients, invoices, payments = [], projects, marketingAudits, onViewAuditDetail, onAddClient, onSetupOwnBrand, onEditClient, onDeleteClient, hasPermission, onSelectClientForDetail, onOpenProjectsDrawer }) => {
+export const ClientsView: React.FC<ClientsViewProps> = ({ clients, invoices, payments = [], opportunities = [], projects, marketingAudits, onViewAuditDetail, onAddClient, onSetupOwnBrand, onEditClient, onDeleteClient, hasPermission, onSelectClientForDetail, onOpenProjectsDrawer }) => {
   const canCreateClients = hasPermission('clients', 'canCreate');
   const canEditClients = hasPermission('clients', 'canEdit');
   const canDeleteClients = hasPermission('clients', 'canDelete');
@@ -362,6 +364,16 @@ export const ClientsView: React.FC<ClientsViewProps> = ({ clients, invoices, pay
                     <td className="px-6 py-3 align-top text-sm">
                         <div className="font-semibold text-premium-accent dark:text-premium-accent-dark">{client.name}</div>
                         {client.companyName && <div className="text-slate-600 dark:text-slate-300">{client.companyName}</div>}
+                        {(() => {
+                            const open = opportunities.filter(o => o.clientId === client.id && (o.stage === 'Interested' || o.stage === 'Quote sent'));
+                            if (!open.length || client.isInternal) return null;
+                            const first = open[0];
+                            return (
+                                <span title={open.map(o => `${o.service} (${o.stage})`).join(', ')} className="inline-block mt-0.5 mr-1 px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap bg-sky-100 text-sky-800 dark:bg-sky-400/20 dark:text-sky-300">
+                                    Upsell: {first.service}{open.length > 1 ? ` +${open.length - 1}` : first.amount ? ` ${inrFmt(first.amount)}` : ''}
+                                </span>
+                            );
+                        })()}
                         {client.isInternal && <span className="inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-400/20 dark:text-amber-300">Own brand · not billed</span>}
                         {client.email && <div className="text-xs text-slate-500 dark:text-slate-400">{client.email}</div>}
                         {client.website && <a href={client.website.startsWith('http') ? client.website : `https://${client.website}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-xs text-sky-600 dark:text-sky-400 hover:underline">{client.website.replace(/^https?:\/\//,'').replace(/\/$/,'')}</a>}
