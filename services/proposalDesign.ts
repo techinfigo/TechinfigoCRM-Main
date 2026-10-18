@@ -284,9 +284,9 @@ export function renderProposalHtml(
     <div class="flow">
       <div class="col">${flowSources.map((s) => `<div class="src">${ic(srcIcon(s.label))}${esc(s.label.replace('Instagram / FB ads', 'Instagram ads'))}</div>`).join('')}</div>
       <div class="arrow">${ic('arrow')}</div>
-      <div class="hub">${ic('chat')}<br>WhatsApp &amp; calls${roiOn ? `<br><span class="num" style="color:var(--amber)">${n.expected.enquiries} / month</span>` : ''}</div>
+      <div class="hub">${ic('chat')}<br>WhatsApp &amp; calls${roiOn ? `<br><span class="num" style="color:var(--amber)">≈ ${n.expected.enquiries} / month</span>` : ''}</div>
       <div class="arrow">${ic('arrow')}</div>
-      <div class="goal">${ic('goal')}<br>${roiOn ? `<span class="num">${n.expected.customers}</span> new ${esc(many(n.expected.customers))}` : `More ${esc(word)}`}</div>
+      <div class="goal">${ic('goal')}<br>${roiOn ? `≈ <span class="num">${n.expected.customers}</span> new ${esc(many(n.expected.customers))}<br><small class="estlbl">estimated</small>` : `More ${esc(word)}`}</div>
     </div>
     <div class="packs">
       ${d.services.map((s) => `<div class="pack${s.recommended ? ' best' : ''}">
@@ -323,6 +323,7 @@ export function renderProposalHtml(
   <section>
     <p class="kicker"><i>3</i> Your ROI</p>
     <h2>${headline}</h2>
+    <div class="est">${ic('chart')}<div><b>These numbers are an estimate, not a promise.</b><span>They are worked out from the numbers you shared and what usually happens for businesses like yours. Real results depend on your market, season, offer and how fast your team replies to enquiries. Months 1–2 are setup; full results usually from month 3.</span></div></div>
     <div class="be">
       <div class="big num">${n.breakEven}</div>
       <div>
@@ -331,7 +332,7 @@ export function renderProposalHtml(
         <div class="legend"><span><i style="background:var(--amber)"></i>Covers cost</span><span><i style="background:#5ee0b0"></i>Your extra profit</span></div>
       </div>
     </div>
-    <div class="wait">${ic('cal')}<div><b>Each month you wait ≈ ${inrShort(e.profit)} profit you could have made</b><span>3 months ≈ ${inrShort(e.profit * 3)} (expected case)</span></div></div>
+    <div class="wait">${ic('cal')}<div><b>Each month you wait ≈ ${inrShort(e.profit)} profit you could have made</b><span>3 months ≈ ${inrShort(e.profit * 3)} (estimate, expected case)</span></div></div>
     <div class="roi-grid">
       <div class="panel chart">
         <h4>Extra profit ${n.costIsMonthly ? 'per month' : 'in the first month'}</h4>
@@ -363,7 +364,7 @@ export function renderProposalHtml(
       <summary>How we calculated this</summary>
       <p>${n.sources.map((s) => `${esc(s.label)} ≈ ${s.enquiries}`).join(' + ')} = ${e.enquiries} enquiries${n.hasAds ? ` (ads: ${inr(d.roi.adBudget)} ÷ ₹150 per enquiry)` : ''}. ${joinTxt} join = ${e.customers} ${esc(many(e.customers))} × ${inr(n.profitPerCustomer)} profit = ${inr(e.profit)}. Low case: fewer enquiries${n.hasAds ? ' (₹250 each)' : ''} and 40% fewer joining. High case: more enquiries${n.hasAds ? ' (₹120 each)' : ''} and 20% more joining.</p>
     </details>
-    <p class="fine">Estimate from your numbers, not a guarantee. Months 1–2 are setup; full results from month 3.</p>
+    <p class="fine">All ROI figures on this page are estimates, not a guarantee of results.</p>
   </section>`;
   }
 
@@ -612,6 +613,11 @@ svg.ic.sm{width:14px;height:14px}
 details{margin-top:12px;font-size:13px;color:var(--muted)}
 summary{cursor:pointer;font-weight:700;color:var(--ink)}
 .fine{font-size:11.5px;color:var(--muted);margin:10px 0 0}
+.est{display:flex;gap:12px;align-items:flex-start;margin:4px 0 16px;background:#eef4f5;border:1px solid #d5e2e4;border-radius:16px;padding:12px 16px;color:var(--ink,#0b2226)}
+.est svg{flex:none;width:22px;height:22px;margin-top:2px;color:#3a7078}
+.est b{display:block;font-size:14px}
+.est span{display:block;font-size:12.5px;color:var(--muted);margin-top:2px;line-height:1.45}
+.estlbl{font-size:11px;font-weight:600;opacity:.7;text-transform:uppercase;letter-spacing:.06em}
 .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;position:relative}
 .steps.n3{grid-template-columns:repeat(3,1fr)} .steps.n2{grid-template-columns:repeat(2,1fr)} .steps.n1{grid-template-columns:1fr}
 .steps:before{content:"";position:absolute;top:27px;left:12%;right:12%;height:3px;background:repeating-linear-gradient(90deg,var(--amber) 0 10px,transparent 10px 18px)}
