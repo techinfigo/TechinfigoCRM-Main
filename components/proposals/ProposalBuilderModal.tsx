@@ -463,6 +463,17 @@ export const ProposalBuilderModal: React.FC<Props> = ({ isOpen, onClose, proposa
           Closing line
           <input className={input} value={d.ctaLine} onChange={(e) => set({ ctaLine: e.target.value })} placeholder="e.g. Start before admission season?" />
         </label>
+        <label className={label}>
+          Your personal note at the top (optional)
+          <textarea
+            rows={2}
+            maxLength={300}
+            className={`${input} h-auto py-2`}
+            value={d.note || ''}
+            onChange={(e) => set({ note: e.target.value })}
+            placeholder="Leave empty for: “Anil ji, I looked at Gyan Path Coaching online. Below are the gaps costing you students today…”"
+          />
+        </label>
         <button type="button" onClick={() => setShowContact((v) => !v)} className="text-xs font-semibold text-text-muted underline">
           {showContact ? 'Hide' : 'Edit'} your name, phone, address, UPI
         </button>

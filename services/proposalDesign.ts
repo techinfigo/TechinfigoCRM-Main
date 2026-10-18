@@ -51,7 +51,29 @@ export interface ProposalDesign {
   };
   ctaLine: string;
   contact: { name: string; phone: string; address: string; upiId?: string };
+  /** Short personal note from the founder at the top; a default is used when empty. */
+  note?: string;
 }
+
+/** Real proof the website adds when it serves the link (never invented). */
+export interface ProposalProof {
+  rating?: number;
+  count?: number;
+  review?: { text: string; author: string };
+  reviewsUrl?: string;
+  videoUrl?: string;
+}
+
+/** What each problem turns into once fixed (the "After" side). */
+const AFTER: Partial<Record<ProposalIcon, string>> = {
+  pin: 'Verified on Google Maps, 20+ photos',
+  globe: 'Website with WhatsApp + call buttons',
+  star: 'Review link + QR: more 5★ reviews',
+  insta: '12 posts + 4 reels every month',
+  mega: 'Ads bringing enquiries every day',
+  zap: 'Fast site, opens in 2 seconds',
+  list: 'Every enquiry tracked in your free CRM',
+};
 
 /* ------------------------------------------------------------------ */
 /* Catalogues the builder picks from                                    */
@@ -190,7 +212,10 @@ const svcIcon = (k: ProposalServiceKey): ProposalIcon => PROPOSAL_SERVICES.find(
 /* The page                                                            */
 /* ------------------------------------------------------------------ */
 
-export function renderProposalHtml(d: ProposalDesign, opts: { logoSrc?: string; sample?: boolean; pdfButton?: boolean } = {}): string {
+export function renderProposalHtml(
+  d: ProposalDesign,
+  opts: { logoSrc?: string; sample?: boolean; pdfButton?: boolean; founderPhoto?: string; proof?: ProposalProof; today?: string } = {},
+): string {
   const n = proposalNumbers(d);
   const word = (d.customerWord || 'customers').toLowerCase();
   const Word = cap(word);
@@ -199,6 +224,23 @@ export function renderProposalHtml(d: ProposalDesign, opts: { logoSrc?: string; 
   const has = (k: ProposalServiceKey) => d.services.some((s) => s.key === k);
   const roiOn = d.roi.enabled && n.profitPerCustomer > 0 && n.cost > 0 && n.sources.length > 0;
   const per = n.costIsMonthly ? '/ month' : 'one-time';
+
+  /* 0. Personal note */
+  const first = (d.person || '').replace(/^(mr|mrs|ms|dr)\.?\s+/i, '').split(' ')[0];
+  const noteText = (d.note || '').trim() ||
+    `${first ? `${first} ji, ` : ''}I looked at ${d.business} online. Below are the gaps costing you ${word} today, and the plan to fix them. My team does all the work; you only approve.`;
+  const founderName = d.contact.name || 'Sachin Bauddh';
+  const initials = founderName.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
+  const sectionNote = `
+  <section class="note">
+    ${opts.founderPhoto ? `<img class="face" src="${esc(opts.founderPhoto)}" alt="${esc(founderName)}" onerror="this.outerHTML='<div class=&quot;face init&quot;>${esc(initials)}</div>'">` : `<div class="face init">${esc(initials)}</div>`}
+    <div>
+      <p class="say">“${esc(noteText)}”</p>
+      <p class="sig"><b>${esc(founderName)}</b> · Founder, Techinfigo</p>
+    </div>
+  </section>`;
+  const todayIso = opts.today || new Date().toISOString().slice(0, 10);
+  const daysLeft = Math.round((new Date(`${d.validUntil}T00:00:00Z`).getTime() - new Date(`${todayIso}T00:00:00Z`).getTime()) / 86400000);
 
   /* 1. Where you are now */
   const score = typeof d.score === 'number' && !Number.isNaN(d.score) ? Math.max(0, Math.min(100, Math.round(d.score))) : null;
@@ -217,7 +259,7 @@ export function renderProposalHtml(d: ProposalDesign, opts: { logoSrc?: string; 
         <div class="lbl" style="color:${scoreColor}">${scoreLabel}</div>
       </div>`}
       <div class="probs">
-        ${problems.map((p) => `<div class="prob ${p.level === 'yellow' ? 'yl' : ''}"><div class="ico">${ic(p.icon)}</div><div><b>${esc(p.title)}</b><span>${esc(p.cost)}</span></div></div>`).join('')}
+        ${problems.map((p) => `<div class="pair"><div class="prob ${p.level === 'yellow' ? 'yl' : ''}"><div class="ico">${ic(p.icon)}</div><div><small>Today</small><b>${esc(p.title)}</b><span>${esc(p.cost)}</span></div></div>${AFTER[p.icon] ? `<div class="after"><small>After</small>${ic('check')}<b>${esc(AFTER[p.icon] as string)}</b></div>` : ''}</div>`).join('')}
       </div>
     </div>
   </section>` : '';
@@ -279,6 +321,7 @@ export function renderProposalHtml(d: ProposalDesign, opts: { logoSrc?: string; 
         <div class="legend"><span><i style="background:var(--amber)"></i>Covers cost</span><span><i style="background:#5ee0b0"></i>Your extra profit</span></div>
       </div>
     </div>
+    <div class="wait">${ic('cal')}<div><b>Each month you wait ≈ ${inrShort(e.profit)} profit you could have made</b><span>3 months ≈ ${inrShort(e.profit * 3)} (expected case)</span></div></div>
     <div class="roi-grid">
       <div class="panel chart">
         <h4>Extra profit ${n.costIsMonthly ? 'per month' : 'in the first month'}</h4>
@@ -351,7 +394,50 @@ export function renderProposalHtml(d: ProposalDesign, opts: { logoSrc?: string; 
     <div class="tchips">${chips.map((c) => `<span class="tchip">${c}</span>`).join('')}</div>
   </section>`;
 
-  /* 6. Why + CTA */
+  /* 6. Your protection (from the refund policy — keep in sync with /refund-policy) */
+  const protect: string[] = [
+    'Full refund within 48 hours if work hasn’t started',
+    ...(has('website') ? ['30 days of free fixes after launch'] : []),
+    'You own your website, pages and ad accounts',
+    ...(n.monthly > 0 ? ['Monthly plan: 3 months, then cancel with 30 days’ notice'] : []),
+    'Real numbers report every month',
+  ];
+  const sectionProtect = `
+  <section>
+    <p class="kicker">${ic('key', 'ic sm')} Your protection</p>
+    <h2>No risk on your side</h2>
+    <div class="protect">${protect.map((t) => `<div>${ic('check')}<b>${esc(t)}</b></div>`).join('')}</div>
+  </section>`;
+
+  /* 7. Proof — only real data the website passes in */
+  const pr = opts.proof || {};
+  const stars = (r: number) => '★★★★★'.slice(0, Math.round(r)) + '☆☆☆☆☆'.slice(0, 5 - Math.round(r));
+  const sectionProof = pr.rating || pr.videoUrl ? `
+  <section class="proof">
+    ${pr.rating ? `<div class="rate"><span class="big num">${pr.rating.toFixed(1)}</span><div><span class="st">${stars(pr.rating)}</span><b>Google rating${pr.count ? ` · ${pr.count} reviews` : ''}</b></div></div>` : ''}
+    ${pr.review?.text ? `<blockquote>“${esc(pr.review.text.length > 220 ? pr.review.text.slice(0, 217) + '…' : pr.review.text)}”<cite>— ${esc(pr.review.author)}, on Google</cite></blockquote>` : ''}
+    <div class="plinks">
+      ${pr.reviewsUrl ? `<a href="${esc(pr.reviewsUrl)}" target="_blank" rel="noopener">${ic('star', 'ic sm')}Read all reviews</a>` : ''}
+      ${pr.videoUrl ? `<a href="${esc(pr.videoUrl)}" target="_blank" rel="noopener">▶ Watch a client story</a>` : ''}
+    </div>
+  </section>` : '';
+
+  /* 8. How to start */
+  const sectionSteps = `
+  <section>
+    <p class="kicker">${ic('zap', 'ic sm')} How to start</p>
+    <h2>3 simple steps</h2>
+    <div class="go">
+      <div><i>1</i><b>Reply YES on WhatsApp</b></div>
+      <div><i>2</i><b>We call you the same day</b></div>
+      <div><i>3</i><b>${has('website') ? 'Your website is live in 7 days' : 'Work starts in 24 hours'}</b></div>
+    </div>
+    <details><summary>Do I need to do anything?</summary><p>Only share your logo, photos and details once, and approve our designs. We do the rest.</p></details>
+    <details><summary>Who owns the website and accounts?</summary><p>You do. The website, Google profile, pages and ad accounts are in your name.</p></details>
+    <details><summary>What if it doesn’t work?</summary><p>You see real numbers every month. If something isn’t working we change it, and the monthly plan can be stopped after 3 months with 30 days’ notice.</p></details>
+  </section>`;
+
+  /* 9. Why + CTA */
   const phone = (d.contact.phone || '').replace(/\D/g, '');
   const wa = phone.length === 10 ? `91${phone}` : phone;
   const waLink = wa ? `https://wa.me/${wa}?text=${encodeURIComponent(`YES, we want to start. (Proposal ${d.number})`)}` : '';
@@ -365,6 +451,7 @@ export function renderProposalHtml(d: ProposalDesign, opts: { logoSrc?: string; 
       <div class="why"><div class="ico">${ic('chart')}</div><b>Real numbers monthly</b></div>
     </div>
     <h2>${esc(d.ctaLine || 'Ready to start?')}</h2>
+    ${daysLeft >= 0 && daysLeft <= 60 ? `<p class="left">${daysLeft === 0 ? 'This offer ends today' : `This offer is valid for ${daysLeft} more day${daysLeft === 1 ? '' : 's'}`}</p>` : ''}
     <div class="btns">
       ${waLink ? `<a class="btn y" href="${esc(waLink)}" target="_blank" rel="noopener">${ic('chat')}Reply YES on WhatsApp</a>` : ''}
       ${upiLink ? `<a class="btn o" href="${esc(upiLink)}">Pay advance by UPI</a>` : ''}
@@ -392,19 +479,24 @@ ${opts.pdfButton ? '<button class="pdf" onclick="window.print()">⬇ Save as PDF
         <div class="chips">
           <span class="chip">${ic('cal', 'ic sm')}<b>${niceDate(d.date)}</b></span>
           <span class="chip">No. <b>${esc(d.number)}</b></span>
-          <span class="chip">Valid till <b>${shortDate(d.validUntil)}</b></span>
+          <span class="chip">Valid till <b>${shortDate(d.validUntil)}</b>${daysLeft >= 0 && daysLeft <= 60 ? ` · ${daysLeft} day${daysLeft === 1 ? '' : 's'} left` : ''}</span>
         </div>
       </div>
       <div class="hero" aria-hidden="true">${HERO}</div>
     </div>
   </header>
+  ${sectionNote}
   ${sectionNow}
   ${sectionPlan}
   ${sectionRoi}
   ${sectionTimeline}
   ${sectionPrice}
+  ${sectionProtect}
+  ${sectionProof}
+  ${sectionSteps}
   ${sectionCta}
 </div>
+${waLink ? `<div class="sticky"><div><b class="num">${inr(n.startToday)}</b><span>to start + GST</span></div>${opts.pdfButton ? '<button class="spdf" onclick="window.print()" aria-label="Save as PDF">PDF</button>' : ''}<a href="${esc(waLink)}" target="_blank" rel="noopener">${ic('chat', 'ic sm')}Reply YES</a></div>` : ''}
 </body></html>`;
 }
 
@@ -539,6 +631,52 @@ summary{cursor:pointer;font-weight:700;color:var(--ink)}
 .foot{font-size:12px;color:#8fa6a9;margin-top:18px}
 .sample{position:fixed;top:10px;right:10px;background:#e04848;color:#fff;font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;z-index:9}
 .pdf{position:fixed;right:14px;bottom:14px;z-index:9;border:0;border-radius:999px;background:var(--amber);color:var(--ink);font:700 13px Poppins,system-ui,sans-serif;padding:10px 16px;box-shadow:0 6px 18px rgba(0,0,0,.18);cursor:pointer}
+/* v3 */
+.note{display:flex;gap:16px;align-items:center;border-left:5px solid var(--amber)}
+.note .face{width:72px;height:72px;border-radius:50%;object-fit:cover;flex:none;border:3px solid var(--amber)}
+.note .face.init{display:grid;place-items:center;background:var(--ink);color:var(--amber);font-weight:800;font-size:24px}
+.note .say{margin:0;font-size:16px;font-weight:600;color:var(--ink);line-height:1.5}
+.note .sig{margin:8px 0 0;font-size:13px;color:var(--muted)}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:stretch}
+.prob small,.after small{display:block;font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;opacity:.7}
+.after{display:flex;flex-direction:column;justify-content:center;gap:2px;background:var(--green-soft);border-radius:16px;padding:12px 14px;color:var(--green);position:relative}
+.after small{color:var(--green)}
+.after svg{position:absolute;right:12px;top:12px;width:18px;height:18px}
+.after b{color:var(--ink);font-size:14px;padding-right:22px}
+.wait{display:flex;gap:12px;align-items:center;margin-top:12px;background:var(--red-soft);border-radius:16px;padding:12px 16px;color:var(--red)}
+.wait b{display:block;color:var(--ink)}
+.wait span{font-size:13px;font-weight:600}
+.protect{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}
+.protect div{display:flex;gap:10px;align-items:center;background:var(--green-soft);border-radius:14px;padding:12px 14px}
+.protect svg{color:var(--green);width:20px;height:20px}
+.protect b{font-size:14px;color:var(--ink)}
+.proof .rate{display:flex;gap:14px;align-items:center}
+.proof .big{font-size:48px;font-weight:800;color:var(--ink);line-height:1}
+.proof .st{color:var(--amber);font-size:22px;letter-spacing:2px;display:block}
+.proof blockquote{margin:16px 0 0;padding:14px 16px;background:#f2f6f6;border-radius:14px;font-size:15px;color:var(--ink)}
+.proof cite{display:block;margin-top:8px;font-style:normal;font-size:12px;color:var(--muted)}
+.plinks{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.plinks a{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:8px 14px;font-size:13px;font-weight:700;color:var(--ink);text-decoration:none}
+.go{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+.go div{background:#f2f6f6;border-radius:16px;padding:14px;text-align:center}
+.go i{font-style:normal;display:grid;place-items:center;width:34px;height:34px;margin:0 auto 8px;border-radius:50%;background:var(--amber);color:var(--ink);font-weight:800}
+.go b{font-size:14px;color:var(--ink)}
+.cta .left{color:var(--amber);font-weight:700;margin:0}
+.sticky{display:none}
+@media (max-width:600px){
+  .pair{grid-template-columns:1fr}
+  .go{grid-template-columns:1fr}
+  .note{flex-direction:column;text-align:center}
+  .sticky{display:flex;position:fixed;left:10px;right:10px;bottom:10px;z-index:20;align-items:center;justify-content:space-between;gap:10px;background:var(--ink);color:#fff;border-radius:16px;padding:10px 10px 10px 16px;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+  .sticky b{display:block;color:var(--amber);font-size:17px}
+  .sticky span{font-size:11px;color:#a9bfc2}
+  .sticky a{display:inline-flex;align-items:center;gap:6px;background:var(--amber);color:var(--ink);font-weight:800;text-decoration:none;border-radius:12px;padding:12px 16px}
+  .pdf{display:none}
+  .sticky>div{margin-right:auto}
+  .spdf{border:1px solid rgba(255,255,255,.3);background:transparent;color:#fff;font:700 12px Poppins,system-ui,sans-serif;border-radius:10px;padding:11px 10px}
+  .page{padding-bottom:90px}
+}
+@media print{.sticky{display:none}}
 @media (max-width:600px){
   section{padding:22px 16px}
   .cover-grid{grid-template-columns:1fr}
