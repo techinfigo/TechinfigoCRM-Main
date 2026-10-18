@@ -74,6 +74,16 @@ const AFTER: Partial<Record<ProposalIcon, string>> = {
   zap: 'Fast site, opens in 2 seconds',
   list: 'Every enquiry tracked in your free CRM',
 };
+/** Which services fix each problem — "After" shows only when one of them is in the proposal. */
+const FIXED_BY: Partial<Record<ProposalIcon, ProposalServiceKey[]>> = {
+  pin: ['gbp', 'growth'],
+  globe: ['website'],
+  star: ['gbp', 'growth'],
+  insta: ['social', 'growth'],
+  mega: ['ads', 'growth'],
+  zap: ['website'],
+  list: ['website', 'gbp', 'growth', 'seo', 'social', 'ads'],
+};
 
 /* ------------------------------------------------------------------ */
 /* Catalogues the builder picks from                                    */
@@ -259,7 +269,7 @@ export function renderProposalHtml(
         <div class="lbl" style="color:${scoreColor}">${scoreLabel}</div>
       </div>`}
       <div class="probs">
-        ${problems.map((p) => `<div class="pair"><div class="prob ${p.level === 'yellow' ? 'yl' : ''}"><div class="ico">${ic(p.icon)}</div><div><small>Today</small><b>${esc(p.title)}</b><span>${esc(p.cost)}</span></div></div>${AFTER[p.icon] ? `<div class="after"><small>After</small>${ic('check')}<b>${esc(AFTER[p.icon] as string)}</b></div>` : ''}</div>`).join('')}
+        ${problems.map((p) => `<div class="pair"><div class="prob ${p.level === 'yellow' ? 'yl' : ''}"><div class="ico">${ic(p.icon)}</div><div><small>Today</small><b>${esc(p.title)}</b><span>${esc(p.cost)}</span></div></div>${AFTER[p.icon] && (FIXED_BY[p.icon] || []).some((k) => has(k)) ? `<div class="after"><small>After</small>${ic('check')}<b>${esc(AFTER[p.icon] as string)}</b></div>` : ''}</div>`).join('')}
       </div>
     </div>
   </section>` : '';
