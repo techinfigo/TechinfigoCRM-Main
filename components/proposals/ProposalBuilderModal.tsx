@@ -112,6 +112,33 @@ export const ProposalBuilderModal: React.FC<Props> = ({ isOpen, onClose, proposa
     const l = leads.find((x) => x.id === id);
     const who = c || l;
     if (!who) return;
+    // A lead from the website check-up: their answers fill the whole proposal.
+    const ck = l?.checkup;
+    if (ck && !c) {
+      const keys = ck.services.filter((k): k is ProposalServiceKey => PROPOSAL_SERVICES.some((s) => s.key === k));
+      const services = keys
+        .map((k) => PROPOSAL_SERVICES.find((s) => s.key === k)!)
+        .map((s) => ({ key: s.key, title: s.title, price: s.price, billing: s.billing, ticks: [...s.ticks], recommended: s.recommended }));
+      const problems = ck.problems.map((t) => PROPOSAL_PROBLEMS.find((p) => p.title === t)).filter((p): p is (typeof PROPOSAL_PROBLEMS)[number] => !!p);
+      const hasAds = keys.includes('ads') || keys.includes('growth');
+      setD((prev) => ({
+        ...prev,
+        business: who.companyName || who.name,
+        person: who.name,
+        customerWord: ck.customerWord || prev.customerWord,
+        problems: problems.length ? problems.slice(0, 4) : prev.problems,
+        services: services.length ? services : prev.services,
+        roi: {
+          ...prev.roi,
+          enabled: true,
+          avgValue: ck.value || prev.roi.avgValue,
+          valueNote: ck.biz === 'coaching' ? '/year' : '',
+          adBudget: hasAds ? prev.roi.adBudget || 10000 : 0,
+        },
+      }));
+      if (ck.score) setScoreText(String(ck.score));
+      return;
+    }
     setD((prev) => {
       const fromClient = c?.agreedServices?.length ? servicesFromNames(c.agreedServices) : [];
       return {

@@ -3,7 +3,7 @@ import { collection, doc, limit, onSnapshot, query, serverTimestamp, updateDoc, 
 import { Globe, Mail, Inbox, MessageCircle, Phone, ShieldAlert, ChevronDown, Check, X, RotateCcw } from 'lucide-react';
 import { db, isFirebaseConfigured } from '../../firebase';
 import { Button } from '../common/Button';
-import type { Lead } from '../../types';
+import type { Lead, LeadCheckup } from '../../types';
 import { PhoneAlertsBar } from './PhoneAlertsBar';
 
 /**
@@ -17,7 +17,7 @@ import { PhoneAlertsBar } from './PhoneAlertsBar';
 
 type EnquiryStatus = 'new' | 'spam' | 'imported' | 'dismissed';
 
-type Enquiry = {
+export type Enquiry = {
   id: string;
   name: string;
   phone: string | null;
@@ -26,6 +26,8 @@ type Enquiry = {
   website: string | null;
   message: string | null;
   needs: string[];
+  /** Free Business Check-up answers (website /checkup form). */
+  checkup: LeadCheckup | null;
   sourceForm: string | null;
   /** Connection name for leads from a webhook connection (e.g. "IndiaMART"). */
   sourceName: string | null;
@@ -47,6 +49,27 @@ const SPAM_REASON_LABELS: Record<string, string> = {
   'marked-by-you': 'You marked it as spam',
 };
 
+function toCheckup(raw: unknown): LeadCheckup | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as Record<string, unknown>;
+  const strs = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []);
+  const est = r.estimate && typeof r.estimate === 'object' ? (r.estimate as Record<string, unknown>) : null;
+  return {
+    biz: typeof r.biz === 'string' ? r.biz : 'other',
+    customerWord: typeof r.customerWord === 'string' ? r.customerWord : 'customers',
+    value: Number(r.value) || 0,
+    score: Number(r.score) || 0,
+    problems: strs(r.problems),
+    services: strs(r.services),
+    ...(est ? { estimate: { enquiries: Number(est.enquiries) || 0, low: Number(est.low) || 0, high: Number(est.high) || 0 } } : {}),
+  };
+}
+
+const CHECKUP_BIZ: Record<string, string> = { coaching: 'Coaching', clinic: 'Clinic', gym: 'Gym', restaurant: 'Restaurant', salon: 'Salon', shop: 'Shop', d2c: 'D2C brand', other: 'Other' };
+
+/** Enquiries from the website's Free Business Check-up go into Leads by themselves. */
+export const isAutoAddEnquiry = (e: Enquiry) => e.status === 'new' && e.sourceForm === 'growth-checkup';
+
 function toEnquiry(id: string, d: Record<string, unknown>): Enquiry {
   const s = (v: unknown) => (typeof v === 'string' && v ? v : null);
   const ts = d.createdAt as Timestamp | undefined;
@@ -59,6 +82,7 @@ function toEnquiry(id: string, d: Record<string, unknown>): Enquiry {
     website: s(d.website),
     message: s(d.message),
     needs: Array.isArray(d.needs) ? (d.needs as unknown[]).filter((n): n is string => typeof n === 'string') : [],
+    checkup: toCheckup(d.checkup),
     sourceForm: s(d.sourceForm),
     sourceName: s(d.sourceName),
     landingPage: s(d.landingPage),
@@ -156,7 +180,7 @@ function timeAgo(date: Date | null): string {
   return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 }
 
-function toLead(e: Enquiry): Lead {
+export function toLead(e: Enquiry): Lead {
   const notes = [
     e.needs.length ? `Needs: ${e.needs.join(', ')}` : '',
     messageText(e),
@@ -165,7 +189,8 @@ function toLead(e: Enquiry): Lead {
     .filter(Boolean)
     .join('\n\n');
   return {
-    id: `lead-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+    // Check-up leads get a fixed id, so two open devices never add the same one twice.
+    id: e.checkup ? `lead-enq-${e.id}` : `lead-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
     name: e.name,
     email: e.email ?? '',
     phone: e.phone ?? undefined,
@@ -175,7 +200,8 @@ function toLead(e: Enquiry): Lead {
     status: 'New Lead',
     dateAdded: (e.createdAt ?? new Date()).toISOString(),
     notes,
-    leadType: e.needs.some((n) => /d2c|store/i.test(n)) ? 'D2C' : 'General',
+    leadType: e.checkup ? (e.checkup.biz === 'd2c' ? 'D2C' : 'General') : e.needs.some((n) => /d2c|store/i.test(n)) ? 'D2C' : 'General',
+    ...(e.checkup ? { checkup: e.checkup, serviceInterest: e.needs, tags: [CHECKUP_BIZ[e.checkup.biz] || 'Other'] } : {}),
   } as Lead;
 }
 

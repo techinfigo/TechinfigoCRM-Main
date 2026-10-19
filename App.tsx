@@ -149,7 +149,7 @@ import { useDiagnostics } from "./hooks/useDiagnostics";
 import { UrlErrorBanner } from "./components/common/UrlErrorBanner";
 import { auth, isFirebaseConfigured } from "./firebase";
 import { subscribeToTasks, saveTaskToCloud, deleteTaskFromCloud } from "./taskSync";
-import { useWebsiteEnquiries } from "./components/leads/WebsiteEnquiriesPanel";
+import { useWebsiteEnquiries, isAutoAddEnquiry, toLead as enquiryToLead } from "./components/leads/WebsiteEnquiriesPanel";
 import { IntegrationsHub } from "./components/views/IntegrationsHub";
 
 interface AppProps {
@@ -172,7 +172,8 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
     if (v || params.get("source")) window.history.replaceState(null, "", window.location.pathname);
   }, []);
   // New enquiries (website + ads) waiting in Leads -> Enquiries; shown as the Leads sidebar number.
-  const newEnquiries = useWebsiteEnquiries().counts.new;
+  const enquiriesState = useWebsiteEnquiries();
+  const newEnquiries = enquiriesState.counts.new;
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">(
@@ -201,6 +202,33 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
     load(KEYS.leads, []),
     addToast,
   );
+  /**
+   * Free Business Check-up enquiries go straight into Leads (no tap needed),
+   * so none is missed. Waits a moment so saved leads have loaded first.
+   */
+  const autoAddedRef = useRef(new Set<string>());
+  const autoAddRef = useRef({ leads, setLeads, setStatus: enquiriesState.setStatus });
+  autoAddRef.current = { leads, setLeads, setStatus: enquiriesState.setStatus };
+  useEffect(() => {
+    if (!enquiriesState.enquiries.some((e) => isAutoAddEnquiry(e) && !autoAddedRef.current.has(e.id))) return;
+    const timer = window.setTimeout(() => {
+      const { leads, setLeads, setStatus } = autoAddRef.current;
+      const todo = enquiriesState.enquiries.filter((e) => isAutoAddEnquiry(e) && !autoAddedRef.current.has(e.id));
+      if (!todo.length) return;
+      todo.forEach((e) => autoAddedRef.current.add(e.id));
+      const fresh = todo.map((e) => ({ e, lead: enquiryToLead(e) })).filter(({ lead }) => !leads.some((l) => l.id === lead.id));
+      if (fresh.length) {
+        setLeads([...fresh.map((f) => f.lead), ...leads], {
+          type: "batch",
+          payload: {},
+          description: `Added ${fresh.length} lead${fresh.length > 1 ? "s" : ""} from the free check-up form`,
+        });
+      }
+      todo.forEach((e) => void setStatus(e, "imported", { importedLeadId: enquiryToLead(e).id, autoAdded: true }));
+    }, 1500);
+    return () => window.clearTimeout(timer);
+  }, [enquiriesState.enquiries]);
+
   const { state: clients, set: setClients } = useUndoRedo<Client>(
     KEYS.clients,
     load(KEYS.clients, []),

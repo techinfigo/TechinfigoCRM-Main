@@ -111,10 +111,25 @@ export interface Lead {
     internalOnboardingNotes?: string;
     assignedToUserId?: string;
     auditRecordId?: string;
+    /** Answers from the website's Free Business Check-up (techinfigo.com/checkup). Used to pre-fill the proposal. */
+    checkup?: LeadCheckup;
     manualCompletionMarkers?: Record<string, boolean>;
     emailHistory?: any[]; // Placeholder
     followUpHistory?: FollowUpLogItem[];
     customFieldValues?: { [key: string]: any };
+}
+
+export interface LeadCheckup {
+    biz: string;
+    customerWord: string;
+    /** Value of one customer in ₹ (coaching: yearly fee). */
+    value: number;
+    score: number;
+    /** Problem titles, matching the proposal builder's list. */
+    problems: string[];
+    /** Proposal service keys: website, gbp, growth, seo, social, ads. */
+    services: string[];
+    estimate?: { enquiries: number; low: number; high: number };
 }
 
 export interface FollowUpLogItem {
