@@ -133,7 +133,7 @@ export const ProposalBuilderModal: React.FC<Props> = ({ isOpen, onClose, proposa
           enabled: true,
           avgValue: ck.value || prev.roi.avgValue,
           valueNote: ck.biz === 'coaching' ? '/year' : '',
-          adBudget: hasAds ? prev.roi.adBudget || 10000 : 0,
+          adBudget: hasAds ? ck.adBudget || prev.roi.adBudget || 10000 : 0,
         },
       }));
       if (ck.score) setScoreText(String(ck.score));

@@ -62,6 +62,9 @@ function toCheckup(raw: unknown): LeadCheckup | null {
     problems: strs(r.problems),
     services: strs(r.services),
     ...(est ? { estimate: { enquiries: Number(est.enquiries) || 0, low: Number(est.low) || 0, high: Number(est.high) || 0 } } : {}),
+    adBudget: Number(r.adBudget) || 0,
+    goal: Number(r.goal) || 0,
+    hot: r.hot === true,
   };
 }
 
@@ -201,7 +204,7 @@ export function toLead(e: Enquiry): Lead {
     dateAdded: (e.createdAt ?? new Date()).toISOString(),
     notes,
     leadType: e.checkup ? (e.checkup.biz === 'd2c' ? 'D2C' : 'General') : e.needs.some((n) => /d2c|store/i.test(n)) ? 'D2C' : 'General',
-    ...(e.checkup ? { checkup: e.checkup, serviceInterest: e.needs, tags: [CHECKUP_BIZ[e.checkup.biz] || 'Other'] } : {}),
+    ...(e.checkup ? { checkup: e.checkup, serviceInterest: e.needs, tags: [CHECKUP_BIZ[e.checkup.biz] || 'Other', ...(e.checkup.hot ? ['🔥 Hot'] : [])] } : {}),
   } as Lead;
 }
 

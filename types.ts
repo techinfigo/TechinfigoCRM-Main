@@ -130,6 +130,12 @@ export interface LeadCheckup {
     /** Proposal service keys: website, gbp, growth, seo, social, ads. */
     services: string[];
     estimate?: { enquiries: number; low: number; high: number };
+    /** Monthly ad budget they picked (₹, middle of the range). */
+    adBudget?: number;
+    /** New customers a month they want. */
+    goal?: number;
+    /** Wants to start now. */
+    hot?: boolean;
 }
 
 export interface FollowUpLogItem {
