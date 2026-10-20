@@ -7,6 +7,7 @@ import { Button } from '../common/Button';
 import { Card } from '../common/Card';
 import { CalendarGrid } from '@/components/calendar/CalendarGrid';
 import { CalendarModal } from '@/components/calendar/CalendarModal';
+import { BulkPlanModal } from '../clients/BulkPlanModal';
 
 interface CalendarViewProps {
   projects: Project[];
@@ -20,13 +21,16 @@ interface CalendarViewProps {
   clients?: Client[];
   clientPlans?: ClientPlanItem[];
   onAddCustomEvent?: (title: string, date: Date, notes?: string) => void;
+  /** Bulk add to a client's planning calendar. */
+  onAddClientPlans?: (items: ClientPlanItem[]) => void;
   onDeleteCustomEvent?: (id: string) => void;
 }
 
 const ArrowLeftIcon = () => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5"><path fillRule="evenodd" d="M11.78 5.22a.75.75 0 010 1.06L8.06 10l3.72 3.72a.75.75 0 11-1.06 1.06l-4.25-4.25a.75.75 0 010-1.06l4.25-4.25a.75.75 0 011.06 0z" clipRule="evenodd" /></svg>;
 const ArrowRightIcon = () => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5"><path fillRule="evenodd" d="M8.22 5.22a.75.75 0 011.06 0l4.25 4.25a.75.75 0 010 1.06l-4.25 4.25a.75.75 0 01-1.06-1.06L11.94 10 8.22 6.28a.75.75 0 010-1.06z" clipRule="evenodd" /></svg>;
 
-export const CalendarView: React.FC<CalendarViewProps> = ({ projects, invoices, leads, marketingAudits, campaignAnomalies = [], leaveRequests, customEvents = [], clients = [], clientPlans = [], onAddCustomEvent, onDeleteCustomEvent }) => {
+export const CalendarView: React.FC<CalendarViewProps> = ({ projects, invoices, leads, marketingAudits, campaignAnomalies = [], leaveRequests, customEvents = [], clients = [], clientPlans = [], onAddCustomEvent, onDeleteCustomEvent, onAddClientPlans }) => {
+  const [bulkOpen, setBulkOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -121,6 +125,9 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ projects, invoices, 
                      <Button onClick={() => setCurrentDate(new Date())} variant="outline" size="sm" className="hidden sm:block">Today</Button>
                 </div>
                 <div className="flex items-center gap-1">
+                    {onAddClientPlans && clients.length > 0 && (
+                      <Button onClick={() => setBulkOpen(true)} variant="outline" size="sm" className="mr-1">Bulk add</Button>
+                    )}
                     <Button onClick={() => changeMonth(-1)} variant="ghost" size="sm" className="p-2" aria-label="Previous month"><ArrowLeftIcon /></Button>
                     <Button onClick={() => changeMonth(1)} variant="ghost" size="sm" className="p-2" aria-label="Next month"><ArrowRightIcon /></Button>
                 </div>
@@ -148,6 +155,16 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ projects, invoices, 
           date={selectedDate}
           events={allCalendarEvents.filter(event => new Date(event.date).toDateString() === selectedDate.toDateString())}
           onAddEvent={handleAddEvent}
+        />
+      )}
+      {bulkOpen && onAddClientPlans && (
+        <BulkPlanModal
+          isOpen
+          onClose={() => setBulkOpen(false)}
+          clients={clients}
+          month={currentDate}
+          existing={clientPlans}
+          onAdd={onAddClientPlans}
         />
       )}
     </div>

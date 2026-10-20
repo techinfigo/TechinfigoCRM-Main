@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, Plus, CalendarDays, Trash2, MessageCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, CalendarDays, Trash2, MessageCircle, ListPlus } from 'lucide-react';
+import { BulkPlanModal } from './BulkPlanModal';
 import type { Client, ClientPlanItem, PlanKind, PlanStatus } from '../../types';
 import { planKinds } from '../../types';
 import { Modal } from '../common/Modal';
@@ -42,6 +43,7 @@ export const ClientCalendarTab: React.FC<{
     return new Date(d.getFullYear(), d.getMonth(), 1);
   });
   const [draft, setDraft] = useState<Draft | null>(null);
+  const [bulkOpen, setBulkOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const todayKey = dayKey(new Date());
 
@@ -163,6 +165,13 @@ export const ClientCalendarTab: React.FC<{
             className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-secondary-accent text-secondary-accent-text text-sm font-semibold hover:opacity-90 whitespace-nowrap"
           >
             <Plus className="w-4 h-4" /> Add plan
+          </button>
+          <button
+            type="button"
+            onClick={() => setBulkOpen(true)}
+            className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-border-base dark:border-slate-600 text-sm font-semibold text-text-base dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 whitespace-nowrap"
+          >
+            <ListPlus className="w-4 h-4" /> Bulk add
           </button>
           {wa && monthItems.length > 0 && (
             <a
@@ -382,6 +391,16 @@ export const ClientCalendarTab: React.FC<{
             <button type="submit" className="hidden" />
           </form>
         </Modal>
+      )}
+      {bulkOpen && (
+        <BulkPlanModal
+          isOpen
+          onClose={() => setBulkOpen(false)}
+          client={client}
+          month={month}
+          existing={items}
+          onAdd={(list) => list.forEach(onSave)}
+        />
       )}
     </div>
   );

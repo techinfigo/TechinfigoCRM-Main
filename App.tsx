@@ -2577,6 +2577,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
             leaveRequests={leaveRequests}
             clients={clients}
             clientPlans={clientPlans}
+            onAddClientPlans={(items) => setClientPlans((prev) => [...prev, ...items])}
             customEvents={customCalendarEvents}
             onAddCustomEvent={(title, date, notes) =>
               setCustomCalendarEvents((prev) => [
