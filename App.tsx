@@ -152,6 +152,7 @@ import { subscribeToTasks, saveTaskToCloud, deleteTaskFromCloud } from "./taskSy
 import { useWebsiteEnquiries, isAutoAddEnquiry, toLead as enquiryToLead } from "./components/leads/WebsiteEnquiriesPanel";
 import { answersToCredentials, listCredRequests, removeCredRequest } from "./services/credRequests";
 import { bestProposalFor, mergeAgreedServices, proposalToAgreedServices } from "./services/proposalToServices";
+import { ackPortalActions, buildSnapshot, pullPortalActions, syncPortal } from "./services/portal";
 import { IntegrationsHub } from "./components/views/IntegrationsHub";
 
 interface AppProps {
@@ -503,6 +504,86 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
   useEffect(() => save(KEYS.opportunities, opportunities), [opportunities]);
   useEffect(() => save(KEYS.clientPlans, clientPlans), [clientPlans]);
   useEffect(() => save(KEYS.proposals, proposals), [proposals]);
+
+  /**
+   * Client portal: each client with access gets their own snapshot (calendar,
+   * invoices, services, proposal link) a few seconds after anything changes.
+   * Only changed snapshots are sent.
+   */
+  const portalSent = useRef<Record<string, string>>({});
+  const portalData = useRef({ clients, clientPlans, invoices, payments, proposals });
+  portalData.current = { clients, clientPlans, invoices, payments, proposals };
+  const portalSnapshotFor = (clientId: string) => {
+    const { clients, clientPlans, invoices, payments, proposals } = portalData.current;
+    const c = clients.find((x) => x.id === clientId);
+    if (!c?.portal?.enabled) return null;
+    const contact = (load(KEYS.proposalDefaults, {}) || {}) as { upiId?: string; name?: string; phone?: string };
+    return buildSnapshot(c, clientPlans, invoices, payments, proposals, contact);
+  };
+  const portalSyncNow = (clientId: string, force = true) => {
+    const snap = portalSnapshotFor(clientId);
+    if (!snap || !auth.currentUser) return;
+    const key = JSON.stringify(snap);
+    if (!force && portalSent.current[clientId] === key) return;
+    portalSent.current[clientId] = key;
+    syncPortal(clientId, snap).catch(() => {
+      delete portalSent.current[clientId]; // try again next time
+    });
+  };
+  useEffect(() => {
+    if (!isFirebaseConfigured) return;
+    const t = window.setTimeout(() => {
+      portalData.current.clients.filter((c) => c.portal?.enabled).forEach((c) => portalSyncNow(c.id, false));
+    }, 4000);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clients, clientPlans, invoices, payments, proposals]);
+
+  /** Approvals and change requests clients made in their portal → the calendar. */
+  useEffect(() => {
+    if (!isFirebaseConfigured) return;
+    let running = false;
+    const pull = async () => {
+      if (running || !auth.currentUser || !portalData.current.clients.some((c) => c.portal?.enabled)) return;
+      running = true;
+      try {
+        const actions = await pullPortalActions();
+        if (actions.length) {
+          const names = new Map(portalData.current.clients.map((c) => [c.id, c.companyName || c.name]));
+          setClientPlans((prev) =>
+            prev.map((p) => {
+              let next = p;
+              for (const a of actions.filter((x) => x.planId === p.id && x.clientId === p.clientId)) {
+                next =
+                  a.action === "approve"
+                    ? { ...next, status: next.status === "Done" ? "Done" : "Approved", changeRequested: undefined, clientComment: a.comment || undefined, updatedAt: new Date().toISOString() }
+                    : { ...next, changeRequested: true, clientComment: a.comment, updatedAt: new Date().toISOString() };
+              }
+              return next;
+            }),
+          );
+          await ackPortalActions(actions.map((a) => a.id));
+          const ok = actions.filter((a) => a.action === "approve").length;
+          const ch = actions.length - ok;
+          const who = [...new Set(actions.map((a) => names.get(a.clientId) || "A client"))].join(", ");
+          addToast({ title: ok && !ch ? "✅ Client approved" : "✏️ Client feedback", description: `${who}: ${ok ? `${ok} approved` : ""}${ok && ch ? ", " : ""}${ch ? `${ch} change request${ch > 1 ? "s" : ""}` : ""}. See the Calendar.` });
+        }
+      } catch {
+        // offline or signed out: try again later
+      } finally {
+        running = false;
+      }
+    };
+    const first = window.setTimeout(pull, 3500);
+    const every = window.setInterval(pull, 60_000);
+    window.addEventListener("focus", pull);
+    return () => {
+      window.clearTimeout(first);
+      window.clearInterval(every);
+      window.removeEventListener("focus", pull);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   useEffect(() => save(KEYS.expenses, expenses), [expenses]);
   useEffect(() => save(KEYS.emails, emails), [emails]);
   useEffect(() => save(KEYS.chatContacts, chatContacts), [chatContacts]);
@@ -2399,6 +2480,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
             onProcessRecurringInvoices={handleProcessRecurringInvoices}
             onRevertClientToLead={handleRevertClientToLead}
             onUpdateClient={handleSaveClient}
+            onSyncPortal={(id) => portalSyncNow(id)}
             tasks={allTasks}
           />
         );

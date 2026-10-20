@@ -5,6 +5,7 @@ import { Client, Project, Campaign, Invoice, AppSettings, FeatureKey, Permission
 import { ClientPaymentsTab } from '../clients/ClientPaymentsTab';
 import { ClientOpportunitiesTab } from '../clients/ClientOpportunitiesTab';
 import { ClientCalendarTab } from '../clients/ClientCalendarTab';
+import { ClientPortalTab } from '../clients/ClientPortalTab';
 import { Card } from '../common/Card';
 import { Button } from '../common/Button';
 import { Modal } from '../common/Modal';
@@ -107,11 +108,14 @@ interface ClientDetailViewProps {
   onProcessRecurringInvoices: () => void;
   onRevertClientToLead?: (leadId: string) => void;
   onUpdateClient?: (client: Client) => void;
+  /** Send this client's latest data to their portal now. */
+  onSyncPortal?: (clientId: string) => void;
 }
 
 const TABS = [
   'Overview',
   'Calendar',
+  'Portal',
   'Projects',
   'Campaigns',
   'Campaign Reports',
@@ -168,7 +172,8 @@ const ClientDetailView: React.FC<ClientDetailViewProps> = ({
   onDeleteInvoice,
   onProcessRecurringInvoices,
   onRevertClientToLead,
-  onUpdateClient
+  onUpdateClient,
+  onSyncPortal
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('Projects');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -293,7 +298,7 @@ const ClientDetailView: React.FC<ClientDetailViewProps> = ({
         {/* The tab row scrolls sideways on its own (phones), so the page below never shifts. */}
         <div className="flex justify-between items-center px-4 py-2 bg-slate-50 dark:bg-slate-900 border-b border-border-base dark:border-border-muted sticky top-0 z-10 min-w-0 overflow-x-auto">
           <div className="flex border-b border-transparent -mb-[1px]">
-            {(client.isInternal ? TABS.filter((t) => t !== 'Invoices' && t !== 'Payments' && t !== 'Opportunities') : TABS).map((tab) => (
+            {(client.isInternal ? TABS.filter((t) => t !== 'Invoices' && t !== 'Payments' && t !== 'Opportunities' && t !== 'Portal') : TABS).map((tab) => (
               <button
                 key={tab}
                 className={`px-3 py-3 text-xs sm:text-sm font-medium whitespace-nowrap border-b-2 transition-colors
@@ -501,6 +506,10 @@ const ClientDetailView: React.FC<ClientDetailViewProps> = ({
 
           {activeTab === 'Calendar' && (
             <ClientCalendarTab client={client} items={clientPlans} onSave={onSavePlan} onDelete={onDeletePlan} />
+          )}
+
+          {activeTab === 'Portal' && onUpdateClient && (
+            <ClientPortalTab client={client} plans={clientPlans} onUpdateClient={onUpdateClient} onSyncNow={() => onSyncPortal?.(client.id)} />
           )}
 
           {activeTab === 'Opportunities' && (

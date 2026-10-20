@@ -25,9 +25,12 @@ type Draft = {
   platforms: string[];
   status: PlanStatus;
   notes: string;
+  previewUrl: string;
+  clientComment?: string;
+  changeRequested?: boolean;
 };
 
-const blank = (date: string): Draft => ({ date, time: '', kind: 'Post', title: '', platforms: ['Instagram'], status: 'Idea', notes: '' });
+const blank = (date: string): Draft => ({ date, time: '', kind: 'Post', title: '', platforms: ['Instagram'], status: 'Idea', notes: '', previewUrl: '' });
 
 const niceDay = (key: string) =>
   new Date(`${key}T00:00`).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
@@ -94,7 +97,7 @@ export const ClientCalendarTab: React.FC<{
   };
   const openEdit = (i: ClientPlanItem) => {
     setError(null);
-    setDraft({ id: i.id, date: i.date, time: i.time || '', kind: i.kind, title: i.title, platforms: i.platforms || [], status: i.status, notes: i.notes || '' });
+    setDraft({ id: i.id, date: i.date, time: i.time || '', kind: i.kind, title: i.title, platforms: i.platforms || [], status: i.status, notes: i.notes || '', previewUrl: i.previewUrl || '', clientComment: i.clientComment, changeRequested: i.changeRequested });
   };
 
   const save = (e?: React.FormEvent) => {
@@ -115,6 +118,10 @@ export const ClientCalendarTab: React.FC<{
       platforms: isContent(draft.kind) ? draft.platforms : [],
       status: flow.includes(draft.status) ? draft.status : 'Idea',
       notes: draft.notes.trim() || undefined,
+      ...(isContent(draft.kind) && draft.previewUrl.trim() ? { previewUrl: /^https?:\/\//i.test(draft.previewUrl.trim()) ? draft.previewUrl.trim() : `https://${draft.previewUrl.trim()}` } : {}),
+      // A new design link means the asked-for change has been made.
+      ...(draft.changeRequested && (draft.previewUrl.trim() || '') === (existing?.previewUrl || '') ? { changeRequested: true } : {}),
+      ...(draft.clientComment ? { clientComment: draft.clientComment } : {}),
       createdAt: existing?.createdAt || now,
       updatedAt: now,
     });
@@ -224,7 +231,7 @@ export const ClientCalendarTab: React.FC<{
                     isLate(i, todayKey) ? 'ring-1 ring-rose-500' : ''
                   }`}
                 >
-                  {kindEmoji[i.kind]} {i.title}
+                  {i.changeRequested ? '✏️ ' : ''}{kindEmoji[i.kind]} {i.title}
                 </button>
               ))}
               {list.length > 3 && <span className="text-[11px] text-text-muted text-center">+{list.length - 3} more</span>}
@@ -265,6 +272,7 @@ export const ClientCalendarTab: React.FC<{
                       {i.platforms?.length && isContent(i.kind) ? ` · ${i.platforms.join(', ')}` : ''}
                       {isLate(i, todayKey) ? ' · late' : ''}
                     </p>
+                    {i.changeRequested && <p className="text-xs font-semibold text-amber-700 dark:text-amber-300 truncate">✏️ Client: “{i.clientComment}”</p>}
                   </button>
                   <button
                     type="button"
@@ -387,6 +395,23 @@ export const ClientCalendarTab: React.FC<{
                 placeholder={isContent(draft.kind) ? 'Hook, caption, hashtags, reference link…' : 'Place, who is coming, what to bring…'}
               />
             </label>
+            {isContent(draft.kind) && (
+              <label className="block space-y-1 text-xs font-semibold text-text-muted">
+                Design preview link (Canva / Drive) · client approves it in their portal
+                <input className={input} value={draft.previewUrl} onChange={(e) => setDraft({ ...draft, previewUrl: e.target.value })} placeholder="https://www.canva.com/design/…" inputMode="url" />
+              </label>
+            )}
+            {draft.clientComment && (
+              <div className={`rounded-lg p-3 text-sm ${draft.changeRequested ? 'bg-amber-50 border border-amber-300 dark:bg-amber-400/10' : 'bg-slate-50 dark:bg-slate-800 border border-border-base dark:border-slate-700'}`}>
+                <p className="font-semibold">{draft.changeRequested ? '✏️ Client asked for a change' : '💬 Client note'}</p>
+                <p className="mt-0.5">“{draft.clientComment}”</p>
+                {draft.changeRequested && (
+                  <button type="button" onClick={() => setDraft({ ...draft, changeRequested: false })} className="mt-2 text-xs font-bold underline">
+                    Mark change as done
+                  </button>
+                )}
+              </div>
+            )}
             {error && <p className="text-xs text-rose-600">{error}</p>}
             <button type="submit" className="hidden" />
           </form>

@@ -188,6 +188,12 @@ export interface ClientPlanItem {
     title: string;
     platforms?: string[];
     status: PlanStatus;
+    /** Canva / Drive link the client sees in their portal to approve. */
+    previewUrl?: string;
+    /** Client's note from the portal (approval comment or change request). */
+    clientComment?: string;
+    /** Client asked for a change in the portal and it is not done yet. */
+    changeRequested?: boolean;
     notes?: string;
     createdAt: string;
     updatedAt: string;
@@ -260,6 +266,8 @@ export interface Client {
     /** Access credentials vault for handover (plain text — sensitive). */
     accessCredentials?: AccessCredential[];
     convertedFromLeadId?: string;
+    /** Client portal (www.techinfigo.com/portal) access. The password lives only on the website, hashed. */
+    portal?: { enabled: boolean; phone: string; since?: string };
     /** Own brand (Techinfigo itself): projects, calendar and tasks work, but never billed
      *  and left out of revenue, client counts and health. */
     isInternal?: boolean;
