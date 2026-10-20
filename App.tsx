@@ -150,6 +150,7 @@ import { UrlErrorBanner } from "./components/common/UrlErrorBanner";
 import { auth, isFirebaseConfigured } from "./firebase";
 import { subscribeToTasks, saveTaskToCloud, deleteTaskFromCloud } from "./taskSync";
 import { useWebsiteEnquiries, isAutoAddEnquiry, toLead as enquiryToLead } from "./components/leads/WebsiteEnquiriesPanel";
+import { answersToCredentials, listCredRequests, removeCredRequest } from "./services/credRequests";
 import { IntegrationsHub } from "./components/views/IntegrationsHub";
 
 interface AppProps {
@@ -378,6 +379,53 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
 
   // Detail View States
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+
+  /**
+   * Logins that clients filled through their private form link: copied into
+   * that client's Credentials, then removed from the website. Checks on open,
+   * when the app gets focus, and every minute.
+   */
+  const credInboxRef = useRef({ clients, setClients, addToast, selectedClient, setSelectedClient });
+  credInboxRef.current = { clients, setClients, addToast, selectedClient, setSelectedClient };
+  useEffect(() => {
+    if (!isFirebaseConfigured) return;
+    let running = false;
+    const pull = async () => {
+      if (running || !auth.currentUser) return;
+      running = true;
+      try {
+        const done = (await listCredRequests()).filter((r) => r.status === "submitted");
+        for (const r of done) {
+          const { clients, setClients, addToast, selectedClient, setSelectedClient } = credInboxRef.current;
+          const c = clients.find((x) => x.id === r.clientId);
+          if (!c) continue; // client not here (deleted / not loaded yet): leave it waiting
+          const have = c.accessCredentials || [];
+          const add = answersToCredentials(r).filter((n) => !have.some((o) => o.id === n.id));
+          if (add.length) {
+            const updated = { ...c, accessCredentials: [...have, ...add] };
+            const next = clients.map((x) => (x.id === c.id ? updated : x));
+            setClients(next, { type: "update", payload: { old: c, new: updated }, description: `Logins received from ${r.clientName}` });
+            credInboxRef.current.clients = next;
+            if (selectedClient?.id === c.id) setSelectedClient(updated);
+            addToast({ title: "🔑 Logins received", description: `${r.clientName} filled ${add.length} item${add.length > 1 ? "s" : ""}. See their Credentials.` });
+          }
+          await removeCredRequest(r.id).catch(() => 0);
+        }
+      } catch {
+        // offline or signed out: try again later
+      } finally {
+        running = false;
+      }
+    };
+    const first = window.setTimeout(pull, 3000);
+    const every = window.setInterval(pull, 60_000);
+    window.addEventListener("focus", pull);
+    return () => {
+      window.clearTimeout(first);
+      window.clearInterval(every);
+      window.removeEventListener("focus", pull);
+    };
+  }, []);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [activeModal, setActiveModal] = useState<{

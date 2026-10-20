@@ -7,6 +7,7 @@ import { Button } from '../common/Button';
 import { Input, TextArea } from '../common/Input';
 import { Select } from '../common/Select';
 import { Checkbox } from '../common/Checkbox';
+import { CredRequestPanel } from '../clients/CredRequestPanel';
 
 interface ClientCredentialsProps {
   client: Client;
@@ -190,6 +191,7 @@ export const ClientCredentials: React.FC<ClientCredentialsProps> = ({ client, on
 
   return (
     <div className="space-y-6">
+      <CredRequestPanel client={client} />
       {needsUnlock ? (
         <div className="p-4 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/40">
           <div className="flex items-center gap-2 mb-2">
