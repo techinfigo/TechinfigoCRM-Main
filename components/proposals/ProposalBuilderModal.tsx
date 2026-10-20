@@ -376,9 +376,9 @@ export const ProposalBuilderModal: React.FC<Props> = ({ isOpen, onClose, proposa
                 onChange={(e) => editService(s.key, { price: Number(e.target.value.replace(/[^\d]/g, '')) || 0 })}
                 aria-label="Price"
               />
-              <select className={`${small} w-32`} value={s.billing} onChange={(e) => editService(s.key, { billing: e.target.value as ProposalService['billing'] })}>
+              <select className={`${small} w-40`} value={s.billing} onChange={(e) => editService(s.key, { billing: e.target.value as ProposalService['billing'] })}>
                 <option value="one-time">one-time</option>
-                <option value="monthly">per month</option>
+                <option value="monthly">monthly retainer</option>
               </select>
               <button
                 type="button"
@@ -413,6 +413,30 @@ export const ProposalBuilderModal: React.FC<Props> = ({ isOpen, onClose, proposa
             )}
           </div>
         ))}
+        {d.services.length > 1 && (
+          <div className="rounded-xl border border-dashed border-emerald-400/70 p-3 flex flex-wrap items-center gap-2">
+            <span className="font-semibold text-sm text-emerald-700 dark:text-emerald-300 mr-auto">Bundle discount (optional)</span>
+            <span className="text-sm text-text-muted">₹</span>
+            <input
+              className={`${small} w-28`}
+              inputMode="numeric"
+              placeholder="0"
+              value={d.discount?.amount ? String(d.discount.amount) : ''}
+              onChange={(e) => set({ discount: { amount: Number(e.target.value.replace(/[^\d]/g, '')) || 0, on: d.discount?.on || 'one-time' } })}
+              aria-label="Discount amount"
+            />
+            <select
+              className={`${small} w-36`}
+              value={d.discount?.on || 'one-time'}
+              onChange={(e) => set({ discount: { amount: d.discount?.amount || 0, on: e.target.value as 'one-time' | 'monthly' } })}
+              aria-label="Discount on"
+            >
+              <option value="one-time">off one-time</option>
+              <option value="monthly">off every month</option>
+            </select>
+            <p className="w-full text-xs text-text-muted">The client sees each service price, then this discount as its own line, then the final total.</p>
+          </div>
+        )}
       </div>
 
       {/* 4. ROI */}

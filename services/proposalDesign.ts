@@ -53,6 +53,8 @@ export interface ProposalDesign {
   contact: { name: string; phone: string; address: string; upiId?: string };
   /** Short personal note from the founder at the top; a default is used when empty. */
   note?: string;
+  /** Bundle discount, shown as its own line in the quotation. */
+  discount?: { amount: number; on: 'one-time' | 'monthly' };
 }
 
 /** Real proof the website adds when it serves the link (never invented). */
@@ -128,8 +130,14 @@ export function guessCustomerWord(industry?: string): string {
 
 type Case = { enquiries: number; customers: number; profit: number; x: number };
 export interface ProposalNumbers {
+  /** Totals after the bundle discount. */
   oneTime: number;
   monthly: number;
+  /** Totals before the discount, and the discount actually applied. */
+  oneTimeList: number;
+  monthlyList: number;
+  discount: number;
+  discountOn: 'one-time' | 'monthly';
   startToday: number;
   hasAds: boolean;
   /** Cost the ROI is measured against: monthly fees + ads, or the one-time cost when nothing is monthly. */
@@ -147,8 +155,15 @@ const round = (n: number) => Math.round(n);
 
 export function proposalNumbers(d: ProposalDesign): ProposalNumbers {
   const has = (k: ProposalServiceKey) => d.services.some((s) => s.key === k);
-  const oneTime = d.services.filter((s) => s.billing === 'one-time').reduce((a, s) => a + (Number(s.price) || 0), 0);
-  const monthly = d.services.filter((s) => s.billing === 'monthly').reduce((a, s) => a + (Number(s.price) || 0), 0);
+  const oneTimeList = d.services.filter((s) => s.billing === 'one-time').reduce((a, s) => a + (Number(s.price) || 0), 0);
+  const monthlyList = d.services.filter((s) => s.billing === 'monthly').reduce((a, s) => a + (Number(s.price) || 0), 0);
+  // The discount goes on the chosen side; if that side has nothing, on the other one.
+  let discountOn: 'one-time' | 'monthly' = d.discount?.on === 'monthly' ? 'monthly' : 'one-time';
+  if (discountOn === 'one-time' && !oneTimeList && monthlyList) discountOn = 'monthly';
+  if (discountOn === 'monthly' && !monthlyList && oneTimeList) discountOn = 'one-time';
+  const discount = Math.max(0, Math.min(Number(d.discount?.amount) || 0, discountOn === 'one-time' ? oneTimeList : monthlyList));
+  const oneTime = oneTimeList - (discountOn === 'one-time' ? discount : 0);
+  const monthly = monthlyList - (discountOn === 'monthly' ? discount : 0);
   const startToday = round(oneTime * 0.5 + monthly);
   const hasAds = (has('growth') || has('ads')) && d.roi.adBudget > 0;
   const costIsMonthly = monthly > 0 || hasAds;
@@ -177,6 +192,10 @@ export function proposalNumbers(d: ProposalDesign): ProposalNumbers {
   return {
     oneTime,
     monthly,
+    oneTimeList,
+    monthlyList,
+    discount,
+    discountOn,
     startToday,
     hasAds,
     cost,
@@ -397,6 +416,19 @@ export function renderProposalHtml(
   <section>
     <p class="kicker"><i>${tl.length ? k + 1 : k}</i> Investment</p>
     <h2>Clear pricing</h2>
+    <div class="quote num">
+      <div class="qh"><span>Service</span><span>Price</span></div>
+      ${d.services
+        .map(
+          (s) =>
+            `<div class="qr"><div><b>${esc(s.title)}</b><span class="qt ${s.billing === 'monthly' ? 'mon' : 'one'}">${s.billing === 'monthly' ? 'Monthly retainer' : 'One-time'}</span></div><span class="qp">${inr(Number(s.price) || 0)}${s.billing === 'monthly' ? '<small>/mo</small>' : ''}</span></div>`,
+        )
+        .join('')}
+      ${n.discount ? `<div class="qr disc"><div><b>Bundle discount</b><span class="qt">on ${n.discountOn === 'monthly' ? 'monthly' : 'one-time'} price</span></div><span class="qp">−${inr(n.discount)}${n.discountOn === 'monthly' ? '<small>/mo</small>' : ''}</span></div>` : ''}
+      ${n.oneTimeList ? `<div class="qr tot"><div><b>One-time total</b></div><span class="qp">${n.discount && n.discountOn === 'one-time' ? `<s>${inr(n.oneTimeList)}</s> ` : ''}${inr(n.oneTime)}</span></div>` : ''}
+      ${n.monthlyList ? `<div class="qr tot"><div><b>Monthly total</b></div><span class="qp">${n.discount && n.discountOn === 'monthly' ? `<s>${inr(n.monthlyList)}</s> ` : ''}${inr(n.monthly)}<small>/mo</small></span></div>` : ''}
+      <p class="qgst">All prices + 18% GST${n.hasAds ? ` · Ad budget (${inr(d.roi.adBudget)}/mo) is paid by you directly to Meta / Google` : ''}</p>
+    </div>
     <div class="prices num">
       ${n.oneTime ? `<div class="pt"><div class="l">${esc(oneNames.length === 1 ? oneNames[0] : 'One-time')}</div><div class="a">${inr(n.oneTime)}</div><div class="s">one-time</div></div>` : ''}
       ${n.monthly ? `<div class="pt"><div class="l">${esc(monNames.length === 1 ? monNames[0] : 'Monthly')}</div><div class="a">${inr(n.monthly)}</div><div class="s">per month</div></div>` : ''}
@@ -626,6 +658,23 @@ summary{cursor:pointer;font-weight:700;color:var(--ink)}
 .st .ico{width:56px;height:56px;border-radius:50%;background:var(--ink);color:var(--amber);display:grid;place-items:center;margin:0 auto 8px;border:4px solid #fff;box-shadow:0 0 0 2px var(--amber)}
 .st .when{font-size:11px;font-weight:800;color:#b07a00;text-transform:uppercase;letter-spacing:.06em}
 .st b{display:block;font-size:14px;color:var(--ink);line-height:1.25;margin-top:2px}
+.quote{border:1px solid var(--line);border-radius:18px;overflow:hidden;margin-bottom:14px}
+.quote .qh,.quote .qr{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:11px 16px}
+.quote .qh{background:#f2f6f6;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.quote .qr{border-top:1px solid var(--line);font-size:14px}
+.quote .qr b{font-weight:700;color:var(--ink)}
+.quote .qr b{margin-right:8px}
+.quote .qt{display:inline-block;margin-top:2px;font-size:11px;font-weight:700;border-radius:999px;padding:2px 9px;background:#eef1f2;color:var(--muted);white-space:nowrap}
+.quote .qt.one{background:var(--amber-soft);color:#8a5a00}
+.quote .qt.mon{background:var(--green-soft);color:#0d6b4b}
+.quote .qp{text-align:right;font-weight:800;color:var(--ink);white-space:nowrap}
+.quote .qp small{font-size:11px;font-weight:600;color:var(--muted)}
+.quote .qp s{font-weight:600;color:var(--muted)}
+.quote .disc .qp,.quote .disc b{color:var(--green)}
+.quote .tot{background:#fafbfb}
+.quote .tot b{font-weight:800}
+.quote .qgst{margin:0;padding:10px 16px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+@media (max-width:480px){.quote .qh,.quote .qr{padding:10px 12px}}
 .prices{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
 .pt{border-radius:18px;padding:16px;background:#f2f6f6;text-align:center}
 .pt .l{font-size:12px;color:var(--muted);font-weight:600}

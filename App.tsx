@@ -151,6 +151,7 @@ import { auth, isFirebaseConfigured } from "./firebase";
 import { subscribeToTasks, saveTaskToCloud, deleteTaskFromCloud } from "./taskSync";
 import { useWebsiteEnquiries, isAutoAddEnquiry, toLead as enquiryToLead } from "./components/leads/WebsiteEnquiriesPanel";
 import { answersToCredentials, listCredRequests, removeCredRequest } from "./services/credRequests";
+import { bestProposalFor, mergeAgreedServices, proposalToAgreedServices } from "./services/proposalToServices";
 import { IntegrationsHub } from "./components/views/IntegrationsHub";
 
 interface AppProps {
@@ -2938,6 +2939,15 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
                 serviceInterest: customAttributes?.serviceInterest || []
               }
             };
+            // The lead's proposal (signed one first) fills the client's services and prices.
+            const fromProposal = bestProposalFor(l.id, proposals);
+            if (fromProposal?.design) {
+              newClient.agreedServices = proposalToAgreedServices(fromProposal.design);
+              addToast({
+                title: "Services filled from the proposal",
+                description: `${newClient.agreedServices.length} service${newClient.agreedServices.length > 1 ? "s" : ""} with prices from ${fromProposal.design.number}.`,
+              });
+            }
             handleSaveClient(newClient);
             setLeads(
               leads.map((lead) =>
@@ -3060,11 +3070,34 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
               closePanel();
               openModal("PROPOSAL_FORM", { proposal: p });
             }}
-            onUpdateStatus={(id, status) =>
+            onUpdateStatus={(id, status) => {
               setProposals(
                 proposals.map((p) => (p.id === id ? { ...p, status } : p)),
-              )
-            }
+              );
+              // Signed: the quoted services (with their prices) become the client's Agreed Services.
+              const prop = proposals.find((p) => p.id === id);
+              if (status === "Signed" && prop?.design) {
+                const client = clients.find((c) => c.id === prop.clientId);
+                if (client) {
+                  const { list, added } = mergeAgreedServices(client.agreedServices, proposalToAgreedServices(prop.design));
+                  if (added) {
+                    const updated = { ...client, agreedServices: list };
+                    setClients(clients.map((c) => (c.id === client.id ? updated : c)), {
+                      type: "update",
+                      payload: { old: client, new: updated },
+                      description: `Services from proposal ${prop.design.number} added to "${client.name}"`,
+                    });
+                    if (selectedClient?.id === client.id) setSelectedClient(updated);
+                  }
+                  addToast({
+                    title: added ? "Services added to the client" : "Services already there",
+                    description: added ? `${added} service${added > 1 ? "s" : ""} with prices added to ${client.companyName || client.name}'s Agreed Services.` : "Nothing new to add.",
+                  });
+                } else if (leads.some((l) => l.id === prop.clientId)) {
+                  addToast({ title: "Proposal signed", description: "Its services and prices will be added when you convert this lead to a client." });
+                }
+              }
+            }}
           />
         )}
 
