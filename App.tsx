@@ -1599,25 +1599,25 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
       });
     }
 
-    // Also update tasks embedded in projects for data consistency (Simplified: assuming task form handles global/project link)
-    if (task.projectId) {
-      const project = projects.find((p) => p.id === task.projectId);
-      if (project) {
-        const taskExists = project.tasks.some((t) => t.id === task.id);
-        const updatedTasks = taskExists
-          ? project.tasks.map((t) => (t.id === task.id ? task : t))
-          : [...project.tasks, task];
-        const updatedProject = { ...project, tasks: updatedTasks };
-        setProjects(
-          projects.map((p) => (p.id === project.id ? updatedProject : p)),
-          {
-            type: "update",
-            payload: { old: project, new: updatedProject },
-            description: `Updated project tasks`,
-          },
-        );
-        if (selectedProject && selectedProject.id === project.id)
-          setSelectedProject(updatedProject);
+    // Keep project task lists in step: put the task in its project and take it
+    // out of any other project it used to belong to (moving between projects).
+    const touched = projects.some((p) => p.id === task.projectId || p.tasks.some((t) => t.id === task.id));
+    if (touched) {
+      const nextProjects = projects.map((p) => {
+        const has = p.tasks.some((t) => t.id === task.id);
+        if (p.id === task.projectId) {
+          return { ...p, tasks: has ? p.tasks.map((t) => (t.id === task.id ? task : t)) : [...p.tasks, task] };
+        }
+        return has ? { ...p, tasks: p.tasks.filter((t) => t.id !== task.id) } : p;
+      });
+      setProjects(nextProjects, {
+        type: "update",
+        payload: { old: projects, new: nextProjects },
+        description: `Updated project tasks`,
+      });
+      if (selectedProject) {
+        const sp = nextProjects.find((p) => p.id === selectedProject.id);
+        if (sp) setSelectedProject(sp);
       }
     }
     closeModal();

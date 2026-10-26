@@ -98,7 +98,8 @@ export const Select: React.FC<SelectProps> = ({
       }
       updateCoords();
     };
-    const handleResize = () => setIsOpen(false);
+    // Phone keyboards resize the screen; just move the menu instead of closing it.
+    const handleResize = () => updateCoords();
     window.addEventListener('scroll', handleScroll, true);
     window.addEventListener('resize', handleResize);
     return () => {
@@ -223,7 +224,7 @@ export const Select: React.FC<SelectProps> = ({
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-700 rounded-md focus:outline-none focus:ring-2 focus:ring-secondary-accent focus:border-transparent placeholder-slate-400 dark:placeholder-slate-500"
                 onClick={(e) => e.stopPropagation()}
-                autoFocus
+                autoFocus={typeof window !== 'undefined' && !window.matchMedia('(pointer: coarse)').matches}
               />
             </div>
           )}
