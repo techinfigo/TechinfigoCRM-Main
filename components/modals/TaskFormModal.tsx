@@ -513,9 +513,19 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={modalTitle} size="4xl" overrideZIndex={overrideZIndex}
       footer={
-        <div className="w-full flex justify-between items-center">
-            <div>{task && (<div className="flex items-center gap-2"><Button variant="outline" size="sm" onClick={handleMarkDone} leftIcon={<CheckCircle size={16}/>}>{task.status === 'Done' ? 'Mark Undone' : 'Mark Done'}</Button><Button variant="ghost" size="sm" onClick={handleCopyLink} leftIcon={<Copy size={16}/>}>Copy Link</Button><Button variant="danger" size="sm" onClick={handleDeleteClick} leftIcon={<Trash2 size={16} />}>Delete</Button></div>)}</div>
-            <div className="flex items-center gap-2"><Button variant="secondary" onClick={onClose}>Cancel</Button><Button variant="primary" onClick={handleSubmit} disabled={!formData.title.trim()}>{task ? 'Save Changes' : 'Add Task'}</Button></div>
+        // Phones: task actions on one row, Cancel / Save full-width below, so nothing is pushed off screen.
+        <div className="w-full flex flex-col gap-2 sm:flex-row sm:justify-between sm:items-center">
+            {task ? (
+                <div className="grid grid-cols-3 gap-2 sm:flex sm:items-center">
+                    <Button variant="outline" size="sm" className="w-full sm:w-auto justify-center" onClick={handleMarkDone} leftIcon={<CheckCircle size={16}/>}>{task.status === 'Done' ? 'Undone' : 'Done'}</Button>
+                    <Button variant="ghost" size="sm" className="w-full sm:w-auto justify-center" onClick={handleCopyLink} leftIcon={<Copy size={16}/>}>Copy</Button>
+                    <Button variant="danger" size="sm" className="w-full sm:w-auto justify-center" onClick={handleDeleteClick} leftIcon={<Trash2 size={16} />}>Delete</Button>
+                </div>
+            ) : <div className="hidden sm:block" />}
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
+                <Button variant="secondary" className="w-full sm:w-auto justify-center" onClick={onClose}>Cancel</Button>
+                <Button variant="primary" className="w-full sm:w-auto justify-center" onClick={handleSubmit} disabled={!formData.title.trim()}>{task ? 'Save' : 'Add Task'}</Button>
+            </div>
         </div>
       }
     >
