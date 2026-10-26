@@ -34,6 +34,8 @@ jobs:
           cp /tmp/build.log /tmp/out/build.log
           cp android/app/build/outputs/apk/release/*.apk /tmp/out/ 2>/dev/null || true
           echo "${{ steps.build.outcome }} ${{ github.sha }}" > /tmp/out/STATUS
+          # This branch only holds the APK: tell Vercel not to try to deploy it.
+          echo '{"git":{"deploymentEnabled":false}}' > /tmp/out/vercel.json
           cd /tmp/out
           git init -q -b apk-build
           git config user.name "github-actions"
