@@ -225,11 +225,6 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
     });
   };
 
-  const handleMultiSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedValues = Array.from(e.target.selectedOptions, (option: HTMLOptionElement) => option.value);
-    setFormData((prev) => ({ ...prev, teamIds: selectedValues }));
-  };
-
   const validate = (): boolean => {
     const newErrors: Partial<Record<keyof ProjectFormData, string>> = {};
     if (!formData.name.trim()) newErrors.name = 'Project name is required.';
@@ -397,6 +392,54 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
           </div>
         </div>
 
+        {/* Who does the work: shown up front so it works easily on a phone too. */}
+        <div className="space-y-3">
+          <div>
+            <label className={labelClass}>{willCreate ? 'Tasks assigned to *' : 'Project manager *'}</label>
+            <select name="managerId" value={formData.managerId} onChange={(e) => {
+              const id = e.target.value;
+              setFormData((prev) => ({ ...prev, managerId: id, teamIds: id && !prev.teamIds.includes(id) ? [id, ...prev.teamIds] : prev.teamIds }));
+            }} className={`${selectBaseClass} ${errors.managerId ? 'border-red-500' : ''}`} required>
+              <option value="">Choose a person</option>
+              {teamMembers.map((tm) => (
+                <option key={tm.id} value={tm.id}>
+                  {tm.name}
+                </option>
+              ))}
+            </select>
+            {errors.managerId && <p className="mt-1 text-xs text-red-600">{errors.managerId}</p>}
+          </div>
+          {teamMembers.length > 1 && (
+            <div>
+              <label className={labelClass}>Team (tap to add or remove)</label>
+              <div className="flex flex-wrap gap-2">
+                {teamMembers.map((tm) => {
+                  const on = formData.teamIds.includes(tm.id);
+                  return (
+                    <button
+                      key={tm.id}
+                      type="button"
+                      aria-pressed={on}
+                      onClick={() =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          teamIds: on ? prev.teamIds.filter((x) => x !== tm.id || x === prev.managerId) : [...prev.teamIds, tm.id],
+                        }))
+                      }
+                      className={`px-3 py-2 rounded-full text-sm font-semibold border ${
+                        on ? 'bg-slate-900 text-white border-slate-900 dark:bg-amber-400 dark:text-slate-900 dark:border-amber-400' : 'border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300'
+                      }`}
+                    >
+                      {on ? '✓ ' : ''}
+                      {tm.name}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
         {willCreate && (
           <div className="rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/70 dark:bg-emerald-900/20 p-3">
             <p className="flex items-center gap-2 text-sm font-semibold text-emerald-800 dark:text-emerald-300">
@@ -431,7 +474,7 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
           className="flex items-center gap-1 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
         >
           <ChevronDown className={`w-4 h-4 transition-transform ${showMore ? 'rotate-180' : ''}`} />
-          {showMore ? 'Fewer options' : 'More options (description, status, team, tags…)'}
+          {showMore ? 'Fewer options' : 'More options (description, status, priority, tags…)'}
         </button>
 
         {showMore && (
@@ -469,32 +512,7 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
                 </select>
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className={labelClass}>Project Manager *</label>
-                <select name="managerId" value={formData.managerId} onChange={handleChange} className={`${selectBaseClass} ${errors.managerId ? 'border-red-500' : ''}`} required>
-                  <option value="">Select a Manager</option>
-                  {teamMembers.map((tm) => (
-                    <option key={tm.id} value={tm.id}>
-                      {tm.name}
-                    </option>
-                  ))}
-                </select>
-                {errors.managerId && <p className="mt-1 text-xs text-red-600">{errors.managerId}</p>}
-              </div>
-              <Input label="Project Code" name="projectCode" value={formData.projectCode} onChange={handleChange} />
-            </div>
-            <div>
-              <label className={labelClass}>Team Members</label>
-              <select multiple name="teamIds" value={formData.teamIds} onChange={handleMultiSelectChange} className={`${selectBaseClass} h-28`}>
-                {teamMembers.map((tm) => (
-                  <option key={tm.id} value={tm.id}>
-                    {tm.name}
-                  </option>
-                ))}
-              </select>
-              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Hold Ctrl (or Cmd on Mac) to select multiple members.</p>
-            </div>
+            <Input label="Project Code" name="projectCode" value={formData.projectCode} onChange={handleChange} />
             {project?.recurring && (
               <label className="flex items-start gap-2 text-sm font-medium text-slate-700 dark:text-slate-300">
                 <input type="checkbox" className="mt-1" checked={repeat} onChange={(e) => setRepeat(e.target.checked)} />

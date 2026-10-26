@@ -74,6 +74,7 @@ export const TasksSection: React.FC<TasksSectionProps> = ({
                     taskActionMenuOpen={taskActionMenuOpen}
                     setTaskActionMenuOpen={setTaskActionMenuOpen}
                     setIsReparentingTask={setIsReparentingTask}
+                    teamMembers={teamMembers}
                 />
                 {renderTasksRecursive(task.id, level + 1)}
             </React.Fragment>
@@ -92,7 +93,7 @@ export const TasksSection: React.FC<TasksSectionProps> = ({
                 />
                 <Button onClick={handleAddTask} disabled={!newTaskTitle.trim()}><PlusCircle className="w-4 h-4" /></Button>
             </div>
-            <div className="space-y-1 max-h-96 overflow-y-auto pr-1">
+            <div className="space-y-1.5 max-h-[32rem] overflow-y-auto pr-1">
                 {project.tasks.length > 0 ? (
                     renderTasksRecursive(undefined, 0)
                 ) : (

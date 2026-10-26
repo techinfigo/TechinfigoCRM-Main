@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Task } from '../types';
+import { Task, TeamMember } from '../types';
 import { Button } from './common/Button';
 import { Input } from './common/Input';
 import { Checkbox } from './common/Checkbox';
@@ -16,11 +16,23 @@ interface TaskItemProps {
     taskActionMenuOpen: string | null;
     setTaskActionMenuOpen: (id: string | null) => void;
     setIsReparentingTask: (task: Task | null) => void;
+    /** People who can be assigned. Without it the assign / date row is hidden. */
+    teamMembers?: TeamMember[];
 }
+
+/** The task's due day in the phone's own time zone (YYYY-MM-DD). */
+const dayOf = (iso?: string) => {
+    if (!iso) return '';
+    if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso;
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+const niceDue = (iso?: string) => (iso ? new Date(`${dayOf(iso)}T00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '');
 
 export const TaskItem: React.FC<TaskItemProps> = ({
     task, level, projectTasks, onUpdateTask, onDeleteTask, menuRef,
-    taskActionMenuOpen, setTaskActionMenuOpen, setIsReparentingTask
+    taskActionMenuOpen, setTaskActionMenuOpen, setIsReparentingTask, teamMembers
 }) => {
     const [isEditingTitle, setIsEditingTitle] = useState(false);
     const [editingTitle, setEditingTitle] = useState(task.title);
@@ -82,7 +94,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({
                     />
                 ) : (
                     <div className="flex-1 flex items-center gap-2 min-w-0">
-                        <span onClick={() => setIsEditingTitle(true)} className="text-sm font-medium cursor-pointer truncate">{task.title}</span>
+                        <span onClick={() => setIsEditingTitle(true)} className={`text-sm font-medium cursor-pointer line-clamp-2 sm:line-clamp-1 break-words ${task.status === 'Done' ? 'line-through text-text-muted' : ''}`}>{task.title}</span>
                         {(task.attachmentCount ?? 0) > 0 && 
                             <span className="flex items-center gap-1 text-xs text-text-muted bg-slate-200 dark:bg-slate-600 px-1.5 py-0.5 rounded-md" title={`${task.attachmentCount} file(s)`}>
                                 <Paperclip size={12}/> {task.attachmentCount}
@@ -96,7 +108,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({
                     </div>
                 )}
                  <div className="relative">
-                    <Button variant="ghost" size="xs" className="p-1 opacity-0 group-hover:opacity-100" onClick={() => setTaskActionMenuOpen(task.id)}>
+                    <Button variant="ghost" size="xs" className="p-2 sm:p-1 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100" aria-label="Task options" onClick={() => setTaskActionMenuOpen(taskActionMenuOpen === task.id ? null : task.id)}>
                         <MoreVertical className="w-4 h-4" />
                     </Button>
                     {taskActionMenuOpen === task.id && (
@@ -113,6 +125,42 @@ export const TaskItem: React.FC<TaskItemProps> = ({
                     )}
                  </div>
             </div>
+            {teamMembers && (
+                <div className="mt-2 pl-7 flex flex-wrap items-center gap-2">
+                    <label className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 pl-2.5 pr-1 py-0.5 text-xs font-semibold text-slate-600 dark:text-slate-300">
+                        <span aria-hidden="true">👤</span>
+                        <span className="sr-only">Assigned to</span>
+                        <select
+                            value={task.assignedMemberId || ''}
+                            onChange={(e) => {
+                                const m = teamMembers.find((x) => x.id === e.target.value);
+                                onUpdateTask({ ...task, assignedMemberId: m?.id, assigneeName: m?.name, updatedAt: new Date().toISOString() });
+                            }}
+                            className="bg-transparent border-0 py-1 pr-6 text-xs font-semibold focus:ring-0 max-w-[10rem]"
+                        >
+                            <option value="">Assign…</option>
+                            {teamMembers.map((m) => (
+                                <option key={m.id} value={m.id}>{m.name}</option>
+                            ))}
+                        </select>
+                    </label>
+                    <label className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
+                        task.dueDate && task.status !== 'Done' && dayOf(task.dueDate) < dayOf(new Date().toISOString())
+                            ? 'border-rose-300 text-rose-700 bg-rose-50 dark:bg-rose-900/20 dark:text-rose-300'
+                            : 'border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+                    }`}>
+                        <span aria-hidden="true">📅</span>
+                        <span className="sr-only">Due date</span>
+                        <input
+                            type="date"
+                            value={dayOf(task.dueDate)}
+                            onChange={(e) => onUpdateTask({ ...task, dueDate: e.target.value ? new Date(`${e.target.value}T00:00`).toISOString() : undefined, updatedAt: new Date().toISOString() })}
+                            className="bg-transparent border-0 p-1 text-xs font-semibold focus:ring-0 w-[7.5rem]"
+                            title={task.dueDate ? `Due ${niceDue(task.dueDate)}` : 'Set due date'}
+                        />
+                    </label>
+                </div>
+            )}
             {task.checklist && task.checklist.length > 0 && (
                 <div className="pl-6 mt-2">
                     <div className="w-full bg-slate-200 dark:bg-slate-600 rounded-full h-1.5 my-2">

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Project, Client, TeamMember, Task, ProjectStatus, projectStatuses, ProjectHealth, projectHealths, ProjectPriority, projectPriorities, FeatureKey, PermissionAction, TimeLog, ProjectConnectors } from '../../types';
 import { Button } from '../common/Button';
 import { Card } from '../common/Card';
@@ -59,19 +59,27 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
     const [activeTab, setActiveTab] = useState<'Overview' | 'Tasks' | 'Time Logs' | 'Integrations'>('Tasks');
     const debouncedProject = useDebounce(editedProject, 500);
 
+    // Only edits made on the Overview tab are auto-saved from here. Task changes
+    // are saved straight away by the parent; without this flag the half-second-old
+    // copy was saved back over them, undoing assignments, dates and ticks.
+    const dirty = useRef(false);
+
     // Update local state if the project prop changes (e.g., from parent state update)
     useEffect(() => {
         setEditedProject(project);
+        dirty.current = false;
     }, [project]);
 
-    // Auto-save debounced changes
+    // Auto-save debounced changes (once typing has settled)
     useEffect(() => {
-        if (debouncedProject && JSON.stringify(debouncedProject) !== JSON.stringify(project)) {
+        if (dirty.current && debouncedProject && debouncedProject === editedProject && JSON.stringify(debouncedProject) !== JSON.stringify(project)) {
+            dirty.current = false;
             onUpdateProject(debouncedProject);
         }
-    }, [debouncedProject, project, onUpdateProject]);
+    }, [debouncedProject, editedProject, project, onUpdateProject]);
     
     const handleFieldChange = (field: keyof Project, value: any) => {
+        dirty.current = true;
         setEditedProject(prev => prev ? { ...prev, [field]: value } : null);
     };
     
