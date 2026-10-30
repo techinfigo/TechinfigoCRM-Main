@@ -14,6 +14,7 @@ import {
     Send, MessageSquare
 } from 'lucide-react';
 import { GoogleGenAI } from '@google/genai';
+import { mainSource } from '../../services/leadSources';
 import { safeFormatDate, safeFormatRelativeTime } from '@/utils';
 
 interface LeadDetailViewProps {
@@ -418,7 +419,7 @@ const LeadDetailView: React.FC<LeadDetailViewProps> = ({
                          <div className="flex justify-between items-center p-2.5 bg-zinc-50 dark:bg-zinc-800/40 rounded-xl border border-zinc-100 dark:border-zinc-700/50">
                              <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Source</p>
                              <span className="px-2.5 py-0.5 bg-amber-500/10 text-amber-700 dark:text-amber-400 font-bold rounded-lg text-xs border border-amber-500/20">
-                                 {lead.source || 'Unknown'}
+                                 {mainSource(lead.source) || 'Unknown'}
                              </span>
                          </div>
                          

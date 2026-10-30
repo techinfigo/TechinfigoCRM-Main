@@ -4,6 +4,7 @@ import { Globe, Mail, Inbox, MessageCircle, Phone, ShieldAlert, ChevronDown, Che
 import { db, isFirebaseConfigured } from '../../firebase';
 import { Button } from '../common/Button';
 import type { Lead, LeadCheckup } from '../../types';
+import { mainSource } from '../../services/leadSources';
 import { PhoneAlertsBar } from './PhoneAlertsBar';
 
 /**
@@ -199,7 +200,7 @@ export function toLead(e: Enquiry): Lead {
     phone: e.phone ?? undefined,
     companyName: e.businessName ?? undefined,
     website: e.website ?? undefined,
-    source: sourceLabel(e),
+    source: mainSource(sourceLabel(e)),
     status: 'New Lead',
     dateAdded: (e.createdAt ?? new Date()).toISOString(),
     notes,

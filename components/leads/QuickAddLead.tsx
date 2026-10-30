@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Check } from 'lucide-react';
+import { LEAD_SOURCE_NAMES } from '../../services/leadSources';
 import type { Lead } from '../../types';
 
 /**
@@ -10,7 +11,7 @@ import type { Lead } from '../../types';
  */
 
 const BUSINESS_TYPES = ['Clinic / Doctor', 'Coaching', 'Real estate', 'Shop / Showroom', 'Restaurant / Sweets', 'Hotel / Travel', 'Online brand (D2C)', 'Other'];
-const SOURCES = ['Walk-in', 'Phone call', 'WhatsApp', 'Referral', 'Instagram', 'Other'];
+const SOURCES = LEAD_SOURCE_NAMES;
 const SERVICES = ['Website', 'Google profile', 'Social media', 'Ads', 'SEO'];
 const FOLLOW_UPS: { label: string; days: number | null }[] = [
   { label: 'Today', days: 0 },
@@ -42,7 +43,7 @@ export const QuickAddLead: React.FC<{ open: boolean; onClose: () => void; onSave
   const [phone, setPhone] = useState('');
   const [business, setBusiness] = useState('');
   const [type, setType] = useState('');
-  const [source, setSource] = useState('Walk-in');
+  const [source, setSource] = useState('Direct');
   const [services, setServices] = useState<string[]>([]);
   const [note, setNote] = useState('');
   const [follow, setFollow] = useState<number | null>(1);
@@ -67,7 +68,7 @@ export const QuickAddLead: React.FC<{ open: boolean; onClose: () => void; onSave
   if (!open) return null;
 
   const reset = () => {
-    setName(''); setPhone(''); setBusiness(''); setType(''); setSource('Walk-in'); setServices([]); setNote(''); setFollow(1);
+    setName(''); setPhone(''); setBusiness(''); setType(''); setSource('Direct'); setServices([]); setNote(''); setFollow(1);
   };
 
   const save = (e: React.FormEvent) => {

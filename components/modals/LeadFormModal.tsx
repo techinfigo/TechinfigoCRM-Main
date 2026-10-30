@@ -6,6 +6,7 @@ import { Button } from '../common/Button';
 import { Input, TextArea } from '../common/Input';
 import { DynamicFormFields } from '@/components/forms/DynamicFormFields';
 import { DatePicker } from '../common/DatePicker';
+import { LEAD_SOURCE_NAMES, mainSource } from '../../services/leadSources';
 
 
 // Suggestion lists for the "type or pick" fields. Users can still type anything.
@@ -91,9 +92,6 @@ interface LeadFormData {
   customFieldValues: { [key: string]: any };
 }
 
-const leadSources = [
-  "Inbound (Website)", "Instagram DM", "LinkedIn Outreach", "Cold Email", "Referral", "Ads", "Other"
-];
 
 const revenueBands = [
     "<$10k/mo", "$10k - $50k/mo", "$50k - $100k/mo", "$100k+/mo"
@@ -175,7 +173,7 @@ export const LeadFormModal: React.FC<LeadFormModalProps> = ({ isOpen, onClose, o
           trackingHealth: lead.trackingHealth || 'Unknown',
           adLibraryLink: lead.adLibraryLink || '',
 
-          source: lead.source || '',
+          source: mainSource(lead.source),
           status: lead.status,
           assignedToUserId: lead.assignedToUserId || '',
           tags: Array.isArray(lead.tags) ? lead.tags.join(', ') : '',
@@ -453,7 +451,7 @@ export const LeadFormModal: React.FC<LeadFormModalProps> = ({ isOpen, onClose, o
                 value={formData.source || ''}
                 onChange={(v) => handleSelectChange('source', v)}
                 placeholder="Select Source"
-                options={leadSources.map(src => ({ value: src, label: src }))}
+                options={LEAD_SOURCE_NAMES.map(src => ({ value: src, label: src }))}
              />
              <Select
                 label="Lead Owner"

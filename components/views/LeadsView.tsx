@@ -12,6 +12,7 @@ import { ConfirmationModal } from '../modals/ConfirmationModal';
 import { WebsiteEnquiriesInbox, useWebsiteEnquiries } from '../leads/WebsiteEnquiriesPanel';
 import { usePagination } from '../../hooks/usePagination';
 import { Pagination } from '../common/Pagination';
+import { mainSource, LEAD_SOURCE_NAMES } from '../../services/leadSources';
 import { safeFormatDate, safeFormatRelativeTime, isDateInRange } from '@/utils';
 
 interface LeadsViewProps {
@@ -175,7 +176,7 @@ export const LeadsView: React.FC<LeadsViewProps> = ({ leads, auditRecords, teamM
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const kanbanColumnStatuses = KANBAN_STAGE_ORDER;
-  const allSources = useMemo(() => Array.from(new Set(leads.map(l => l.source).filter(Boolean))), [leads]);
+  const allSources = useMemo(() => { const used = new Set(leads.map(l => mainSource(l.source)).filter(Boolean)); return LEAD_SOURCE_NAMES.filter(n => used.has(n)); }, [leads]);
   const allStatuses = KANBAN_STAGE_ORDER; // Use defined order
 
   const handleRefresh = () => {
@@ -351,7 +352,7 @@ export const LeadsView: React.FC<LeadsViewProps> = ({ leads, auditRecords, teamM
         lead.email,
         lead.phone || '',
         lead.companyName || '',
-        lead.source || '',
+        mainSource(lead.source),
         lead.status,
         lead.website || '',
         lead.notes || '',
@@ -507,7 +508,7 @@ export const LeadsView: React.FC<LeadsViewProps> = ({ leads, auditRecords, teamM
         const dateMatch = isDateInRange(lead.dateAdded, dateRange);
         const statusMatch = statusFilters.size === 0 || statusFilters.has(lead.status);
         const ownerMatch = ownerFilters.size === 0 || (lead.assignedToUserId && ownerFilters.has(lead.assignedToUserId));
-        const sourceMatch = sourceFilters.size === 0 || (lead.source && sourceFilters.has(lead.source));
+        const sourceMatch = sourceFilters.size === 0 || sourceFilters.has(mainSource(lead.source));
         
         return searchMatch && dateMatch && statusMatch && ownerMatch && sourceMatch;
     });
@@ -788,7 +789,7 @@ export const LeadsView: React.FC<LeadsViewProps> = ({ leads, auditRecords, teamM
                                         <span className="text-slate-400 dark:text-slate-500 italic">-</span>
                                     )}
                                 </td>
-                                <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{lead.source || '-'}</td>
+                                <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{mainSource(lead.source) || '-'}</td>
                                 <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
                                     {teamMembers.find(t => t.id === lead.assignedToUserId)?.name ? (
                                         <div className="flex items-center gap-1">
