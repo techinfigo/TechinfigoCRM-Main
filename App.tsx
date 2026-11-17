@@ -2313,7 +2313,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
                 id: "",
                 name: currentUser?.name || "Sachin Bauddh",
                 companyName: "Techinfigo",
-                email: "contact@techinfigo.com",
+                email: "info@techinfigo.com",
                 phone: "9557338487",
                 website: "https://www.techinfigo.com",
                 industry: "Digital Marketing (own brand)",

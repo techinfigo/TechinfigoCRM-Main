@@ -125,7 +125,7 @@ export const AuditReportPDF: React.FC<AuditReportPDFProps> = ({ auditRecord, cli
             {/* Footer */}
             <div style={{ position: 'absolute', bottom: '20px', left: '30px', right: '30px', textAlign: 'center', fontSize: '10px', color: '#999', borderTop: '1px solid #eee', paddingTop: '10px' }}>
                 <p>Generated via TECHINFIGO CRM</p>
-                <p>contact@techinfigo.com | www.techinfigo.com</p>
+                <p>info@techinfigo.com | www.techinfigo.com</p>
             </div>
         </div>
     );
