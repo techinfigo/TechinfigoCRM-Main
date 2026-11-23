@@ -562,6 +562,18 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
               return next;
             }),
           );
+          const leadActs = actions.filter((a) => a.leadId);
+          if (leadActs.length) {
+            const updatedLeads = portalData.current.leads.map((l) => {
+              let next = l;
+              for (const a of leadActs.filter((x) => x.leadId === l.id && x.clientId === l.clientId)) {
+                const st = a.leadStatus === "Converted" ? "Closed Won" : a.leadStatus === "Lost" ? "Closed Lost" : a.leadStatus === "Contacted" ? "Contacted" : a.leadStatus === "New" ? "New Lead" : next.status;
+                next = { ...next, status: st as typeof next.status, ...(a.leadNote ? { notes: a.leadNote } : {}), lastContactedDate: new Date().toISOString() };
+              }
+              return next;
+            });
+            setLeads(updatedLeads, { type: "batch", payload: null, description: "Client updated leads from portal" });
+          }
           await ackPortalActions(actions.map((a) => a.id));
           const ok = actions.filter((a) => a.action === "approve").length;
           const ch = actions.length - ok;

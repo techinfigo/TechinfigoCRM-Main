@@ -25,7 +25,7 @@ export const setupPortal = (clientId: string, phone: string, password: string, e
 
 export const syncPortal = (clientId: string, snapshot: unknown) => call<{ ok: true }>({ action: 'sync', clientId, snapshot });
 
-export type PortalAction = { id: string; clientId: string; planId: string; action: 'approve' | 'change'; comment: string; at: number };
+export type PortalAction = { id: string; clientId: string; planId: string; action: 'approve' | 'change'; comment: string; at: number; leadId?: string; leadStatus?: string; leadNote?: string };
 export const pullPortalActions = () => call<{ actions: PortalAction[] }>({ action: 'pull' }).then((r) => r.actions || []);
 export const ackPortalActions = (ids: string[]) => call<{ ok: true }>({ action: 'ack', ids });
 
