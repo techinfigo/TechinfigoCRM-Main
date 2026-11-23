@@ -47,6 +47,7 @@ type Connection = {
   token: string;
   enabled: boolean;
   createdAt: Date | null;
+  clientId?: string;
 };
 type Stats = { receivedCount: number; lastReceivedAt: Date | null; lastTestAt: Date | null };
 
@@ -103,6 +104,7 @@ function useIntegrations() {
             token: typeof x.token === 'string' ? x.token : '',
             enabled: x.enabled !== false,
             createdAt: toDate(x.createdAt),
+            clientId: typeof x.clientId === 'string' ? x.clientId : undefined,
           };
         });
         list.sort((a, b) => (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0));
@@ -289,9 +291,17 @@ const PRESETS: { name: string; steps: string[] }[] = [
 
 /* ------------------------------ custom connection ------------------------- */
 
-const ConnectionRow: React.FC<{ c: Connection; s?: Stats; onError: (msg: string) => void }> = ({ c, s, onError }) => {
+const ConnectionRow: React.FC<{ c: Connection; s?: Stats; onError: (msg: string) => void; clients?: { id: string; name: string; companyName?: string }[] }> = ({ c, s, onError, clients = [] }) => {
   const url = `${SITE}/api/hooks/in/${c.token}`;
   const [busy, setBusy] = useState(false);
+  const assignClient = async (clientId: string) => {
+    try {
+      await updateDoc(doc(db, 'integrations', c.id), { clientId: clientId || null, updatedAt: serverTimestamp() });
+    } catch (err) {
+      console.error(err);
+      onError('Could not update the client for this connection.');
+    }
+  };
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [test, setTest] = useState<'idle' | 'sending' | 'ok' | 'fail'>('idle');
   const [showGuide, setShowGuide] = useState(false);
@@ -349,6 +359,23 @@ const ConnectionRow: React.FC<{ c: Connection; s?: Stats; onError: (msg: string)
       <CopyField label="Webhook link (paste this in the tool)" value={url} />
       <StatsLine s={s} />
 
+      {clients.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Leads go to:</span>
+          <select
+            value={c.clientId || ''}
+            onChange={(e) => assignClient(e.target.value)}
+            className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 text-xs text-slate-900 dark:text-white"
+          >
+            <option value="">Agency only</option>
+            {clients.map((cl) => (
+              <option key={cl.id} value={cl.id}>{cl.companyName || cl.name}</option>
+            ))}
+          </select>
+          {c.clientId && <span className="text-xs text-emerald-600 dark:text-emerald-400">→ shows in their portal</span>}
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center gap-2">
         <Button size="sm" variant="outline" disabled={!c.enabled || test === 'sending'} onClick={sendTest} leftIcon={<Send className="w-3.5 h-3.5 mr-1" />}>
           {test === 'sending' ? 'Sending…' : 'Send test lead'}
@@ -402,17 +429,18 @@ const ConnectionRow: React.FC<{ c: Connection; s?: Stats; onError: (msg: string)
 
 /* --------------------------------- page ---------------------------------- */
 
-export const IntegrationsHub: React.FC = () => {
+export const IntegrationsHub: React.FC<{ clients?: { id: string; name: string; companyName?: string }[] }> = ({ clients = [] }) => {
   const { connections, stats, error, loaded, setError } = useIntegrations();
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState('');
+  const [newClientId, setNewClientId] = useState('');
   const [busy, setBusy] = useState(false);
   const [confirmNewKey, setConfirmNewKey] = useState(false);
 
   const googleAds = useMemo(() => connections.find((c) => c.kind === 'google-ads') ?? null, [connections]);
   const webhooks = connections.filter((c) => c.kind === 'webhook');
 
-  const create = async (kind: ConnectionKind, connectionName: string) => {
+  const create = async (kind: ConnectionKind, connectionName: string, clientId?: string) => {
     setBusy(true);
     try {
       await addDoc(collection(db, 'integrations'), {
@@ -420,11 +448,13 @@ export const IntegrationsHub: React.FC = () => {
         name: connectionName,
         token: newToken(),
         enabled: true,
+        ...(clientId ? { clientId } : {}),
         createdAt: serverTimestamp(),
         createdBy: auth.currentUser?.email ?? null,
       });
       setAdding(false);
       setName('');
+      setNewClientId('');
     } catch (err) {
       console.error(err);
       setError('Could not create the connection. The Firestore rules may need the "integrations" section.');
@@ -591,11 +621,26 @@ export const IntegrationsHub: React.FC = () => {
               placeholder="Or type a name, e.g. Agra landing page"
               className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-white"
             />
+            {clients.length > 0 && (
+              <div>
+                <label className="block text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 mb-1">Send these leads to which client?</label>
+                <select
+                  value={newClientId}
+                  onChange={(e) => setNewClientId(e.target.value)}
+                  className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-white"
+                >
+                  <option value="">Agency only (no client portal)</option>
+                  {clients.map((c) => (
+                    <option key={c.id} value={c.id}>{c.companyName || c.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
             <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
-              <Info className="w-3.5 h-3.5" /> This name shows on every lead from this connection.
+              <Info className="w-3.5 h-3.5" /> This name shows on every lead from this connection. If a client is chosen, their leads appear in that client\'s portal.
             </p>
             <div className="flex gap-2">
-              <Button size="sm" variant="primary" disabled={busy || !name.trim()} onClick={() => create('webhook', name.trim())}>
+              <Button size="sm" variant="primary" disabled={busy || !name.trim()} onClick={() => create('webhook', name.trim(), newClientId || undefined)}>
                 Create connection
               </Button>
               <Button
@@ -620,7 +665,7 @@ export const IntegrationsHub: React.FC = () => {
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {webhooks.map((c) => (
-            <ConnectionRow key={c.id} c={c} s={stats[c.id]} onError={setError} />
+            <ConnectionRow key={c.id} c={c} s={stats[c.id]} onError={setError} clients={clients} />
           ))}
         </div>
       </section>

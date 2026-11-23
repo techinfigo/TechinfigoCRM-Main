@@ -2743,7 +2743,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
           />
         );
       case "INTEGRATIONS":
-        return <IntegrationsHub />;
+        return <IntegrationsHub clients={clients} />;
       case "TOOLS":
         return <ToolsView />;
       case "USER_PROFILE":

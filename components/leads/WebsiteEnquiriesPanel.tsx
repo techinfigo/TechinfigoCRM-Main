@@ -32,6 +32,8 @@ export type Enquiry = {
   sourceForm: string | null;
   /** Connection name for leads from a webhook connection (e.g. "IndiaMART"). */
   sourceName: string | null;
+  /** Which client this lead belongs to (set on the webhook connection). */
+  clientId?: string;
   landingPage: string | null;
   utmSource: string | null;
   utmCampaign: string | null;
@@ -89,6 +91,7 @@ function toEnquiry(id: string, d: Record<string, unknown>): Enquiry {
     checkup: toCheckup(d.checkup),
     sourceForm: s(d.sourceForm),
     sourceName: s(d.sourceName),
+    ...(s(d.clientId) ? { clientId: s(d.clientId) as string } : {}),
     landingPage: s(d.landingPage),
     utmSource: s(d.utmSource),
     utmCampaign: s(d.utmCampaign),
@@ -205,6 +208,7 @@ export function toLead(e: Enquiry): Lead {
     dateAdded: (e.createdAt ?? new Date()).toISOString(),
     notes,
     leadType: e.checkup ? (e.checkup.biz === 'd2c' ? 'D2C' : 'General') : e.needs.some((n) => /d2c|store/i.test(n)) ? 'D2C' : 'General',
+    ...(e.clientId ? { clientId: e.clientId } : {}),
     ...(e.checkup ? { checkup: e.checkup, serviceInterest: e.needs, tags: [CHECKUP_BIZ[e.checkup.biz] || 'Other', ...(e.checkup.hot ? ['🔥 Hot'] : [])] } : {}),
   } as Lead;
 }
