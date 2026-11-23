@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Lead, LeadStatus, leadStatuses, OnboardingInterestLevel, onboardingInterestLevels, CustomField, TeamMember, LeadType, leadTypes } from '../../types';
+import { Lead, LeadStatus, leadStatuses, OnboardingInterestLevel, onboardingInterestLevels, CustomField, TeamMember, LeadType, leadTypes, Client } from '../../types';
 import { Select } from '../common/Select';
 import { SidePanel } from '../common/SidePanel';
 import { Button } from '../common/Button';
@@ -48,6 +48,7 @@ interface LeadFormModalProps {
   teamMembers: TeamMember[];
   onSetDirty: (isDirty: boolean) => void;
   customFields: CustomField[];
+  clients?: Client[];
 }
 
 interface LeadFormData {
@@ -56,6 +57,7 @@ interface LeadFormData {
   // Vitals
   name: string;
   companyName: string;
+  clientId?: string;
   email: string;
   phone?: string;
   website?: string;
@@ -101,6 +103,7 @@ const initialFormData: LeadFormData = {
   leadType: 'D2C',
   name: '',
   companyName: '',
+  clientId: '',
   email: '',
   phone: '',
   website: '',
@@ -137,7 +140,7 @@ const toLocalISOString = (dateString: string): string => {
     return localISOTime;
 };
 
-export const LeadFormModal: React.FC<LeadFormModalProps> = ({ isOpen, onClose, onSave, lead, teamMembers, onSetDirty, customFields }) => {
+export const LeadFormModal: React.FC<LeadFormModalProps> = ({ isOpen, onClose, onSave, lead, teamMembers, onSetDirty, customFields, clients = [] }) => {
   const [formData, setFormData] = useState<LeadFormData>(initialFormData);
   const [errors, setErrors] = useState<Partial<Record<keyof LeadFormData, string>>>({});
   const initialFormStateRef = useRef<LeadFormData | null>(null);
@@ -152,6 +155,7 @@ export const LeadFormModal: React.FC<LeadFormModalProps> = ({ isOpen, onClose, o
           leadType: lead.leadType || 'D2C',
           name: lead.name,
           companyName: lead.companyName || '',
+          clientId: lead.clientId || '',
           email: lead.email,
           phone: lead.phone || '',
           website: lead.website || '',
@@ -341,6 +345,16 @@ export const LeadFormModal: React.FC<LeadFormModalProps> = ({ isOpen, onClose, o
             <Input label="Contact Name *" id="name" name="name" value={formData.name} onChange={handleChange} error={errors.name} required />
             <Input label="Brand / Company Name" id="companyName" name="companyName" value={formData.companyName} onChange={handleChange} />
             <Input label="Website URL" id="website" name="website" type="url" value={formData.website} onChange={handleChange} placeholder="https://..." />
+            <div>
+              <label className="block text-sm font-medium text-text-base dark:text-slate-300 mb-1">Belongs to client (shows in their portal)</label>
+              <Select
+                value={formData.clientId || ''}
+                onChange={(v) => setFormData(prev => ({ ...prev, clientId: v }))}
+                placeholder="Agency lead (no client)"
+                searchable
+                options={[{ value: '', label: "Agency lead (no client)" }, ...clients.map(c => ({ value: c.id, label: c.companyName || c.name }))]}
+              />
+            </div>
             <Input label="Instagram Handle" id="instagramHandle" name="instagramHandle" value={formData.instagramHandle} onChange={handleChange} placeholder="@brandname" />
             <Input label="Email Address" id="email" name="email" type="email" value={formData.email} onChange={handleChange} error={errors.email} />
             <Input label="Phone Number" id="phone" name="phone" type="tel" value={formData.phone} onChange={handleChange} />

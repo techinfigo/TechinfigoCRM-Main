@@ -511,14 +511,14 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
    * Only changed snapshots are sent.
    */
   const portalSent = useRef<Record<string, string>>({});
-  const portalData = useRef({ clients, clientPlans, invoices, payments, proposals });
-  portalData.current = { clients, clientPlans, invoices, payments, proposals };
+  const portalData = useRef({ clients, clientPlans, invoices, payments, proposals, leads });
+  portalData.current = { clients, clientPlans, invoices, payments, proposals, leads };
   const portalSnapshotFor = (clientId: string) => {
-    const { clients, clientPlans, invoices, payments, proposals } = portalData.current;
+    const { clients, clientPlans, invoices, payments, proposals, leads } = portalData.current;
     const c = clients.find((x) => x.id === clientId);
     if (!c?.portal?.enabled) return null;
     const contact = (load(KEYS.proposalDefaults, {}) || {}) as { upiId?: string; name?: string; phone?: string };
-    return buildSnapshot(c, clientPlans, invoices, payments, proposals, contact);
+    return buildSnapshot(c, clientPlans, invoices, payments, proposals, contact, leads);
   };
   const portalSyncNow = (clientId: string, force = true) => {
     const snap = portalSnapshotFor(clientId);
@@ -3447,6 +3447,7 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
         )}
       {activeModal?.type === "LEAD_FORM" && (
         <LeadFormModal
+          clients={clients}
           isOpen={true}
           onClose={closeModal}
           onSave={(lead) => {

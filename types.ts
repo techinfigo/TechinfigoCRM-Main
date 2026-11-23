@@ -74,6 +74,7 @@ export interface Lead {
     id: string;
     name: string;
     email: string;
+    clientId?: string; // which client this lead belongs to (for the client portal); empty = agency's own lead
     leadType?: LeadType; // 'D2C' shows e-commerce fields; 'General' shows service-business fields
     phone?: string;
     companyName?: string;

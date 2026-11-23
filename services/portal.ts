@@ -1,5 +1,5 @@
 import { auth } from '../firebase';
-import type { Client, ClientPlanItem, Invoice, Payment, Proposal } from '../types';
+import type { Client, ClientPlanItem, Invoice, Payment, Proposal, Lead } from '../types';
 import { invoiceBalance, isBillable } from '../selectors/money';
 
 /**
@@ -45,6 +45,7 @@ export function buildSnapshot(
   payments: Payment[],
   proposals: Proposal[],
   contact: { upiId?: string; name?: string; phone?: string },
+  leads: Lead[] = [],
 ) {
   const from = new Date(Date.now() - 120 * 864e5).toISOString().slice(0, 10);
   const mine = invoices.filter((i) => i.clientId === client.id && isBillable(i));
@@ -74,6 +75,19 @@ export function buildSnapshot(
     docs: proposals
       .filter((p) => p.publicUrl && (p.clientId === client.id || (client.convertedFromLeadId && p.clientId === client.convertedFromLeadId)))
       .map((p) => ({ title: `Proposal ${p.design?.number || p.proposalNumber}`, url: p.publicUrl!, date: (p.generatedDate || '').slice(0, 10) })),
+    leads: leads
+      .filter((l) => l.clientId === client.id)
+      .sort((a, b) => (b.dateAdded || '').localeCompare(a.dateAdded || ''))
+      .map((l) => ({
+        id: l.id,
+        name: l.name || 'Lead',
+        phone: l.phone || '',
+        email: l.email || '',
+        source: l.source || '',
+        status: (l.status === 'Closed Won' ? 'Converted' : l.status === 'Closed Lost' ? 'Lost' : l.status === 'New Lead' ? 'New' : 'Contacted') as 'New' | 'Contacted' | 'Converted' | 'Lost',
+        note: l.notes || '',
+        at: l.dateAdded || '',
+      })),
     upiId: contact.upiId || '',
     contactName: contact.name || '',
     contactPhone: contact.phone || '',
