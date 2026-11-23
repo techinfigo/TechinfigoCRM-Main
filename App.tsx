@@ -564,15 +564,31 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
           );
           const leadActs = actions.filter((a) => a.leadId);
           if (leadActs.length) {
+            const existingIds = new Set(portalData.current.leads.map((l) => l.id));
+            // New leads the client added from their portal.
+            const newLeads = leadActs
+              .filter((a) => a.leadNew && !existingIds.has(a.leadId!))
+              .map((a) => ({
+                id: a.leadId!,
+                name: a.leadName || "Lead",
+                email: "",
+                phone: a.leadPhone || undefined,
+                clientId: a.clientId,
+                source: "Client portal",
+                status: "New Lead" as const,
+                dateAdded: new Date().toISOString(),
+                notes: a.leadNote || undefined,
+                leadType: "General" as const,
+              }));
             const updatedLeads = portalData.current.leads.map((l) => {
               let next = l;
-              for (const a of leadActs.filter((x) => x.leadId === l.id && x.clientId === l.clientId)) {
+              for (const a of leadActs.filter((x) => !x.leadNew && x.leadId === l.id && x.clientId === l.clientId)) {
                 const st = a.leadStatus === "Converted" ? "Closed Won" : a.leadStatus === "Lost" ? "Closed Lost" : a.leadStatus === "Contacted" ? "Contacted" : a.leadStatus === "New" ? "New Lead" : next.status;
                 next = { ...next, status: st as typeof next.status, ...(a.leadNote ? { notes: a.leadNote } : {}), lastContactedDate: new Date().toISOString() };
               }
               return next;
             });
-            setLeads(updatedLeads, { type: "batch", payload: null, description: "Client updated leads from portal" });
+            setLeads([...(newLeads as typeof updatedLeads), ...updatedLeads], { type: "batch", payload: null, description: "Client lead changes from portal" });
           }
           await ackPortalActions(actions.map((a) => a.id));
           const ok = actions.filter((a) => a.action === "approve").length;
