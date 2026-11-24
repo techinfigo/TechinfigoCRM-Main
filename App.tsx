@@ -583,7 +583,8 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
             const updatedLeads = portalData.current.leads.map((l) => {
               let next = l;
               for (const a of leadActs.filter((x) => !x.leadNew && x.leadId === l.id && x.clientId === l.clientId)) {
-                const st = a.leadStatus === "Converted" ? "Closed Won" : a.leadStatus === "Lost" ? "Closed Lost" : a.leadStatus === "Contacted" ? "Contacted" : a.leadStatus === "New" ? "New Lead" : next.status;
+                const validStages = ["New Lead", "Contacted", "Proposal Sent", "Negotiation", "Closed Won", "Closed Lost"];
+                const st = a.leadStatus && validStages.includes(a.leadStatus) ? a.leadStatus : next.status;
                 next = { ...next, status: st as typeof next.status, ...(a.leadNote ? { notes: a.leadNote } : {}), lastContactedDate: new Date().toISOString() };
                 // Client set a next follow-up date from their portal.
                 if (a.leadNextFollowUp) next = { ...next, nextFollowUpDateTime: a.leadNextFollowUp };

@@ -84,7 +84,7 @@ export function buildSnapshot(
         phone: l.phone || '',
         email: l.email || '',
         source: l.source || '',
-        status: (l.status === 'Closed Won' ? 'Converted' : l.status === 'Closed Lost' ? 'Lost' : l.status === 'New Lead' ? 'New' : 'Contacted') as 'New' | 'Contacted' | 'Converted' | 'Lost',
+        status: (l.status === 'Audit in Progress' ? 'Contacted' : l.status) as 'New Lead' | 'Contacted' | 'Proposal Sent' | 'Negotiation' | 'Closed Won' | 'Closed Lost',
         note: l.notes || '',
         at: l.dateAdded || '',
         nextFollowUp: l.nextFollowUpDateTime || '',
