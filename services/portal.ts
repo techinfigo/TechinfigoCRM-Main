@@ -81,6 +81,7 @@ export function buildSnapshot(
       .map((l) => ({
         id: l.id,
         name: l.name || 'Lead',
+        company: l.companyName || '',
         phone: l.phone || '',
         email: l.email || '',
         source: l.source || '',
