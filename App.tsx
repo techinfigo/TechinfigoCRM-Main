@@ -585,6 +585,27 @@ export const App: React.FC<AppProps> = ({ onSignOut }) => {
               for (const a of leadActs.filter((x) => !x.leadNew && x.leadId === l.id && x.clientId === l.clientId)) {
                 const st = a.leadStatus === "Converted" ? "Closed Won" : a.leadStatus === "Lost" ? "Closed Lost" : a.leadStatus === "Contacted" ? "Contacted" : a.leadStatus === "New" ? "New Lead" : next.status;
                 next = { ...next, status: st as typeof next.status, ...(a.leadNote ? { notes: a.leadNote } : {}), lastContactedDate: new Date().toISOString() };
+                // Client set a next follow-up date from their portal.
+                if (a.leadNextFollowUp) next = { ...next, nextFollowUpDateTime: a.leadNextFollowUp };
+                // Client logged an activity (call / WhatsApp / visit) — mirror it into the lead's history.
+                if (a.leadActivityNote) {
+                  const typeMap: Record<string, "Call" | "Email" | "Meeting" | "Other"> = { Call: "Call", WhatsApp: "Call", Visit: "Meeting", Email: "Email", Meeting: "Meeting", Other: "Other" };
+                  const item = {
+                    id: `fu-portal-${a.id}`,
+                    note: a.leadActivityNote,
+                    timestamp: new Date(a.at || Date.now()).toISOString(),
+                    followUpType: typeMap[a.leadActivityType || ""] || "Other",
+                    ...(a.leadNextFollowUp ? { nextFollowUpDateTime: a.leadNextFollowUp } : {}),
+                    addedByUserId: "portal",
+                    addedByUserName: `${names.get(a.clientId) || "Client"} (portal)`,
+                  };
+                  next = {
+                    ...next,
+                    followUpHistory: [...(next.followUpHistory || []), item],
+                    status: next.status === "New Lead" ? "Contacted" : next.status,
+                    lastContactedDate: new Date().toISOString(),
+                  };
+                }
               }
               return next;
             });

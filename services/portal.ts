@@ -25,7 +25,7 @@ export const setupPortal = (clientId: string, phone: string, password: string, e
 
 export const syncPortal = (clientId: string, snapshot: unknown) => call<{ ok: true }>({ action: 'sync', clientId, snapshot });
 
-export type PortalAction = { id: string; clientId: string; planId: string; action: 'approve' | 'change'; comment: string; at: number; leadId?: string; leadStatus?: string; leadNote?: string; leadNew?: boolean; leadName?: string; leadPhone?: string };
+export type PortalAction = { id: string; clientId: string; planId: string; action: 'approve' | 'change'; comment: string; at: number; leadId?: string; leadStatus?: string; leadNote?: string; leadNew?: boolean; leadName?: string; leadPhone?: string; leadNextFollowUp?: string; leadActivityType?: string; leadActivityNote?: string };
 export const pullPortalActions = () => call<{ actions: PortalAction[] }>({ action: 'pull' }).then((r) => r.actions || []);
 export const ackPortalActions = (ids: string[]) => call<{ ok: true }>({ action: 'ack', ids });
 
@@ -87,6 +87,12 @@ export function buildSnapshot(
         status: (l.status === 'Closed Won' ? 'Converted' : l.status === 'Closed Lost' ? 'Lost' : l.status === 'New Lead' ? 'New' : 'Contacted') as 'New' | 'Contacted' | 'Converted' | 'Lost',
         note: l.notes || '',
         at: l.dateAdded || '',
+        nextFollowUp: l.nextFollowUpDateTime || '',
+        activity: (l.followUpHistory || [])
+          .slice()
+          .sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''))
+          .slice(0, 10)
+          .map((f) => ({ type: f.followUpType || 'Other', note: f.note || '', at: f.timestamp || '' })),
       })),
     upiId: contact.upiId || '',
     contactName: contact.name || '',
