@@ -700,11 +700,15 @@ export const IntegrationsHub: React.FC<{ clients?: { id: string; name: string; c
             }
           >
             <StatsLine s={stats.meta} />
+            <CopyField label="Webhook Callback URL (paste in your Meta app)" value={`${SITE}/api/hooks/meta`} />
+            <ol className="list-decimal pl-5 space-y-1 text-xs text-slate-600 dark:text-slate-300">
+              <li>developers.facebook.com → create a free app → add <b>Webhooks</b> + <b>Leads Retrieval</b>.</li>
+              <li>Webhooks → Page → Callback URL: paste above. Verify token: pick any secret word.</li>
+              <li>Subscribe your Facebook Page to the <b>leadgen</b> field.</li>
+              <li>In Vercel → Settings → Environment Variables add <code>META_VERIFY_TOKEN</code> (your secret word), <code>META_APP_SECRET</code>, <code>META_PAGE_ACCESS_TOKEN</code> — then redeploy.</li>
+            </ol>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Needs a free Meta app connected to your Facebook Page, once (guided setup). After that, leads arrive here on their own.
-            </p>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Quick option: use Zapier / Make / Pabbly “Facebook Lead Ads” → add a connection below.
+              After that, Lead-Ads leads arrive here on their own. No-code option: Zapier / Make / Pabbly “Facebook Lead Ads” → the webhook link in a connection below.
             </p>
           </SourceCard>
         </div>
