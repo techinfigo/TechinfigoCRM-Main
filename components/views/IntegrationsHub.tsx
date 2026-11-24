@@ -6,6 +6,7 @@ import {
   doc,
   onSnapshot,
   serverTimestamp,
+  setDoc,
   updateDoc,
   type Timestamp,
 } from 'firebase/firestore';
@@ -24,6 +25,8 @@ import {
   Webhook,
   ChevronDown,
   Info,
+  KeyRound,
+  ExternalLink,
 } from 'lucide-react';
 import { auth, db, isFirebaseConfigured } from '../../firebase';
 import { Button } from '../common/Button';
@@ -427,6 +430,114 @@ const ConnectionRow: React.FC<{ c: Connection; s?: Stats; onError: (msg: string)
   );
 };
 
+/* ------------------------------ apps & APIs ------------------------------- */
+
+type AppState = { apiKey?: string; connected?: boolean; requested?: boolean };
+const APP_DEFS: { id: string; name: string; desc: string; kind: 'key' | 'oauth'; keyLabel?: string; keyHint?: string; badge: string; help?: string }[] = [
+  { id: 'claude', name: 'Claude (Anthropic)', desc: 'AI lead scoring, auto-draft WhatsApp/email replies, content ideas.', kind: 'key', keyLabel: 'Anthropic API key', keyHint: 'sk-ant-…', badge: 'AI' },
+  { id: 'openai', name: 'OpenAI', desc: 'Alternative AI engine for the same features.', kind: 'key', keyLabel: 'OpenAI API key', keyHint: 'sk-…', badge: 'AI' },
+  { id: 'meta', name: 'Meta — Facebook & Instagram', desc: 'Lead Ads auto-capture, page posting, ad metrics.', kind: 'oauth', badge: 'f', help: 'Needs a free Meta app + one permission review.' },
+  { id: 'whatsapp', name: 'WhatsApp Business API', desc: 'Auto-reply + two-way inbox.', kind: 'oauth', badge: 'W', help: 'Paid Meta API (~₹1.5–2.5k/mo) + setup.' },
+  { id: 'google', name: 'Google Business / Sheets', desc: 'Reply to reviews, GMB posts, export to Sheets.', kind: 'oauth', badge: 'G', help: 'Google sign-in (OAuth).' },
+  { id: 'razorpay', name: 'Razorpay / UPI', desc: 'Online payments + automatic receipts.', kind: 'key', keyLabel: 'Razorpay Key ID', keyHint: 'rzp_live_…', badge: '₹' },
+];
+
+const AppIntegrations: React.FC = () => {
+  const [apps, setApps] = useState<Record<string, AppState>>({});
+  const [editing, setEditing] = useState<string | null>(null);
+  const [draft, setDraft] = useState('');
+  const [note, setNote] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isFirebaseConfigured) return;
+    const off = onSnapshot(
+      collection(db, 'appIntegrations'),
+      (snap) => {
+        const m: Record<string, AppState> = {};
+        snap.docs.forEach((d) => {
+          const x = d.data();
+          m[d.id] = { apiKey: typeof x.apiKey === 'string' ? x.apiKey : undefined, connected: !!x.connected, requested: !!x.requested };
+        });
+        setApps(m);
+      },
+      () => setNote('Could not load apps. If this persists, the Firestore rules need an "appIntegrations" section.'),
+    );
+    return () => off();
+  }, []);
+
+  const saveKey = async (id: string) => {
+    if (!draft.trim()) return;
+    try {
+      await setDoc(doc(db, 'appIntegrations', id), { apiKey: draft.trim(), connected: true, connectedAt: serverTimestamp(), by: auth.currentUser?.email ?? null }, { merge: true });
+      setEditing(null);
+      setDraft('');
+    } catch {
+      setNote('Could not save. The Firestore rules may need an "appIntegrations" section.');
+    }
+  };
+  const disconnect = async (id: string) => {
+    try { await deleteDoc(doc(db, 'appIntegrations', id)); } catch { setNote('Could not disconnect. Try again.'); }
+  };
+  const requestSetup = async (id: string) => {
+    try { await setDoc(doc(db, 'appIntegrations', id), { requested: true, requestedAt: serverTimestamp() }, { merge: true }); } catch { setNote('Could not save. Try again.'); }
+  };
+
+  return (
+    <section className="space-y-3">
+      <div>
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Apps &amp; APIs</h3>
+        <p className="text-xs text-slate-500 dark:text-slate-400">Connect AI and other services. You paste your own API key — it is stored in your CRM only. Live wiring is added per app.</p>
+      </div>
+      {note && <div className="rounded-lg border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/40 p-3 text-sm text-amber-800 dark:text-amber-300">{note}</div>}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        {APP_DEFS.map((a) => {
+          const st = apps[a.id] || {};
+          const connected = a.kind === 'key' ? !!(st.connected && st.apiKey) : !!st.connected;
+          const status = connected ? (
+            <StatusPill tone="green">● Connected</StatusPill>
+          ) : st.requested ? (
+            <StatusPill tone="amber">Setup requested</StatusPill>
+          ) : (
+            <StatusPill tone="grey">Not connected</StatusPill>
+          );
+          return (
+            <SourceCard key={a.id} icon={<span className="text-sm font-bold">{a.badge}</span>} title={a.name} subtitle={a.desc} status={status}>
+              {a.kind === 'key' ? (
+                connected ? (
+                  <div className="space-y-2">
+                    <CopyField label={a.keyLabel || 'API key'} value={st.apiKey || ''} secret />
+                    <Button size="sm" variant="ghost" onClick={() => disconnect(a.id)} leftIcon={<Trash2 className="w-3.5 h-3.5 mr-1" />}>Disconnect</Button>
+                  </div>
+                ) : editing === a.id ? (
+                  <div className="space-y-2">
+                    <input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={a.keyHint} className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-white" />
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="primary" disabled={!draft.trim()} onClick={() => saveKey(a.id)}>Save key</Button>
+                      <Button size="sm" variant="ghost" onClick={() => { setEditing(null); setDraft(''); }}>Cancel</Button>
+                    </div>
+                    <p className="text-[11px] text-slate-400">Paste your own key. Stored in your CRM only.</p>
+                  </div>
+                ) : (
+                  <Button size="sm" variant="primary" onClick={() => { setEditing(a.id); setDraft(''); }} leftIcon={<KeyRound className="w-3.5 h-3.5 mr-1" />}>Add API key</Button>
+                )
+              ) : (
+                <div className="space-y-2">
+                  {a.help && <p className="text-xs text-slate-500 dark:text-slate-400">{a.help}</p>}
+                  {st.requested ? (
+                    <Button size="sm" variant="ghost" onClick={() => disconnect(a.id)}>Cancel request</Button>
+                  ) : (
+                    <Button size="sm" variant="primary" onClick={() => requestSetup(a.id)} leftIcon={<ExternalLink className="w-3.5 h-3.5 mr-1" />}>Connect</Button>
+                  )}
+                </div>
+              )}
+            </SourceCard>
+          );
+        })}
+      </div>
+    </section>
+  );
+};
+
 /* --------------------------------- page ---------------------------------- */
 
 export const IntegrationsHub: React.FC<{ clients?: { id: string; name: string; companyName?: string }[] }> = ({ clients = [] }) => {
@@ -579,6 +690,9 @@ export const IntegrationsHub: React.FC<{ clients?: { id: string; name: string; c
           </SourceCard>
         </div>
       </section>
+
+      {/* Apps & APIs */}
+      <AppIntegrations />
 
       {/* Custom connections */}
       <section className="space-y-3">
