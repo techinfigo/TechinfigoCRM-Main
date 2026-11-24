@@ -30,6 +30,12 @@ service cloud.firestore {
         && request.auth.token.email in ['sachin.kumar.zone@gmail.com'];
     }
 
+    // Connected apps & API keys (Claude, Meta, WhatsApp, Google, Razorpay…).
+    match /appIntegrations/{appId} {
+      allow read, write: if request.auth != null
+        && request.auth.token.email in ['sachin.kumar.zone@gmail.com'];
+    }
+
     // "Last lead 5 min ago" counters. Only the website's server writes them.
     match /integrationStats/{sourceId} {
       allow read: if request.auth != null
