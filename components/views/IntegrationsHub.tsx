@@ -432,15 +432,33 @@ const ConnectionRow: React.FC<{ c: Connection; s?: Stats; onError: (msg: string)
 
 /* ------------------------------ apps & APIs ------------------------------- */
 
-type AppState = { apiKey?: string; connected?: boolean; requested?: boolean };
-const APP_DEFS: { id: string; name: string; desc: string; kind: 'key' | 'oauth'; keyLabel?: string; keyHint?: string; badge: string; help?: string }[] = [
-  { id: 'claude', name: 'Claude (Anthropic)', desc: 'AI lead scoring, auto-draft WhatsApp/email replies, content ideas.', kind: 'key', keyLabel: 'Anthropic API key', keyHint: 'sk-ant-…', badge: 'AI' },
-  { id: 'openai', name: 'OpenAI', desc: 'Alternative AI engine for the same features.', kind: 'key', keyLabel: 'OpenAI API key', keyHint: 'sk-…', badge: 'AI' },
+type AppState = { apiKey?: string; connected?: boolean; requested?: boolean; model?: string };
+const APP_DEFS: { id: string; name: string; desc: string; kind: 'key' | 'oauth'; keyLabel?: string; keyHint?: string; badge: string; help?: string; defaultModel?: string }[] = [
+  { id: 'claude', name: 'Claude (Anthropic)', desc: 'AI lead scoring, auto-draft WhatsApp/email replies, content ideas.', kind: 'key', keyLabel: 'Anthropic API key', keyHint: 'sk-ant-…', badge: 'AI', defaultModel: 'claude-3-5-haiku-latest' },
+  { id: 'openai', name: 'OpenAI', desc: 'Alternative AI engine for the same features.', kind: 'key', keyLabel: 'OpenAI API key', keyHint: 'sk-…', badge: 'AI', defaultModel: 'gpt-4o-mini' },
   { id: 'meta', name: 'Meta — Facebook & Instagram', desc: 'Lead Ads auto-capture, page posting, ad metrics.', kind: 'oauth', badge: 'f', help: 'Needs a free Meta app + one permission review.' },
   { id: 'whatsapp', name: 'WhatsApp Business API', desc: 'Auto-reply + two-way inbox.', kind: 'oauth', badge: 'W', help: 'Paid Meta API (~₹1.5–2.5k/mo) + setup.' },
   { id: 'google', name: 'Google Business / Sheets', desc: 'Reply to reviews, GMB posts, export to Sheets.', kind: 'oauth', badge: 'G', help: 'Google sign-in (OAuth).' },
   { id: 'razorpay', name: 'Razorpay / UPI', desc: 'Online payments + automatic receipts.', kind: 'key', keyLabel: 'Razorpay Key ID', keyHint: 'rzp_live_…', badge: '₹' },
 ];
+
+const ModelField: React.FC<{ id: string; current?: string; fallback: string }> = ({ id, current, fallback }) => {
+  const [v, setV] = useState(current || fallback);
+  const [saved, setSaved] = useState(false);
+  useEffect(() => { setV(current || fallback); }, [current, fallback]);
+  const save = async () => {
+    try { await setDoc(doc(db, 'appIntegrations', id), { model: v.trim() || fallback }, { merge: true }); setSaved(true); setTimeout(() => setSaved(false), 1500); } catch { /* ignore */ }
+  };
+  return (
+    <div>
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1">Model</p>
+      <div className="flex items-center gap-1.5">
+        <input value={v} onChange={(e) => setV(e.target.value)} className="flex-1 min-w-0 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2.5 py-1.5 text-xs text-slate-900 dark:text-white" />
+        <Button size="sm" variant="ghost" onClick={save}>{saved ? 'Saved' : 'Save'}</Button>
+      </div>
+    </div>
+  );
+};
 
 const AppIntegrations: React.FC = () => {
   const [apps, setApps] = useState<Record<string, AppState>>({});
@@ -456,7 +474,7 @@ const AppIntegrations: React.FC = () => {
         const m: Record<string, AppState> = {};
         snap.docs.forEach((d) => {
           const x = d.data();
-          m[d.id] = { apiKey: typeof x.apiKey === 'string' ? x.apiKey : undefined, connected: !!x.connected, requested: !!x.requested };
+          m[d.id] = { apiKey: typeof x.apiKey === 'string' ? x.apiKey : undefined, connected: !!x.connected, requested: !!x.requested, model: typeof x.model === 'string' ? x.model : undefined };
         });
         setApps(m);
       },
@@ -506,6 +524,7 @@ const AppIntegrations: React.FC = () => {
                 connected ? (
                   <div className="space-y-2">
                     <CopyField label={a.keyLabel || 'API key'} value={st.apiKey || ''} secret />
+                    {a.defaultModel && <ModelField id={a.id} current={st.model} fallback={a.defaultModel} />}
                     <Button size="sm" variant="ghost" onClick={() => disconnect(a.id)} leftIcon={<Trash2 className="w-3.5 h-3.5 mr-1" />}>Disconnect</Button>
                   </div>
                 ) : editing === a.id ? (

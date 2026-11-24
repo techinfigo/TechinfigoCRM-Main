@@ -7,8 +7,9 @@ import { Card } from '../common/Card';
 import { Input } from '../common/Input';
 import { DateRangePicker, DateRange } from '../common/DateRangePicker';
 import { Checkbox } from '../common/Checkbox';
-import { ChevronDown, SlidersHorizontal, Columns, Search, Undo2, GripVertical, Mail, Phone, Calendar, Download, Upload, Instagram, Globe, Webhook, StickyNote, Eye, Trash2, FileText, MessageCircle, ChevronRight } from 'lucide-react';
+import { ChevronDown, SlidersHorizontal, Columns, Search, Undo2, GripVertical, Mail, Phone, Calendar, Download, Upload, Instagram, Globe, Webhook, StickyNote, Eye, Trash2, FileText, MessageCircle, ChevronRight, Sparkles } from 'lucide-react';
 import { ConfirmationModal } from '../modals/ConfirmationModal';
+import { AiDraftModal } from '../modals/AiDraftModal';
 import { WebsiteEnquiriesInbox, useWebsiteEnquiries } from '../leads/WebsiteEnquiriesPanel';
 import { usePagination } from '../../hooks/usePagination';
 import { Pagination } from '../common/Pagination';
@@ -158,6 +159,7 @@ export const LeadsView: React.FC<LeadsViewProps> = ({ leads, auditRecords, teamM
   const enquiries = useWebsiteEnquiries();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [leadToDelete, setLeadToDelete] = useState<Lead | null>(null);
+  const [aiLead, setAiLead] = useState<Lead | null>(null);
   const [dateRange, setDateRange] = useState<DateRange | null>(null);
   
   const [searchTerm, setSearchTerm] = useState('');
@@ -799,8 +801,15 @@ export const LeadsView: React.FC<LeadsViewProps> = ({ leads, auditRecords, teamM
                                 </td>
                                 <td className="px-4 py-3 text-right">
                                     <div className="flex items-center justify-end gap-1.5 flex-wrap">
-                                        <button 
-                                            onClick={() => onSelectLeadForDetail(lead)} 
+                                        <button
+                                            onClick={() => setAiLead(lead)}
+                                            className="p-1.5 bg-amber-50/70 hover:bg-amber-100 border border-amber-200/70 dark:bg-amber-950/20 dark:hover:bg-amber-900/30 dark:border-amber-900/50 text-amber-600 dark:text-amber-400 rounded-lg shadow-3xs hover:shadow-2xs transition-all cursor-pointer"
+                                            title="Draft a reply with AI"
+                                        >
+                                            <Sparkles className="w-3.5 h-3.5" />
+                                        </button>
+                                        <button
+                                            onClick={() => onSelectLeadForDetail(lead)}
                                             className="p-1.5 bg-slate-50/60 hover:bg-slate-100/80 border border-slate-200/70 dark:bg-slate-800/40 dark:hover:bg-slate-700/60 dark:border-slate-700/50 text-slate-700 dark:text-slate-200 rounded-lg shadow-3xs hover:shadow-2xs transition-all cursor-pointer group/btn"
                                             title="View Details"
                                         >
@@ -888,6 +897,7 @@ export const LeadsView: React.FC<LeadsViewProps> = ({ leads, auditRecords, teamM
             confirmLabel="Delete"
         />
     )}
+    {aiLead && <AiDraftModal lead={aiLead} onClose={() => setAiLead(null)} />}
     </>
   );
 };
