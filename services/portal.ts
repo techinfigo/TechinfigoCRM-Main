@@ -20,8 +20,20 @@ async function call<T>(body: Record<string, unknown>): Promise<T> {
   return json;
 }
 
-export const setupPortal = (clientId: string, phone: string, password: string, enabled: boolean) =>
-  call<{ portal: { enabled: boolean; phone: string; syncedAt: number } }>({ action: 'setup', clientId, phone, password: password || undefined, enabled });
+export const setupPortal = (clientId: string, phone: string, password: string, enabled: boolean, businessType?: string) =>
+  call<{ portal: { enabled: boolean; phone: string; syncedAt: number } }>({ action: 'setup', clientId, phone, password: password || undefined, enabled, businessType: businessType || undefined });
+
+/** The agency's pipeline presets for a client's portal leads (Audit stage removed). */
+export const BUSINESS_PIPELINES: { id: string; label: string }[] = [
+  { id: 'general', label: 'General / Sales' },
+  { id: 'clinic', label: 'Clinic / Healthcare' },
+  { id: 'realestate', label: 'Real Estate' },
+  { id: 'coaching', label: 'Coaching / Education' },
+  { id: 'restaurant', label: 'Restaurant / Food' },
+  { id: 'retail', label: 'Shop / Showroom' },
+  { id: 'hotel', label: 'Hotel / Travel' },
+  { id: 'd2c', label: 'D2C / Online Store' },
+];
 
 export const syncPortal = (clientId: string, snapshot: unknown) => call<{ ok: true }>({ action: 'sync', clientId, snapshot });
 

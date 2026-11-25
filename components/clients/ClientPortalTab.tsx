@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { MonitorSmartphone, KeyRound, MessageCircle, Loader2, Power, ExternalLink, RefreshCw } from 'lucide-react';
+import { MonitorSmartphone, KeyRound, MessageCircle, Loader2, Power, ExternalLink, RefreshCw, GitBranch } from 'lucide-react';
 import type { Client, ClientPlanItem } from '../../types';
-import { PORTAL_URL, makePassword, setupPortal } from '../../services/portal';
+import { PORTAL_URL, makePassword, setupPortal, BUSINESS_PIPELINES } from '../../services/portal';
 
 /**
  * Give a client their own dashboard: phone number + a starter password.
@@ -16,6 +16,7 @@ export const ClientPortalTab: React.FC<{
   const on = !!client.portal?.enabled;
   const [phone, setPhone] = useState(client.portal?.phone || (client.phone || '').replace(/\D/g, '').slice(-10));
   const [password, setPassword] = useState('');
+  const [bizType, setBizType] = useState(client.portal?.businessType || 'general');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [shareText, setShareText] = useState<string | null>(null);
@@ -31,8 +32,8 @@ export const ClientPortalTab: React.FC<{
     setError(null);
     const pass = withPassword ? password || makePassword(client) : '';
     try {
-      const r = await setupPortal(client.id, phone, pass, enabled);
-      onUpdateClient({ ...client, portal: { enabled: r.portal.enabled, phone: r.portal.phone, since: client.portal?.since || new Date().toISOString() } });
+      const r = await setupPortal(client.id, phone, pass, enabled, bizType);
+      onUpdateClient({ ...client, portal: { enabled: r.portal.enabled, phone: r.portal.phone, since: client.portal?.since || new Date().toISOString(), businessType: bizType } });
       if (enabled) onSyncNow();
       if (pass) {
         setPassword(pass);
@@ -80,6 +81,28 @@ export const ClientPortalTab: React.FC<{
           </span>
           <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="auto: e.g. jain-4821" className={`${input} mt-1`} autoComplete="off" />
         </label>
+      </div>
+
+      <div className="rounded-xl border border-border-base dark:border-slate-700 p-4">
+        <div className="flex items-start gap-3">
+          <GitBranch className="w-5 h-5 shrink-0 text-text-muted mt-0.5" />
+          <div className="flex-1">
+            <p className="font-semibold text-text-heading dark:text-white text-sm">Leads pipeline for this client</p>
+            <p className="text-sm text-text-muted">Pick the stages that match this client’s business. Their portal Leads board uses these — the client can’t change it.</p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <select value={bizType} onChange={(e) => setBizType(e.target.value)} className={`${input} max-w-xs`}>
+                {BUSINESS_PIPELINES.map((b) => (
+                  <option key={b.id} value={b.id}>{b.label}</option>
+                ))}
+              </select>
+              {on && bizType !== (client.portal?.businessType || 'general') && (
+                <button type="button" disabled={busy} onClick={() => save(true, false)} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary-accent text-secondary-accent-text text-sm font-semibold disabled:opacity-50">
+                  {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : null} Save pipeline
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
 
       {error && <p className="text-sm text-rose-600">{error}</p>}
