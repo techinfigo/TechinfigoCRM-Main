@@ -35,6 +35,11 @@ export const BUSINESS_PIPELINES: { id: string; label: string }[] = [
   { id: 'd2c', label: 'D2C / Online Store' },
 ];
 
+export type PortalTeamMember = { name: string; phone: string };
+/** Add / update / remove a client's portal team. Each staff logs in with their own number + password. */
+export const setPortalTeam = (clientId: string, members: { name: string; phone: string; password?: string }[]) =>
+  call<{ team: PortalTeamMember[] }>({ action: 'team', clientId, members });
+
 export const syncPortal = (clientId: string, snapshot: unknown) => call<{ ok: true }>({ action: 'sync', clientId, snapshot });
 
 export type PortalAction = { id: string; clientId: string; planId: string; action: 'approve' | 'change'; comment: string; at: number; leadId?: string; leadStatus?: string; leadNote?: string; leadNew?: boolean; leadName?: string; leadPhone?: string; leadNextFollowUp?: string; leadActivityType?: string; leadActivityNote?: string };

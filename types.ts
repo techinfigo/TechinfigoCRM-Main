@@ -268,7 +268,7 @@ export interface Client {
     accessCredentials?: AccessCredential[];
     convertedFromLeadId?: string;
     /** Client portal (www.techinfigo.com/portal) access. The password lives only on the website, hashed. */
-    portal?: { enabled: boolean; phone: string; since?: string; businessType?: string };
+    portal?: { enabled: boolean; phone: string; since?: string; businessType?: string; team?: { name: string; phone: string }[] };
     /** Own brand (Techinfigo itself): projects, calendar and tasks work, but never billed
      *  and left out of revenue, client counts and health. */
     isInternal?: boolean;

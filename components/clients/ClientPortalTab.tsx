@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { MonitorSmartphone, KeyRound, MessageCircle, Loader2, Power, ExternalLink, RefreshCw, GitBranch } from 'lucide-react';
+import { MonitorSmartphone, KeyRound, MessageCircle, Loader2, Power, ExternalLink, RefreshCw, GitBranch, Users, Plus, Trash2 } from 'lucide-react';
 import type { Client, ClientPlanItem } from '../../types';
-import { PORTAL_URL, makePassword, setupPortal, BUSINESS_PIPELINES } from '../../services/portal';
+import { PORTAL_URL, makePassword, setupPortal, setPortalTeam, BUSINESS_PIPELINES } from '../../services/portal';
 
 /**
  * Give a client their own dashboard: phone number + a starter password.
@@ -21,6 +21,30 @@ export const ClientPortalTab: React.FC<{
   const [error, setError] = useState<string | null>(null);
   const [shareText, setShareText] = useState<string | null>(null);
   const [synced, setSynced] = useState(false);
+
+  // Team members: each logs in with their own number + password.
+  type TeamRow = { name: string; phone: string; password: string; existing: boolean };
+  const [team, setTeam] = useState<TeamRow[]>(() => (client.portal?.team || []).map((m) => ({ name: m.name, phone: m.phone, password: '', existing: true })));
+  const [teamBusy, setTeamBusy] = useState(false);
+  const [teamMsg, setTeamMsg] = useState<string | null>(null);
+  const [teamErr, setTeamErr] = useState<string | null>(null);
+
+  const addMember = () => setTeam((t) => [...t, { name: '', phone: '', password: '', existing: false }]);
+  const updateMember = (i: number, patch: Partial<TeamRow>) => setTeam((t) => t.map((m, k) => (k === i ? { ...m, ...patch } : m)));
+  const removeMember = (i: number) => setTeam((t) => t.filter((_, k) => k !== i));
+  const saveTeam = async () => {
+    setTeamBusy(true); setTeamErr(null); setTeamMsg(null);
+    try {
+      const members = team.map((m) => ({ name: m.name.trim(), phone: m.phone.replace(/\D/g, '').slice(-10), password: m.password || undefined }));
+      const r = await setPortalTeam(client.id, members);
+      setTeam(r.team.map((m) => ({ name: m.name, phone: m.phone, password: '', existing: true })));
+      onUpdateClient({ ...client, portal: { ...(client.portal || { enabled: on, phone }), team: r.team } });
+      setTeamMsg(r.team.length ? `Saved. ${r.team.length} team member${r.team.length === 1 ? '' : 's'} can log in.` : 'Team cleared.');
+    } catch (e) {
+      setTeamErr(e instanceof Error ? e.message : 'Could not save the team.');
+    }
+    setTeamBusy(false);
+  };
 
   const waNumber = (() => {
     const d = (phone || '').replace(/\D/g, '');
@@ -104,6 +128,38 @@ export const ClientPortalTab: React.FC<{
           </div>
         </div>
       </div>
+
+      {on && (
+        <div className="rounded-xl border border-border-base dark:border-slate-700 p-4">
+          <div className="flex items-start gap-3">
+            <Users className="w-5 h-5 shrink-0 text-text-muted mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-text-heading dark:text-white text-sm">Team access</p>
+              <p className="text-sm text-text-muted">Add the client’s staff. Each person logs in with their own mobile number + password and sees the same leads &amp; calendar. Leave the password blank to keep an existing one.</p>
+
+              <div className="mt-3 space-y-2">
+                {team.length === 0 && <p className="text-sm text-text-muted italic">No team members yet. Only the owner can log in.</p>}
+                {team.map((m, i) => (
+                  <div key={i} className="flex flex-wrap items-center gap-2">
+                    <input value={m.name} onChange={(e) => updateMember(i, { name: e.target.value })} placeholder="Name (e.g. Pooja)" className={`${input} flex-1 min-w-[120px]`} />
+                    <input value={m.phone} onChange={(e) => updateMember(i, { phone: e.target.value })} placeholder="10-digit mobile" inputMode="numeric" className={`${input} w-40`} />
+                    <input value={m.password} onChange={(e) => updateMember(i, { password: e.target.value })} placeholder={m.existing ? 'Password (keep)' : 'Set password'} className={`${input} w-40`} />
+                    <button type="button" onClick={() => removeMember(i)} title="Remove" className="h-10 w-10 grid place-items-center rounded-lg text-text-muted hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10"><Trash2 className="w-4 h-4" /></button>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <button type="button" onClick={addMember} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border-base dark:border-slate-600 text-sm font-semibold text-text-heading dark:text-white"><Plus className="w-4 h-4" /> Add team member</button>
+                <button type="button" disabled={teamBusy} onClick={saveTeam} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary-accent text-secondary-accent-text text-sm font-semibold disabled:opacity-50">{teamBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : null} Save team</button>
+                {teamMsg && <span className="text-sm text-emerald-600 font-medium">{teamMsg}</span>}
+                {teamErr && <span className="text-sm text-rose-600 font-medium">{teamErr}</span>}
+              </div>
+              <p className="mt-2 text-xs text-text-muted">Removing a member signs them out right away (everyone re-logs in once). Same portal link for all: {PORTAL_URL}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {error && <p className="text-sm text-rose-600">{error}</p>}
 
